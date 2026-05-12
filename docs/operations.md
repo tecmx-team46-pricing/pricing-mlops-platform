@@ -59,6 +59,8 @@ Para un ambiente nuevo, GitHub Actions no puede hacer su propio primer bootstrap
 
 Despues del bootstrap local, los scripts detectan `GITHUB_ACTIONS=true` y no intentan recrear identidades OIDC ni role assignments. Esos permisos se administran desde el despliegue local inicial.
 
+Para ejecutar `what-if` y `deploy` desde GitHub Actions con el template a scope subscription, la identidad OIDC de cada GitHub environment necesita `Contributor` sobre la subscription. Los role assignments de Storage y Key Vault se crean durante el bootstrap local.
+
 ## Corrida MLOps staging
 
 Local:
