@@ -1,0 +1,79 @@
+name: platform-infra
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - "scripts/deploy.sh"
+      - "scripts/what-if.sh"
+      - ".github/workflows/platform-infra.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Platform environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - validation
+      operation:
+        description: "Manual operation"
+        required: true
+        default: "validate"
+        type: choice
+        options:
+          - validate
+          - what-if
+          - deploy
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Bicep template
+        run: az bicep build --file infra/main.bicep
+      - name: Build Bicep parameter files
+        run: |
+          az bicep build-params --file infra/parameters/staging.bicepparam
+          az bicep build-params --file infra/parameters/validation.bicepparam
+
+  what-if:
+    if: github.event_name == 'workflow_dispatch' && (inputs.operation == 'what-if' || inputs.operation == 'deploy')
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Azure what-if
+        run: scripts/what-if.sh "${{ inputs.environment }}"
+
+  deploy:
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'deploy'
+    needs: what-if
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy platform hello world
+        run: scripts/deploy.sh "${{ inputs.environment }}"

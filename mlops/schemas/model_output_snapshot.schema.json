@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "model_output_snapshot",
+  "type": "object",
+  "required": [
+    "run_id",
+    "record_id",
+    "business_group",
+    "vp_area",
+    "disty_segment",
+    "part_number",
+    "recommended_target_price",
+    "recommended_floor_price",
+    "recommended_start_price",
+    "pricing_strategy"
+  ],
+  "properties": {
+    "run_id": { "type": "string" },
+    "record_id": { "type": "string" },
+    "business_group": { "type": "string" },
+    "vp_area": { "type": "string" },
+    "disty_segment": { "type": "string" },
+    "part_number": { "type": "string" },
+    "recommended_target_price": { "type": "number" },
+    "recommended_floor_price": { "type": "number" },
+    "recommended_start_price": { "type": "number" },
+    "pricing_strategy": { "type": "string" },
+    "revenue": { "type": "number" }
+  },
+  "additionalProperties": false
+}

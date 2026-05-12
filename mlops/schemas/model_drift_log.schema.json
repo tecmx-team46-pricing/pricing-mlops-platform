@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "model_drift_log",
+  "type": "object",
+  "required": [
+    "drift_id",
+    "run_id",
+    "baseline_version",
+    "variable_name",
+    "variable_type",
+    "drift_metric",
+    "drift_value",
+    "threshold_green",
+    "threshold_yellow",
+    "threshold_red",
+    "drift_status",
+    "revenue_weighted_impact",
+    "recommended_action"
+  ],
+  "properties": {
+    "drift_id": { "type": "string" },
+    "run_id": { "type": "string" },
+    "baseline_version": { "type": "string" },
+    "variable_name": { "type": "string" },
+    "variable_type": { "type": "string", "enum": ["price", "quantity", "output"] },
+    "drift_metric": { "type": "string" },
+    "drift_value": { "type": "number" },
+    "threshold_green": { "type": "number" },
+    "threshold_yellow": { "type": "number" },
+    "threshold_red": { "type": "number" },
+    "drift_status": { "type": "string", "enum": ["green", "yellow", "red"] },
+    "revenue_weighted_impact": { "type": "number" },
+    "recommended_action": {
+      "type": "string",
+      "enum": ["no_action", "business_review", "recalibrate_or_retrain"]
+    }
+  },
+  "additionalProperties": false
+}

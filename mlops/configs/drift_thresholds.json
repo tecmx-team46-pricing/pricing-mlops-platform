@@ -1,0 +1,27 @@
+{
+  "version": "2026-05-07",
+  "currency": "USD",
+  "metrics": {
+    "price_relative_change": {
+      "green_max": 0.05,
+      "yellow_max": 0.15
+    },
+    "quantity_relative_change": {
+      "green_max": 0.1,
+      "yellow_max": 0.25
+    },
+    "recommended_price_relative_change": {
+      "green_max": 0.05,
+      "yellow_max": 0.12
+    },
+    "revenue_weighted_impact": {
+      "green_max": 0.03,
+      "yellow_max": 0.1
+    }
+  },
+  "actions": {
+    "green": "no_action",
+    "yellow": "business_review",
+    "red": "recalibrate_or_retrain"
+  }
+}

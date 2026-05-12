@@ -1,0 +1,20 @@
+{
+  "version": "2026-05-07",
+  "granularity": [
+    "business_group",
+    "vp_area",
+    "disty_segment",
+    "part_number"
+  ],
+  "outputs": [
+    "recommended_target_price",
+    "recommended_floor_price",
+    "recommended_start_price"
+  ],
+  "quality_rules": {
+    "allow_negative_quantity": false,
+    "allow_negative_price": false,
+    "require_revenue": true,
+    "require_margin": false
+  }
+}

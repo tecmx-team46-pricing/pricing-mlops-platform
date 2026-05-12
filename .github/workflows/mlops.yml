@@ -1,0 +1,63 @@
+name: mlops
+
+on:
+  pull_request:
+    paths:
+      - "mlops/**"
+      - "scripts/run-mlops-staging.py"
+      - "scripts/validate-mlops-contracts.py"
+      - ".github/workflows/mlops.yml"
+  workflow_dispatch:
+    inputs:
+      upload_to_azure:
+        description: "Upload generated run artifacts to Azure Storage"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate MLOps contracts
+        run: scripts/validate-mlops-contracts.py
+
+  run-staging:
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Generate staging run package
+        run: scripts/run-mlops-staging.py --environment staging --output-dir outputs/runs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mlops-staging-run
+          path: outputs/runs
+      - uses: azure/login@v2
+        if: inputs.upload_to_azure
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Upload run artifacts to Storage
+        if: inputs.upload_to_azure
+        run: |
+          az storage blob upload-batch \
+            --account-name "${{ vars.AZURE_STORAGE_ACCOUNT }}" \
+            --auth-mode login \
+            --destination runs \
+            --source outputs/runs \
+            --overwrite true

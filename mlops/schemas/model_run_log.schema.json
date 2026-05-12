@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "model_run_log",
+  "type": "object",
+  "required": [
+    "run_id",
+    "run_timestamp",
+    "git_commit_hash",
+    "code_version",
+    "config_version",
+    "dataset_version",
+    "logic_version",
+    "output_version",
+    "environment",
+    "status",
+    "executed_by"
+  ],
+  "properties": {
+    "run_id": { "type": "string" },
+    "run_timestamp": { "type": "string", "format": "date-time" },
+    "git_commit_hash": { "type": "string" },
+    "code_version": { "type": "string" },
+    "config_version": { "type": "string" },
+    "dataset_version": { "type": "string" },
+    "logic_version": { "type": "string" },
+    "output_version": { "type": "string" },
+    "environment": { "type": "string", "enum": ["sandbox", "staging", "prod"] },
+    "status": { "type": "string", "enum": ["started", "succeeded", "failed"] },
+    "executed_by": { "type": "string" },
+    "storage_uri": { "type": "string" },
+    "comments": { "type": "string" }
+  },
+  "additionalProperties": false
+}

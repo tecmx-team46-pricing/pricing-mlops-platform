@@ -1,0 +1,21 @@
+name: infra
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - "scripts/deploy.sh"
+      - "scripts/what-if.sh"
+      - ".github/workflows/infra.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Bicep
+        run: az bicep build --file infra/main.bicep

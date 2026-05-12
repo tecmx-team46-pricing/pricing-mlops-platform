@@ -51,7 +51,9 @@ flowchart LR
 ```text
 infra/
   main.bicep
+  parameters/sandbox-david.bicepparam
   parameters/staging.bicepparam
+  parameters/validation.bicepparam
 
 mlops/
   configs/
@@ -68,10 +70,13 @@ scripts/
 docs/
   architecture.md
   operations.md
+  platform-environments.md
+  repository-governance.md
   sandbox.md
 
 .github/workflows/
   infra.yml
+  platform-infra.yml
   mlops.yml
 ```
 
@@ -81,6 +86,8 @@ docs/
 |---|---|
 | Shared Resource Group | Key Vault, Log Analytics e identidad OIDC |
 | Staging Resource Group | Storage y evidencia MLOps |
+| Sandbox David Resource Group | Storage hello world para pruebas personales temporales |
+| Validation Resource Group | Storage hello world no productivo para validacion controlada |
 | Storage Account | Inputs, baselines, runs, snapshots, drift logs, reportes y artefactos |
 | Key Vault | Secretos y parametros sensibles si aparecen |
 | Log Analytics | Observabilidad tecnica minima |
@@ -99,6 +106,14 @@ scripts/what-if.sh staging
 scripts/deploy.sh staging
 ```
 
+Ambientes permitidos para el prototipo de plataforma:
+
+```text
+staging
+sandbox-david
+validation
+```
+
 Los scripts de despliegue no crean el repo, no asignan usuarios y no hacen bootstrap de permisos. Solo ejecutan comandos repetibles contra Bicep.
 
 Validar contratos MLOps:
@@ -115,17 +130,17 @@ scripts/run-mlops-staging.py --environment staging
 
 Los artefactos locales se escriben en `outputs/`, que no se versiona.
 
-El workflow de infraestructura valida Bicep. El despliegue de infraestructura queda manual/local al inicio porque crear Resource Groups y role assignments desde GitHub Actions requiere permisos elevados a nivel suscripcion.
+El workflow `platform-infra.yml` valida Bicep en pull requests sin hacer login a Azure ni desplegar. En `workflow_dispatch` puede ejecutar `validate`, `what-if` o `deploy` para `staging` o `validation`, siempre usando el GitHub environment correspondiente. Los sandboxes personales como `sandbox-david` se operan localmente por cada companero. El primer bootstrap de OIDC puede requerir despliegue local con permisos administrativos antes de que GitHub Actions pueda hacer what-if o deploy.
 
 El budget recomendado es 180 USD para dejar margen antes de consumir los 200 USD incluidos.
 
 ## Configuracion GitHub OIDC
 
-1. Editar `infra/parameters/staging.bicepparam`.
+1. Editar el parameter file del ambiente que se quiere habilitar.
 2. Configurar `githubRepository` con el formato `org/repo`.
 3. Desplegar infraestructura.
 4. Copiar el output `githubActionsClientId`.
-5. Crear variables del environment `staging` en GitHub:
+5. Crear variables en el GitHub environment correspondiente:
 
 ```text
 AZURE_CLIENT_ID
@@ -135,6 +150,12 @@ AZURE_STORAGE_ACCOUNT
 ```
 
 El workflow `mlops.yml` puede ejecutar la corrida staging y, opcionalmente, subir artefactos al Storage Account usando OIDC.
+
+Mas detalle operativo:
+
+- `docs/platform-environments.md`
+- `docs/repository-governance.md`
+- `docs/operations.md`
 
 ## Regla de separacion
 
