@@ -57,6 +57,8 @@ AZURE_SUBSCRIPTION_ID
 
 Para un ambiente nuevo, GitHub Actions no puede hacer su propio primer bootstrap si todavia no existe la identidad OIDC y su federated credential. En ese caso, hacer el primer despliegue local con una cuenta autorizada y luego copiar los outputs al GitHub environment.
 
+Despues del bootstrap local, los scripts detectan `GITHUB_ACTIONS=true` y no intentan recrear identidades OIDC ni role assignments. Esos permisos se administran desde el despliegue local inicial.
+
 ## Corrida MLOps staging
 
 Local:

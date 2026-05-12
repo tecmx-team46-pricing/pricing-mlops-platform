@@ -6,6 +6,11 @@ LOCATION="${AZURE_LOCATION:-eastus2}"
 EXPECTED_SUBSCRIPTION_NAME="${AZURE_SUBSCRIPTION_NAME:-<azure-subscription-name>}"
 DEPLOYMENT_NAME="pricing-mlops-${ENVIRONMENT}-$(date +%Y%m%d%H%M%S)"
 PARAMETER_FILE="infra/parameters/${ENVIRONMENT}.bicepparam"
+EXTRA_PARAMETERS=()
+
+if [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
+  EXTRA_PARAMETERS+=(enableGithubActionsIdentity=false)
+fi
 
 case "${ENVIRONMENT}" in
   staging|sandbox-david|validation) ;;
@@ -37,4 +42,4 @@ fi
 az deployment sub create \
   --name "${DEPLOYMENT_NAME}" \
   --location "${LOCATION}" \
-  --parameters "${PARAMETER_FILE}"
+  --parameters "${PARAMETER_FILE}" "${EXTRA_PARAMETERS[@]}"
