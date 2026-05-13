@@ -18,4 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Bicep
-        run: az bicep build --file infra/main.bicep
+        run: |
+          az bicep build --file infra/foundation/main.bicep
+          az bicep build --file infra/workloads/pricing-mlops/main.bicep
+          az bicep build-params --file infra/parameters/staging.bicepparam
+          az bicep build-params --file infra/parameters/sandbox-david.bicepparam
+          az bicep build-params --file infra/parameters/validation.bicepparam

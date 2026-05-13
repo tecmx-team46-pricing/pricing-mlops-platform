@@ -3,7 +3,7 @@ targetScope = 'resourceGroup'
 @description('Azure region.')
 param location string
 
-@description('Tags applied to the operational environment resources.')
+@description('Tags applied to workload resources.')
 param tags object
 
 @description('Storage account name. Lowercase letters and numbers only.')
@@ -15,7 +15,7 @@ param storageAccountName string
 param storageContainers array
 
 @description('Principal id of the GitHub Actions managed identity.')
-param githubActionsPrincipalId string
+param githubActionsPrincipalId string = ''
 
 @description('Managed identity name. Used to create stable role assignment ids.')
 param githubActionsIdentityName string
@@ -23,7 +23,6 @@ param githubActionsIdentityName string
 @description('Create GitHub Actions workload role assignments.')
 param enableGithubActionsIdentity bool = true
 
-var contributorRoleDefinitionId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
 var storageBlobDataContributorRoleDefinitionId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
@@ -66,15 +65,6 @@ resource containers 'Microsoft.Storage/storageAccounts/blobServices/containers@2
     publicAccess: 'None'
   }
 }]
-
-resource githubWorkloadContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableGithubActionsIdentity) {
-  name: guid(resourceGroup().id, githubActionsIdentityName, contributorRoleDefinitionId)
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', contributorRoleDefinitionId)
-    principalId: githubActionsPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
 
 resource githubStorageBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableGithubActionsIdentity) {
   scope: storage

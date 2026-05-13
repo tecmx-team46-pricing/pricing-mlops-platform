@@ -17,7 +17,21 @@ purpose=personal-sandbox
 lifecycle=temporary
 ```
 
-El tag real `environment` es `sandbox`. El nombre `sandbox-david` se usa como parameter file local para evitar confundirlo con otros sandboxes. No se expone como GitHub environment de despliegue.
+El tag real `environment` es `sandbox`. El nombre `sandbox-david` se usa como parameter file y GitHub environment para evitar confundirlo con otros sandboxes.
+
+En este refactor, `sandbox-david` es el ambiente principal para probar el workload hello world:
+
+```bash
+scripts/what-if.sh sandbox-david
+scripts/deploy.sh sandbox-david
+scripts/publish-hello-function.sh sandbox-david
+```
+
+Si Azure bloquea la Function App por cuota de App Service Plan, probar la base del sandbox con:
+
+```bash
+ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-david
+```
 
 ## Nombre
 

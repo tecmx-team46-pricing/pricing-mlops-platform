@@ -1,4 +1,4 @@
-using '../main.bicep'
+using '../foundation/main.bicep'
 
 param location = 'eastus2'
 param projectName = 'pricing-mlops'
@@ -16,6 +16,7 @@ param sharedOwner = 'team46'
 param githubRepository = 'tecmx-team46-pricing/pricing-mlops-platform'
 param githubEnvironment = 'staging'
 param enableGithubActionsIdentity = true
+param enableHelloFunction = true
 
 // The MVP uses the included 200 USD Azure credit in "<azure-subscription-name>".
 // Keep the budget below the full credit to leave operating margin.

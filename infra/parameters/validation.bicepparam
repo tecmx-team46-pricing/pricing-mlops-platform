@@ -1,4 +1,4 @@
-using '../main.bicep'
+using '../foundation/main.bicep'
 
 param location = 'eastus2'
 param projectName = 'pricing-mlops'
@@ -16,6 +16,7 @@ param sharedOwner = 'team46'
 param githubRepository = 'tecmx-team46-pricing/pricing-mlops-platform'
 param githubEnvironment = 'validation'
 param enableGithubActionsIdentity = true
+param enableHelloFunction = true
 
 // Validation is non-production. Keep budget creation explicit.
 param monthlyBudgetAmount = 0

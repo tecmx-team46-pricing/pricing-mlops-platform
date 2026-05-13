@@ -6,9 +6,9 @@ Este repo mantiene una sola subscription Azure y separa el MVP con Resource Grou
 
 | Nombre | Tipo | Resource Group | Uso |
 |---|---|---|---|
-| `shared` | Scope compartido | `rg-pricing-mlops-platform-shared` | Key Vault, Log Analytics e identidades OIDC. No es ambiente MLOps. |
+| `shared` | Scope foundation | `rg-pricing-mlops-platform-shared` | Key Vault, Log Analytics e identidades OIDC. No es ambiente MLOps. |
 | `staging` | MVP actual | `rg-pricing-mlops-staging` | Validacion y despliegue inicial de la plataforma. |
-| `sandbox-david` | Sandbox personal | `rg-pricing-mlops-sbx-david` | Pruebas temporales de David con lifecycle temporal. |
+| `sandbox-david` | Sandbox personal | `rg-pricing-mlops-sbx-david` | Ambiente principal para probar el hello world del refactor. |
 | `validation` | No-prod controlado | `rg-pricing-mlops-validation` | Validar cambios antes de una promocion formal futura. |
 
 `prod` sigue siendo conceptual. No hay infraestructura, parameter file ni workflow de produccion.
@@ -33,9 +33,9 @@ lifecycle=controlled
 purpose=controlled-validation
 ```
 
-## Operacion
+## Operacion local
 
-Los scripts locales aceptan solo:
+Los scripts locales aceptan:
 
 ```text
 staging
@@ -47,23 +47,18 @@ Ejemplos:
 
 ```bash
 scripts/what-if.sh sandbox-david
-scripts/deploy.sh validation
+scripts/deploy.sh sandbox-david
+scripts/publish-hello-function.sh sandbox-david
 ```
 
-Antes de ejecutar what-if o deploy local, confirmar la subscription:
-
-```bash
-az account show --query "{name:name, id:id}" --output table
-```
+La publicacion de la Function requiere que el despliegue haya creado la Function App. Si la subscription no tiene cuota de compute para App Service Plan, usar `ENABLE_HELLO_FUNCTION=false` para validar foundation y storage mientras se solicita cuota.
 
 ## GitHub Actions
 
 `platform-infra.yml` valida en pull requests sin credenciales Azure. Para operaciones manuales, ejecutar `workflow_dispatch` y seleccionar:
 
-- `environment`: `staging` o `validation`.
+- `environment`: `staging`, `sandbox-david` o `validation`.
 - `operation`: `validate`, `what-if` o `deploy`.
-
-Los sandboxes personales no se exponen como GitHub environments de despliegue. `sandbox-david` se mantiene como ejemplo local reproducible para que cada companero pueda tener un parameter file temporal equivalente.
 
 Cada GitHub environment usado para what-if o deploy necesita:
 
@@ -73,5 +68,4 @@ AZURE_TENANT_ID
 AZURE_SUBSCRIPTION_ID
 ```
 
-El valor de `AZURE_CLIENT_ID` sale del output `githubActionsClientId` del despliegue del ambiente.
-Si ese despliegue todavia no existe, el bootstrap inicial debe hacerse localmente con una cuenta autorizada.
+El valor de `AZURE_CLIENT_ID` sale del output `githubActionsClientId` del despliegue foundation del ambiente.

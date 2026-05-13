@@ -2,12 +2,12 @@
 
 Monorepo minimo para operar el MVP de MLOps del sistema de recomendacion de precios B2B.
 
-El repositorio incluye dos cosas que deben evolucionar juntas durante el MVP:
+El repositorio separa dos capas que evolucionan juntas durante el MVP:
 
-- Infraestructura Azure minima con Bicep.
-- Definicion operativa del flujo MLOps: contratos, configuracion, scripts y workflows.
+- `infra/foundation`: base reusable de plataforma Azure.
+- `infra/workloads/pricing-mlops`: infraestructura especifica del workload Pricing MLOps.
 
-La filosofia es deliberada: un repo, pocos ambientes, pocos recursos, una identidad de GitHub Actions y despliegues controlados.
+`mlops/` no contiene IaC. Se mantiene para contratos, schemas, thresholds, reglas y validaciones del flujo del modelo.
 
 ## Subscription
 
@@ -18,7 +18,7 @@ El MVP usa una sola subscription:
 Credito incluido: 200 USD
 ```
 
-No se crean subscriptions separadas por ambiente. La separacion se hace con Resource Groups, tags y disciplina operativa. Esto mantiene el proyecto barato y entendible para un equipo pequeno.
+No se crean subscriptions separadas por ambiente. La separacion se hace con Resource Groups, tags y disciplina operativa.
 
 ## Arquitectura
 
@@ -26,21 +26,23 @@ No se crean subscriptions separadas por ambiente. La separacion se hace con Reso
 flowchart LR
   Dev["Equipo"] --> Repo["pricing-mlops-platform"]
 
-  Repo --> Infra["infra/ Bicep"]
-  Repo --> MLOps["mlops/ flujo y contratos"]
+  Repo --> Foundation["infra/foundation"]
+  Repo --> Workload["infra/workloads/pricing-mlops"]
+  Repo --> MLOps["mlops/ contratos y reglas"]
   Repo --> Actions["GitHub Actions"]
+  Repo --> FuncSrc["src/functions/pricing-mlops-hello"]
 
-  Actions --> OIDC["OIDC identity"]
-  OIDC --> KV["Key Vault"]
-  OIDC --> ST["Storage Account"]
+  Foundation --> SharedRG["rg-pricing-mlops-platform-shared"]
+  Foundation --> WorkloadRG["RG por ambiente"]
+  Foundation --> OIDC["OIDC identities"]
+  Foundation --> KV["Key Vault"]
+  Foundation --> Logs["Log Analytics"]
 
-  Infra --> SharedRG["rg-pricing-mlops-platform-shared"]
-  Infra --> StgRG["rg-pricing-mlops-staging"]
+  Workload --> Storage["Storage workload"]
+  Workload --> Func["Azure Function hello /api/health"]
 
-  SharedRG --> KV
-  SharedRG --> Logs["Log Analytics"]
-  StgRG --> ST
-
+  Actions --> OIDC
+  FuncSrc --> Func
   MLOps --> RunLog["model_run_log"]
   MLOps --> DriftLog["model_drift_log"]
   MLOps --> Snapshot["model_output_snapshot"]
@@ -50,51 +52,53 @@ flowchart LR
 
 ```text
 infra/
-  main.bicep
-  parameters/sandbox-david.bicepparam
-  parameters/staging.bicepparam
-  parameters/validation.bicepparam
+  foundation/
+    main.bicep
+    modules/
+      resource-groups.bicep
+      shared-services.bicep
+      identities.bicep
+      observability.bicep
+  workloads/
+    pricing-mlops/
+      main.bicep
+      modules/
+        hello-function.bicep
+        storage.bicep
+  parameters/
+    sandbox-david.bicepparam
+    staging.bicepparam
+    validation.bicepparam
+
+src/
+  functions/pricing-mlops-hello/
 
 mlops/
   configs/
   docs/
   schemas/
-
-scripts/
-  deploy.sh
-  what-if.sh
-  destroy-sandbox.sh
-  run-mlops-staging.py
-  validate-mlops-contracts.py
-
-docs/
-  architecture.md
-  operations.md
-  platform-environments.md
-  repository-governance.md
-  sandbox.md
-
-.github/workflows/
-  infra.yml
-  platform-infra.yml
-  mlops.yml
 ```
 
 ## Recursos Azure MVP
 
-| Recurso | Proposito |
-|---|---|
-| Shared Resource Group | Key Vault, Log Analytics e identidad OIDC |
-| Staging Resource Group | Storage y evidencia MLOps |
-| Sandbox David Resource Group | Storage hello world para pruebas personales temporales |
-| Validation Resource Group | Storage hello world no productivo para validacion controlada |
-| Storage Account | Inputs, baselines, runs, snapshots, drift logs, reportes y artefactos |
-| Key Vault | Secretos y parametros sensibles si aparecen |
-| Log Analytics | Observabilidad tecnica minima |
-| Budget | Alerta mensual opcional a nivel suscripcion |
-| User Assigned Identity | Una identidad para GitHub Actions via OIDC |
+| Capa | Recurso | Proposito |
+|---|---|---|
+| Foundation | Shared Resource Group | Key Vault, Log Analytics e identidades OIDC |
+| Foundation | Workload Resource Groups | Separacion por ambiente |
+| Foundation | User Assigned Identities | OIDC para GitHub Actions |
+| Foundation | Budget | Alerta mensual opcional a nivel subscription |
+| Pricing MLOps workload | Storage Account | Inputs, baselines, runs, snapshots, drift logs, reportes y artefactos |
+| Pricing MLOps workload | Function App | Hello world / health check del prototipo |
 
-No se incluye Kubernetes, Azure ML, Databricks, Terraform, Ansible, multiples repos ni multiples ambientes permanentes.
+La Function App usa App Service Plan `B1` por defecto. La subscription debe tener cuota `Basic VMs >= 1`; si no, foundation y storage pueden quedar desplegados, pero la Function App queda bloqueada por cuota de Azure.
+
+Para validar solo foundation y storage mientras se resuelve cuota de compute:
+
+```bash
+ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-david
+```
+
+No se incluye Kubernetes, Azure ML, Data Factory, Azure SQL, Hub-and-Spoke, Private Endpoints, ACR, Terraform, Ansible ni produccion real.
 
 ## Uso local
 
@@ -102,11 +106,11 @@ No se incluye Kubernetes, Azure ML, Databricks, Terraform, Ansible, multiples re
 az login
 az account set --subscription "<azure-subscription-name>"
 
-scripts/what-if.sh staging
-scripts/deploy.sh staging
+scripts/what-if.sh sandbox-david
+scripts/deploy.sh sandbox-david
 ```
 
-Ambientes permitidos para el prototipo de plataforma:
+Ambientes permitidos:
 
 ```text
 staging
@@ -114,7 +118,10 @@ sandbox-david
 validation
 ```
 
-Los scripts de despliegue no crean el repo, no asignan usuarios y no hacen bootstrap de permisos. Solo ejecutan comandos repetibles contra Bicep.
+Los scripts ejecutan en orden:
+
+1. `infra/foundation/main.bicep`
+2. `infra/workloads/pricing-mlops/main.bicep`
 
 Validar contratos MLOps:
 
@@ -122,25 +129,31 @@ Validar contratos MLOps:
 scripts/validate-mlops-contracts.py
 ```
 
-Generar una corrida staging de ejemplo:
+Validar Function hello world localmente:
 
 ```bash
-scripts/run-mlops-staging.py --environment staging
+npm test --prefix src/functions/pricing-mlops-hello
 ```
 
-Los artefactos locales se escriben en `outputs/`, que no se versiona.
+Publicar el codigo de la Function despues de desplegar infraestructura:
 
-El workflow `platform-infra.yml` valida Bicep en pull requests sin hacer login a Azure ni desplegar. En `workflow_dispatch` puede ejecutar `validate`, `what-if` o `deploy` para `staging` o `validation`, siempre usando el GitHub environment correspondiente. Los sandboxes personales como `sandbox-david` se operan localmente por cada companero. El primer bootstrap de OIDC puede requerir despliegue local con permisos administrativos antes de que GitHub Actions pueda hacer what-if o deploy.
+```bash
+scripts/publish-hello-function.sh sandbox-david
+```
 
-El budget recomendado es 180 USD para dejar margen antes de consumir los 200 USD incluidos.
+## GitHub Actions
 
-## Configuracion GitHub OIDC
+`platform-infra.yml` valida Bicep en pull requests sin hacer login a Azure ni desplegar.
 
-1. Editar el parameter file del ambiente que se quiere habilitar.
-2. Configurar `githubRepository` con el formato `org/repo`.
-3. Desplegar infraestructura.
-4. Copiar el output `githubActionsClientId`.
-5. Crear variables en el GitHub environment correspondiente:
+En `workflow_dispatch` puede ejecutar `validate`, `what-if` o `deploy` para:
+
+```text
+staging
+sandbox-david
+validation
+```
+
+Cada GitHub environment usado para what-if o deploy necesita:
 
 ```text
 AZURE_CLIENT_ID
@@ -149,13 +162,7 @@ AZURE_SUBSCRIPTION_ID
 AZURE_STORAGE_ACCOUNT
 ```
 
-El workflow `mlops.yml` puede ejecutar la corrida staging y, opcionalmente, subir artefactos al Storage Account usando OIDC.
-
-Mas detalle operativo:
-
-- `docs/platform-environments.md`
-- `docs/repository-governance.md`
-- `docs/operations.md`
+El primer bootstrap de OIDC puede requerir despliegue local con permisos administrativos antes de que GitHub Actions pueda hacer what-if o deploy.
 
 ## Regla de separacion
 

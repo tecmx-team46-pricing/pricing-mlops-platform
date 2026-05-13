@@ -1,4 +1,4 @@
-using '../main.bicep'
+using '../foundation/main.bicep'
 
 param location = 'eastus2'
 param projectName = 'pricing-mlops'
@@ -11,11 +11,10 @@ param workloadPurpose = 'personal-sandbox'
 param workloadEnvironmentTag = 'sandbox'
 param sharedOwner = 'team46'
 
-// Set this after the GitHub repo exists, for example:
-// param githubRepository = 'tecmx-team46-pricing/pricing-mlops-platform'
-param githubRepository = ''
+param githubRepository = 'tecmx-team46-pricing/pricing-mlops-platform'
 param githubEnvironment = 'sandbox-david'
-param enableGithubActionsIdentity = false
+param enableGithubActionsIdentity = true
+param enableHelloFunction = true
 
 // Personal sandboxes should stay cheap and temporary.
 param monthlyBudgetAmount = 0

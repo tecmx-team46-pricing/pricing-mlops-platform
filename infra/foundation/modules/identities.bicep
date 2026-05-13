@@ -3,16 +3,11 @@ targetScope = 'resourceGroup'
 @description('Azure region.')
 param location string
 
-@description('Tags applied to shared resources.')
+@description('Tags applied to identity resources.')
 param tags object
 
-@description('Key Vault name.')
-@minLength(3)
-@maxLength(24)
+@description('Existing shared Key Vault name.')
 param keyVaultName string
-
-@description('Log Analytics workspace name.')
-param logAnalyticsName string
 
 @description('One user-assigned managed identity for GitHub Actions OIDC.')
 param githubActionsIdentityName string
@@ -21,7 +16,7 @@ param githubActionsIdentityName string
 param githubRepository string = ''
 
 @description('GitHub environment used by deployments.')
-param githubEnvironment string = 'staging'
+param githubEnvironment string
 
 @description('Create the GitHub Actions identity and federated credential.')
 param enableGithubActionsIdentity bool = !empty(githubRepository)
@@ -30,35 +25,8 @@ var keyVaultSecretsUserRoleDefinitionId = '4633458b-17de-408a-b874-0445c86b69e6'
 var githubActionsSubject = 'repo:${githubRepository}:environment:${githubEnvironment}'
 var shouldCreateFederatedCredential = enableGithubActionsIdentity && !empty(githubRepository)
 
-resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   name: keyVaultName
-  location: location
-  tags: tags
-  properties: {
-    tenantId: tenant().tenantId
-    sku: {
-      family: 'A'
-      name: 'standard'
-    }
-    enableRbacAuthorization: true
-    enabledForDeployment: false
-    enabledForDiskEncryption: false
-    enabledForTemplateDeployment: false
-    publicNetworkAccess: 'Enabled'
-    softDeleteRetentionInDays: 7
-  }
-}
-
-resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
-  name: logAnalyticsName
-  location: location
-  tags: tags
-  properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
-    retentionInDays: 30
-  }
 }
 
 resource githubActionsIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = if (enableGithubActionsIdentity) {
@@ -89,8 +57,6 @@ resource githubKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022
   }
 }
 
-output keyVaultName string = keyVault.name
-output logAnalyticsWorkspaceName string = logAnalytics.name
 output githubActionsClientId string = enableGithubActionsIdentity ? githubActionsIdentity!.properties.clientId : ''
 output githubActionsPrincipalId string = enableGithubActionsIdentity ? githubActionsIdentity!.properties.principalId : ''
 output githubActionsSubject string = shouldCreateFederatedCredential ? githubActionsSubject : ''

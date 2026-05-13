@@ -5,10 +5,17 @@ ENVIRONMENT="${1:-staging}"
 LOCATION="${AZURE_LOCATION:-eastus2}"
 EXPECTED_SUBSCRIPTION_NAME="${AZURE_SUBSCRIPTION_NAME:-<azure-subscription-name>}"
 PARAMETER_FILE="infra/parameters/${ENVIRONMENT}.bicepparam"
+FOUNDATION_TEMPLATE="infra/foundation/main.bicep"
+WORKLOAD_TEMPLATE="infra/workloads/pricing-mlops/main.bicep"
 EXTRA_PARAMETERS=()
+PARAMETERS_JSON=""
 
 if [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
   EXTRA_PARAMETERS+=(enableGithubActionsIdentity=false)
+fi
+
+if [[ -n "${ENABLE_HELLO_FUNCTION:-}" ]]; then
+  EXTRA_PARAMETERS+=(enableHelloFunction="${ENABLE_HELLO_FUNCTION}")
 fi
 
 case "${ENVIRONMENT}" in
@@ -25,6 +32,16 @@ if [[ ! -f "${PARAMETER_FILE}" ]]; then
   exit 1
 fi
 
+if [[ ! -f "${FOUNDATION_TEMPLATE}" ]]; then
+  echo "Foundation template not found: ${FOUNDATION_TEMPLATE}" >&2
+  exit 1
+fi
+
+if [[ ! -f "${WORKLOAD_TEMPLATE}" ]]; then
+  echo "Pricing MLOps workload template not found: ${WORKLOAD_TEMPLATE}" >&2
+  exit 1
+fi
+
 ACTIVE_SUBSCRIPTION_NAME="$(az account show --query name -o tsv 2>/dev/null || true)"
 
 if [[ -z "${ACTIVE_SUBSCRIPTION_NAME}" ]]; then
@@ -38,6 +55,18 @@ if [[ "${ACTIVE_SUBSCRIPTION_NAME}" != "${EXPECTED_SUBSCRIPTION_NAME}" ]]; then
   exit 1
 fi
 
+PARAMETERS_JSON="$(mktemp)"
+trap 'rm -f "${PARAMETERS_JSON}"' EXIT
+az bicep build-params --file "${PARAMETER_FILE}" --outfile "${PARAMETERS_JSON}" >/dev/null
+
+echo "Foundation what-if: ${ENVIRONMENT}"
 az deployment sub what-if \
+  --template-file "${FOUNDATION_TEMPLATE}" \
   --location "${LOCATION}" \
-  --parameters "${PARAMETER_FILE}" "${EXTRA_PARAMETERS[@]}"
+  --parameters "${PARAMETERS_JSON}" "${EXTRA_PARAMETERS[@]}"
+
+echo "Pricing MLOps workload what-if: ${ENVIRONMENT}"
+az deployment sub what-if \
+  --template-file "${WORKLOAD_TEMPLATE}" \
+  --location "${LOCATION}" \
+  --parameters "${PARAMETERS_JSON}" "${EXTRA_PARAMETERS[@]}"
