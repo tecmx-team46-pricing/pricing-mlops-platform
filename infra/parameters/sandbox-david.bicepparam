@@ -1,6 +1,6 @@
 using '../foundation/main.bicep'
 
-param location = 'eastus2'
+param location = 'centralus'
 param projectName = 'pricing-mlops'
 param environmentName = 'sandbox-david'
 param owner = 'david'

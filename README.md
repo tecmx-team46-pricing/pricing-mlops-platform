@@ -92,6 +92,10 @@ mlops/
 
 La Function App usa App Service Plan `B1` por defecto. La subscription debe tener cuota `Basic VMs >= 1`; si no, foundation y storage pueden quedar desplegados, pero la Function App queda bloqueada por cuota de Azure.
 
+`sandbox-david` usa `centralus` para probar App Service/Functions fuera de `eastus2`, donde la cuenta con credito gratis reporto quota 0 para compute. `staging` y `validation` se mantienen en `eastus2`.
+
+Si el sandbox ya fue desplegado en otra region, Azure no mueve Storage Accounts ni Function Apps en sitio. Para aplicar el cambio de region hay que recrear el Resource Group del sandbox o cambiar nombres.
+
 Para validar solo foundation y storage mientras se resuelve cuota de compute:
 
 ```bash

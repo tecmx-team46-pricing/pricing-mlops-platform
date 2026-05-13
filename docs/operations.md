@@ -26,6 +26,10 @@ Cada ejecucion despliega en orden:
 
 La Function App del workload usa App Service Plan `B1` por defecto. Si Azure devuelve `SubscriptionIsOverQuotaForSku` para `Basic VMs`, la infraestructura base queda preparada pero la Function App no puede crearse hasta pedir cuota `Basic VMs >= 1` o ajustar los parametros `functionPlanSkuName`, `functionPlanSkuTier` y `functionPlanSkuSize` en el despliegue.
 
+`sandbox-david` puede usar una region distinta a `staging` para evitar saturacion o quotas regionales. El bloqueo original fue App Service/Functions quota 0 en `eastus2`; el parameter file del sandbox usa `centralus` para esta prueba.
+
+Si `sandbox-david` ya tiene recursos en otra region, Azure no puede moverlos en sitio. Un cambio de region requiere borrar y recrear `rg-pricing-mlops-sbx-david` o usar nombres nuevos de recursos.
+
 Mientras se resuelve la cuota de compute, se puede validar foundation y storage sin crear Function App:
 
 ```bash

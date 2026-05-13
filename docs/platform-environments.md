@@ -13,6 +13,10 @@ Este repo mantiene una sola subscription Azure y separa el MVP con Resource Grou
 
 `prod` sigue siendo conceptual. No hay infraestructura, parameter file ni workflow de produccion.
 
+`sandbox-david` puede usar una region distinta a `staging` para pruebas temporales de capacidad. Actualmente usa `centralus` porque `eastus2` reporto quota 0 para App Service/Functions en la cuenta con credito gratis.
+
+Cambiar la region de un sandbox existente no mueve recursos Azure ya creados; requiere recrear el Resource Group del sandbox o usar nombres nuevos.
+
 ## Tags obligatorios
 
 `sandbox-david`:

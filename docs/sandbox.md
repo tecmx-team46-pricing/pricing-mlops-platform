@@ -19,6 +19,10 @@ lifecycle=temporary
 
 El tag real `environment` es `sandbox`. El nombre `sandbox-david` se usa como parameter file y GitHub environment para evitar confundirlo con otros sandboxes.
 
+`sandbox-david` usa `centralus` para probar compute fuera de `eastus2`, donde Azure reporto quota 0 para App Service/Functions. Si `centralus` tambien falla por quota, el siguiente paso es pedir `Dynamic VMs >= 1` o probar otra region de forma explicita.
+
+Los recursos Azure no se mueven de region en sitio. Si el Resource Group del sandbox ya contiene Storage Accounts en `eastus2`, hay que borrar y recrear `rg-pricing-mlops-sbx-david` o cambiar nombres antes de desplegar en `centralus`.
+
 En este refactor, `sandbox-david` es el ambiente principal para probar el workload hello world:
 
 ```bash
