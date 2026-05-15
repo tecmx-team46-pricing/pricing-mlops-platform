@@ -35,7 +35,7 @@ Nota: `rg-pricing-mlops-sbx-david` ya tiene recursos existentes en `eastus2`. Pa
 | Log Analytics | `rg-pricing-mlops-platform-shared` | Foundation | Si | Observabilidad minima de despliegues, Function y validaciones. |
 | User Assigned Managed Identity | `rg-pricing-mlops-platform-shared` | Foundation | Si | OIDC para GitHub Actions y ejecuciones sin secretos persistentes. |
 | Budget | Subscription scope | Foundation | Opcional | Control de gasto contra el credito disponible. |
-| Storage Account / ADLS Gen2 | `rg-pricing-mlops-sbx-david` | Workload | Si | Almacenar CSVs, datasets enmascarados, features, baselines, snapshots y evidencia. |
+| Storage Account / ADLS Gen2 | `rg-pricing-mlops-sbx-david` | Workload | Si | Almacenar datasets enmascarados, features, baselines, snapshots y evidencia. Los CSVs unmasked pertenecen a `data-lab`/`secure-sandbox`. |
 | Azure Function hello/health | `rg-pricing-mlops-sbx-david` | Workload | Si, cuando quota lo permita | Endpoint `/api/health` y base para futuro motor de drift. |
 | App Service Plan o Functions Consumption | `rg-pricing-mlops-sbx-david` | Workload | Condicionado a quota | Compute minimo para la Function. Preferido a futuro: Consumption/Flex Consumption. |
 
@@ -59,7 +59,7 @@ Propuesta de almacenamiento para PoC:
 
 | Contenedor | Datos | Acceso |
 |---|---|---|
-| `raw-unmasked` | CSVs originales no enmascarados | Solo owner del sandbox y Managed Identity operativa. No acceso desde GitHub por defecto. |
+| `raw-unmasked` | CSVs originales no enmascarados | Solo `data-lab`/`secure-sandbox` con RBAC explicito. No acceso desde GitHub por defecto. No usar en `staging`. |
 | `raw-masked` | CSVs con IDs hasheados/tokenizados | Equipo tecnico del proyecto. |
 | `curated` | Features limpias para validacion y scoring | Workload MLOps. |
 | `baseline` | Distribuciones historicas y thresholds | Function/drift engine. |
@@ -78,9 +78,9 @@ Reglas minimas:
 
 ## Flujo PoC propuesto
 
-1. Cargar CSVs unmasked a `raw-unmasked` en `sandbox-david`.
-2. Ejecutar enmascaramiento local o Function controlada.
-3. Escribir salida a `raw-masked`.
+1. Cargar CSVs unmasked a `raw-unmasked` en `data-lab`/`secure-sandbox`, no en `staging`.
+2. Ejecutar enmascaramiento con salt/secret desde Key Vault.
+3. Escribir salida a `raw-masked` para uso en sandbox, `staging` y `validation`.
 4. Validar contratos iniciales:
    - nulos criticos;
    - unicidad de `[kpn, vpareadescription, distysegment]`;
@@ -116,7 +116,7 @@ Reglas minimas:
 ### Paso 2: Endurecer storage para datos sensibles
 
 - Confirmar containers esperados.
-- Crear `raw-unmasked` solo en sandbox.
+- Crear `raw-unmasked` solo en `data-lab`/`secure-sandbox`; los sandboxes personales consumen masked/curated por default.
 - Asegurar RBAC minimo: sin acceso publico, sin secrets en GitHub, uso de identidad administrada.
 
 ### Paso 3: Registrar contratos de datos reales
@@ -157,7 +157,6 @@ Reglas minimas:
 |---|---|---|
 | Region de sandbox | `centralus`, otra region, o mantener `eastus2` | Probar `centralus` con RG temporal antes de borrar sandbox actual. |
 | Compute de Function | Consumption/Flex, B1 App Service Plan | Preferir Consumption/Flex si la cuenta lo permite. |
-| Manejo de unmasked | Local-only, `raw-unmasked` sandbox, Key Vault hashing | Usar `raw-unmasked` solo en sandbox con RBAC estricto. |
+| Manejo de unmasked | Local-only, `raw-unmasked` en `data-lab`/`secure-sandbox`, Key Vault hashing | Usar `raw-unmasked` solo en zona segura con RBAC estricto; `staging` consume solo masked/curated. |
 | SQL audit store | Storage JSON/Parquet, Azure SQL Serverless | Empezar con Storage; pasar a SQL cuando haya consultas reales. |
 | Orquestacion | Manual/scripts, Function timer, ADF | Empezar manual/scripts; ADF cuando haya fuente formal. |
-
