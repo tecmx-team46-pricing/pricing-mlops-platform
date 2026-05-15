@@ -4,7 +4,9 @@
 
 Definir que servicios Azure se necesitan para un PoC de la plataforma MLOps de Pricing Intelligence, que se desplegaria ahora y en que Resource Groups viviria cada componente.
 
-Este plan toma como referencia el documento externo `Diseno Tecnico: Arquitectura MLOps` del repo `pricing-mlops-eda` y lo aterriza al estado actual de este repo: una sola subscription, separacion `foundation` vs `workloads/pricing-mlops`, `shared` como scope comun, `sandbox-david` como laboratorio principal, `staging` como MVP actual y `validation` como ambiente controlado no productivo.
+Este plan toma como referencia los documentos externos del repo `pricing-mlops-eda`, incluyendo `Diseno Tecnico: Arquitectura MLOps` y `Avance0.Equipo46.pdf`, y los aterriza al estado actual de este repo: una sola subscription, separacion `foundation` vs `workloads/pricing-mlops`, `shared` como scope comun, `sandbox-david` como laboratorio principal, `staging` como MVP actual y `validation` como ambiente controlado no productivo.
+
+Para ejecucion futura, el repo funcional/modelo objetivo debe llamarse `pricing-mlops`, siguiendo `Avance0.Equipo46.pdf`. `pricing-mlops-eda` queda como repo de EDA inicial y documentos de referencia.
 
 ## Principios de alcance
 

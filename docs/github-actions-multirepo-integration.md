@@ -2,14 +2,14 @@
 
 ## Proposito
 
-Preparar la integracion entre `pricing-mlops-platform` y `pricing-mlops-eda` usando GitHub Actions, OIDC y variables por environment, sin desplegar produccion ni introducir secretos hardcodeados.
+Preparar la integracion entre `pricing-mlops-platform` y `pricing-mlops` usando GitHub Actions, OIDC y variables por environment, sin desplegar produccion ni introducir secretos hardcodeados.
 
 Este documento define el contrato operativo de CI/CD. No ejecuta despliegues nuevos por si mismo.
 
 ## Principios
 
 1. `pricing-mlops-platform` despliega y gobierna Azure.
-2. `pricing-mlops-eda` valida codigo/model contracts, ejecuta scoring y publica artefactos.
+2. `pricing-mlops` valida codigo/model contracts, ejecuta scoring y publica artefactos.
 3. Ambos repos usan OIDC; no se guardan client secrets, account keys ni connection strings en Git.
 4. El repo modelo no necesita `Owner` ni `Contributor` sobre la subscription.
 5. `prod` no existe como GitHub environment operativo en esta fase.
@@ -27,7 +27,7 @@ Este documento define el contrato operativo de CI/CD. No ejecuta despliegues nue
 
 Los outputs publicados deben ser no sensibles. El mecanismo puede ser un GitHub Actions artifact `platform-outputs-<environment>.json`, una actualizacion manual de GitHub environment variables o documentacion operativa desde los outputs de IaC. No se deben publicar secrets de Key Vault.
 
-### `pricing-mlops-eda`
+### `pricing-mlops`
 
 | Workflow | Trigger | Azure login | Responsabilidad |
 |---|---|---|---|
@@ -74,7 +74,7 @@ Estas variables son valores no secretos. Deben vivir como GitHub environment var
 | `MLOPS_CONTAINER_REPORTS` | Publica | Consume | `reports`. |
 | `MLOPS_CONTAINER_ARTIFACTS` | Publica | Consume | `artifacts`. |
 
-`raw-unmasked` no debe exponerse como variable normal para el repo modelo. Si se crea un proceso de masking en `pricing-mlops-eda`, debe usar un environment separado, aprobacion explicita y RBAC restringido a esa identidad.
+`raw-unmasked` no debe exponerse como variable normal para el repo modelo. Si se crea un proceso de masking en `pricing-mlops`, debe usar un environment separado, aprobacion explicita y RBAC restringido a esa identidad.
 
 ## Outputs que platform debe publicar
 

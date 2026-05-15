@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Definir donde viven los CSVs unmasked/masked y los artefactos MLOps, quien puede acceder a cada zona, como se transforman los datos y que responsabilidades quedan en `pricing-mlops-platform` y `pricing-mlops-eda`.
+Definir donde viven los CSVs unmasked/masked y los artefactos MLOps, quien puede acceder a cada zona, como se transforman los datos y que responsabilidades quedan en `pricing-mlops-platform` y `pricing-mlops`.
 
 Este documento no implementa infraestructura. Es el contrato operativo para una implementacion futura en Storage Account o ADLS Gen2 gobernado por `pricing-mlops-platform`.
 
@@ -12,7 +12,7 @@ Este documento no implementa infraestructura. Es el contrato operativo para una 
 2. `raw-unmasked` no se comparte por default y no existe en `staging`.
 3. El repo modelo consume datos desde Storage/ADLS con identidad autorizada, no desde Git.
 4. `pricing-mlops-platform` gobierna contenedores, RBAC, Key Vault, lifecycle, costos y observabilidad.
-5. `pricing-mlops-eda` implementa masking, validaciones, transformaciones, scoring y generacion de artefactos.
+5. `pricing-mlops` implementa masking, validaciones, transformaciones, scoring y generacion de artefactos.
 6. GitHub Actions usa OIDC/RBAC de minimo privilegio. No debe recibir account keys ni connection strings.
 7. El equipo de negocio consume reportes y snapshots aprobados, nunca datos unmasked.
 
@@ -103,7 +103,7 @@ flowchart TD
   C --> D["raw-masked"]
   D --> E["Validacion de schema y calidad"]
   E --> F["curated"]
-  F --> G["Model execution en pricing-mlops-eda"]
+  F --> G["Model execution en pricing-mlops"]
   G --> H["snapshots"]
   G --> I["drift-logs"]
   G --> J["runs"]
@@ -118,7 +118,7 @@ Pasos operativos:
 2. La carga registra metadata minima: nombre fuente, fecha, owner, checksum/hash, clasificacion y ticket/aprobacion.
 3. El proceso de masking obtiene salts/secrets desde Key Vault usando Managed Identity u OIDC.
 4. El proceso escribe datasets anonimizados en `raw-masked`; no sobrescribe unmasked.
-5. `pricing-mlops-eda` valida schema, nulos criticos, unicidad, monotonicidad y reglas de margen.
+5. `pricing-mlops` valida schema, nulos criticos, unicidad, monotonicidad y reglas de margen.
 6. Las salidas validadas se publican en `curated` con version de dataset y schema.
 7. El modelo/scoring lee `curated` y `baseline`, genera recomendaciones y calcula drift.
 8. La corrida escribe `runs`, `snapshots`, `drift-logs`, `reports` y `artifacts`.
@@ -173,7 +173,7 @@ Las reglas exactas deben ajustarse por costo, requisitos academicos/legales y va
 
 ## Responsabilidades por repo
 
-| Responsabilidad | `pricing-mlops-platform` | `pricing-mlops-eda` |
+| Responsabilidad | `pricing-mlops-platform` | `pricing-mlops` |
 |---|---|---|
 | Definir contenedores y ambientes | Si | Consume definiciones. |
 | Crear Storage/ADLS, Key Vault, identidades y RBAC | Si | No. |

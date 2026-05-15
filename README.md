@@ -176,11 +176,13 @@ El primer bootstrap de OIDC puede requerir despliegue local con permisos adminis
 
 ## Regla de separacion
 
-Mantener todo aqui mientras el proyecto sea MVP. Separar el codigo de pricing a otro repo solo si:
+Mantener aqui la plataforma, IaC, contratos y operacion del MVP. El repo funcional del modelo, cuando se cree siguiendo el nombre del documento de avance, debe ser `pricing-mlops`.
+
+Separar o mover codigo ejecutable de pricing a `pricing-mlops` solo si:
 
 - el modelo se vuelve producto independiente;
 - hay releases propios del paquete de pricing;
 - el equipo crece y necesita ownership separado;
 - el repositorio empieza a tener ciclos de cambio claramente distintos.
 
-Antes de eso, separar seria complejidad prematura.
+`pricing-mlops-eda` queda como repo de referencia historica/documental y EDA inicial, no como nombre objetivo para el repo operativo del modelo.

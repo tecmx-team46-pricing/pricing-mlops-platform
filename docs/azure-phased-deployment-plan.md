@@ -4,7 +4,7 @@
 
 Definir un despliegue incremental y costeable para el proyecto MLOps completo de Pricing Intelligence. El plan cubre los servicios objetivo del PDF de arquitectura, pero los ordena por fases para evitar activar ADF, AML, SQL, ACR, Private Endpoints o Hub-Spoke antes de que exista evidencia tecnica y operativa.
 
-Este documento no modifica IaC. `pricing-mlops-platform` sigue siendo el repo responsable de plataforma, infraestructura y operacion. `pricing-mlops-eda` sigue siendo el repo responsable de modelo, scoring, validaciones y artefactos de ejecucion.
+Este documento no modifica IaC. `pricing-mlops-platform` sigue siendo el repo responsable de plataforma, infraestructura y operacion. `pricing-mlops` sigue siendo el repo responsable de modelo, scoring, validaciones y artefactos de ejecucion.
 
 ## Resumen ejecutivo
 
@@ -64,7 +64,7 @@ Esta fase cubre mas que hello world: el hello endpoint solo prueba compute. El o
 | Proposito | Integrar plataforma y repo modelo con datos masked/curated, validaciones automatizadas y corridas manuales reproducibles. |
 | Costo/riesgo | Bajo a medio. Se evita unmasked, AML, SQL y ADF. Riesgo principal: tratar staging como prod o promover baselines sin revision. |
 | Dependencias | Fase 2 con corrida exitosa, reglas de data governance, workflows del repo modelo, permisos por ambiente. |
-| Criterios para avanzar | `pricing-mlops-eda` consume Storage/ADLS, no Git; quality gates pasan; drift produce semaforo; baseline versionado; reportes aprobados por equipo tecnico. |
+| Criterios para avanzar | `pricing-mlops` consume Storage/ADLS, no Git; quality gates pasan; drift produce semaforo; baseline versionado; reportes aprobados por equipo tecnico. |
 
 `staging` no recibe `raw-unmasked`. Es el ambiente para demostrar integracion MVP, no para operar datos productivos.
 
@@ -104,7 +104,7 @@ En el estado actual, `prod` no tiene parameter file, workflow ni IaC. Debe segui
 | Log Analytics | Fase 0 | Desplegar ahora | Observabilidad minima de despliegues y Functions. |
 | Azure Functions Flex | Fase 2 o Fase 4 | Desplegar despues si quota/uso lo justifican | Primero health/drift simple; Flex real entra cuando haya ejecucion recurrente o serverless estable. |
 | Azure SQL Serverless | Fase 4 | Desplegar despues | Storage JSON/Parquet basta para PoC; SQL entra cuando auditoria requiera consultas historicas. |
-| Azure Machine Learning | Fase 4 | Desplegar despues | Requiere gobierno, costos y empaquetado; primero validar scoring en `pricing-mlops-eda`. |
+| Azure Machine Learning | Fase 4 | Desplegar despues | Requiere gobierno, costos y empaquetado; primero validar scoring en `pricing-mlops`. |
 | Azure Data Factory | Fase 4 o Fase 5 | Desplegar despues | Solo se justifica con fuentes reales, scheduling formal y dependencias upstream. |
 | Azure Container Registry | Fase 4 o Fase 5 | Desplegar despues | Necesario si validadores/modelos se empaquetan como contenedores. No antes. |
 | Azure Monitor alerts | Fase 4 | Desplegar despues | Las alertas son utiles cuando hay metricas reales y runbooks. |
@@ -132,18 +132,18 @@ En el estado actual, `prod` no tiene parameter file, workflow ni IaC. Debe segui
 | Log Analytics | `rg-pricing-mlops-platform-shared` | Fase 0 shared | `pricing-mlops-platform` |
 | User Assigned Managed Identity/OIDC | `rg-pricing-mlops-platform-shared` | Fase 0 shared | `pricing-mlops-platform` |
 | Budget | Subscription scope | Fase 0 shared | `pricing-mlops-platform` |
-| Storage/ADLS data-lab | `rg-pricing-mlops-data-lab` o `rg-pricing-mlops-secure-sandbox` | Fase 1 data lab | `pricing-mlops-platform` provisiona; `pricing-mlops-eda` consume/genera masked |
-| Storage sandbox | `rg-pricing-mlops-sbx-david` o sandbox temporal | Fase 2 PoC sandbox | `pricing-mlops-platform` provisiona; `pricing-mlops-eda` ejecuta validacion/scoring |
+| Storage/ADLS data-lab | `rg-pricing-mlops-data-lab` o `rg-pricing-mlops-secure-sandbox` | Fase 1 data lab | `pricing-mlops-platform` provisiona; `pricing-mlops` consume/genera masked |
+| Storage sandbox | `rg-pricing-mlops-sbx-david` o sandbox temporal | Fase 2 PoC sandbox | `pricing-mlops-platform` provisiona; `pricing-mlops` ejecuta validacion/scoring |
 | Function hello/health | `rg-pricing-mlops-sbx-david` | Fase 2 PoC sandbox | `pricing-mlops-platform` provisiona; codigo actual en plataforma hasta reemplazo |
-| Function drift/orquestacion | `rg-pricing-mlops-staging` o `rg-pricing-mlops-validation` | Fase 3/4 | `pricing-mlops-platform` provisiona; `pricing-mlops-eda` aporta logica si aplica |
-| Storage staging | `rg-pricing-mlops-staging` | Fase 3 staging MVP | `pricing-mlops-platform` provisiona; `pricing-mlops-eda` consume/genera artefactos |
-| Storage validation | `rg-pricing-mlops-validation` | Fase 4 validation | `pricing-mlops-platform` provisiona; `pricing-mlops-eda` consume/genera artefactos |
+| Function drift/orquestacion | `rg-pricing-mlops-staging` o `rg-pricing-mlops-validation` | Fase 3/4 | `pricing-mlops-platform` provisiona; `pricing-mlops` aporta logica si aplica |
+| Storage staging | `rg-pricing-mlops-staging` | Fase 3 staging MVP | `pricing-mlops-platform` provisiona; `pricing-mlops` consume/genera artefactos |
+| Storage validation | `rg-pricing-mlops-validation` | Fase 4 validation | `pricing-mlops-platform` provisiona; `pricing-mlops` consume/genera artefactos |
 | Azure SQL Serverless | `rg-pricing-mlops-validation` o futuro RG audit | Fase 4 validation | `pricing-mlops-platform` provisiona; ambos repos consumen metadata |
-| Azure ML | `rg-pricing-mlops-validation` o futuro RG ml | Fase 4 validation | `pricing-mlops-platform` provisiona; `pricing-mlops-eda` opera jobs/modelos |
+| Azure ML | `rg-pricing-mlops-validation` o futuro RG ml | Fase 4 validation | `pricing-mlops-platform` provisiona; `pricing-mlops` opera jobs/modelos |
 | Azure Data Factory | `rg-pricing-mlops-validation` o futuro prod RG | Fase 4/5 | `pricing-mlops-platform` provisiona; ambos repos definen contratos de integracion |
-| ACR | `rg-pricing-mlops-platform-shared` o RG controlado | Fase 4/5 | `pricing-mlops-platform` provisiona; `pricing-mlops-eda` publica imagenes aprobadas |
+| ACR | `rg-pricing-mlops-platform-shared` o RG controlado | Fase 4/5 | `pricing-mlops-platform` provisiona; `pricing-mlops` publica imagenes aprobadas |
 | Hub-Spoke, Private Endpoints, Private DNS | Futuros RG de red/prod | Fase 5 prod conceptual | `pricing-mlops-platform` |
-| Prod Storage/ADLS, AML, SQL, ADF | Futuros RG prod | Fase 5 prod conceptual | `pricing-mlops-platform` provisiona; `pricing-mlops-eda` opera modelo |
+| Prod Storage/ADLS, AML, SQL, ADF | Futuros RG prod | Fase 5 prod conceptual | `pricing-mlops-platform` provisiona; `pricing-mlops` opera modelo |
 
 ## Reglas de avance entre fases
 

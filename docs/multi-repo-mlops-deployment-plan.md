@@ -7,22 +7,23 @@ Este plan redefine el despliegue MLOps de Pricing Intelligence como una arquitec
 | Repo | Rol | Alcance principal |
 |---|---|---|
 | `pricing-mlops-platform` | Plataforma e infraestructura | Gobierno de Azure, IaC, ambientes, identidades, storage, observabilidad, despliegues y contratos operativos compartidos. |
-| `pricing-mlops-eda` | Data lab y ejecucion de modelo | Notebooks, scripts de scoring, validaciones de datos, generacion de artefactos, uso de datasets y logica estadistica del modelo. |
+| `pricing-mlops` | Data lab y ejecucion de modelo | Notebooks, scripts de scoring, validaciones de datos, generacion de artefactos, uso de datasets y logica estadistica del modelo. |
 
-La decision corrige el acoplamiento del MVP monorepo: `pricing-mlops-platform` no debe convertirse en el repo del modelo. Este repo conserva IaC, gobierno y documentacion operativa; el codigo de modelo y scoring debe vivir y evolucionar en `pricing-mlops-eda`.
+La decision corrige el acoplamiento del MVP monorepo: `pricing-mlops-platform` no debe convertirse en el repo del modelo. Este repo conserva IaC, gobierno y documentacion operativa; el codigo de modelo y scoring debe vivir y evolucionar en `pricing-mlops`.
 
 ## Fuentes revisadas
 
 - Documentacion actual de plataforma: `README.md`, `docs/architecture.md`, `docs/platform-environments.md`, `docs/repository-governance.md`, `docs/operations.md`, `docs/poc-mlops-services-plan.md`.
 - IaC actual: `infra/foundation/`, `infra/workloads/pricing-mlops/`, `infra/parameters/`.
 - Workflows actuales: `.github/workflows/platform-infra.yml`, `.github/workflows/infra.yml`, `.github/workflows/mlops.yml`.
-- Repo `pricing-mlops-eda`: contiene `Avance1_Equipo_46_EDA.ipynb`, `Avance0.Equipo46.pdf`, `Diseño Técnico_ Arquitectura MLOps.pdf` y `README.md`.
+- Repo `pricing-mlops-eda`: contiene `Avance1_Equipo_46_EDA.ipynb`, `Avance0.Equipo46.pdf`, `Diseño Técnico_ Arquitectura MLOps.pdf` y `README.md`; se usa como referencia historica/documental y EDA inicial.
+- PDF `Avance0.Equipo46.pdf`: propone `pricing-mlops/` como estructura del repositorio funcional MLOps y `pricing-mlops-infra/` como repositorio independiente de infraestructura.
 - PDF `Diseño Técnico_ Arquitectura MLOps.pdf`: define el objetivo conceptual con ADF, ADLS Gen2, Azure Functions Flex, Azure ML, Azure SQL Serverless, Key Vault, Private Endpoints, Hub-and-Spoke, Great Expectations, drift PSI/KS y auditoria por `model_run_log`.
 
 ## Principios de separacion
 
 1. `pricing-mlops-platform` gobierna recursos cloud, permisos, despliegues y ambientes. No contiene notebooks productivos, entrenamiento, scoring ni datasets.
-2. `pricing-mlops-eda` gobierna logica de datos/modelo. No crea infraestructura Azure por su cuenta, salvo pruebas locales o mocks sin recursos reales.
+2. `pricing-mlops` gobierna logica de datos/modelo. No crea infraestructura Azure por su cuenta, salvo pruebas locales o mocks sin recursos reales.
 3. Los repos se comunican por contratos versionados, artefactos y recursos Azure, no copiando secretos ni datos por Git.
 4. Los datos sensibles no se versionan en ningun repo. Se almacenan en Azure Storage/ADLS con RBAC, identidades administradas y secretos en Key Vault.
 5. `prod` sigue conceptual. La plataforma actual habilita `data-lab`, `sandbox-david`, `staging` y `validation`.
@@ -50,9 +51,9 @@ No debe contener:
 - Entrenamiento, reentrenamiento o notebooks de calibracion.
 - Secrets, salts, connection strings o credenciales.
 
-El directorio actual `mlops/` debe tratarse como contratos y evidencia minima del MVP. En el modelo multi-repo, esos contratos pueden permanecer aqui como referencia de plataforma o moverse gradualmente a un paquete/contrato compartido, pero la implementacion ejecutable del modelo pertenece a `pricing-mlops-eda`.
+El directorio actual `mlops/` debe tratarse como contratos y evidencia minima del MVP. En el modelo multi-repo, esos contratos pueden permanecer aqui como referencia de plataforma o moverse gradualmente a un paquete/contrato compartido, pero la implementacion ejecutable del modelo pertenece a `pricing-mlops`.
 
-### `pricing-mlops-eda`
+### `pricing-mlops`
 
 Debe contener:
 
@@ -91,7 +92,7 @@ No debe contener:
 
 ## Procesos gobernados por el repo modelo
 
-`pricing-mlops-eda` debe implementar y probar:
+`pricing-mlops` debe implementar y probar:
 
 - Lectura de datasets desde rutas Azure autorizadas.
 - Enmascaramiento o validacion del estado de enmascaramiento cuando aplique.
@@ -113,7 +114,7 @@ No debe contener:
 ```mermaid
 flowchart LR
   Platform["pricing-mlops-platform"] --> Azure["Azure platform resources"]
-  Model["pricing-mlops-eda"] --> Azure
+  Model["pricing-mlops"] --> Azure
   Platform --> Contracts["Contratos operativos compartidos"]
   Contracts --> Model
   Model --> Artifacts["Run artifacts"]
@@ -174,9 +175,9 @@ Workflows recomendados:
 | `platform-observability.yml` | `workflow_dispatch` | Validar queries, alertas y configuracion operativa cuando existan. |
 | `sandbox-cleanup.yml` | Manual o schedule futuro | Reportar o destruir sandboxes expirados con aprobacion. |
 
-El workflow actual `.github/workflows/mlops.yml` no debe crecer como pipeline de scoring. En el plan multi-repo debe limitarse a contratos de plataforma o retirarse cuando `pricing-mlops-eda` tenga su propio pipeline.
+El workflow actual `.github/workflows/mlops.yml` no debe crecer como pipeline de scoring. En el plan multi-repo debe limitarse a contratos de plataforma o retirarse cuando `pricing-mlops` tenga su propio pipeline.
 
-### `pricing-mlops-eda`
+### `pricing-mlops`
 
 Workflows recomendados:
 
@@ -219,7 +220,7 @@ Responsable de:
 - datasets sinteticos o masked;
 - analisis de umbrales PSI/KS y reglas de negocio.
 
-Repo dueño: `pricing-mlops-eda`.
+Repo dueño: `pricing-mlops`.
 
 No debe depender de datos unmasked en Git. Para desarrollo local se usan datos sinteticos o masked.
 
@@ -235,7 +236,7 @@ Responsable de:
 - escritura de `model_run_log`;
 - reporte de decision `green/yellow/red`.
 
-Repo dueño: `pricing-mlops-eda`.
+Repo dueño: `pricing-mlops`.
 
 Infra usada: Storage/ADLS, Key Vault, Function/AML futuros y Log Analytics gobernados por plataforma.
 
@@ -292,6 +293,6 @@ La documentacion actual describe el MVP como monorepo minimo y evita servicios p
 - conserva `shared` como scope de plataforma, no ambiente MLOps;
 - mantiene `data-lab`, `sandbox-david`, `staging` y `validation` como ambientes habilitados;
 - trata ADF, AML, SQL, ACR y red privada como fases futuras, no como despliegue actual;
-- redefine el ownership futuro del codigo de modelo hacia `pricing-mlops-eda`.
+- redefine el ownership futuro del codigo de modelo hacia `pricing-mlops`.
 
 El unico cambio de direccion es organizacional: el plan objetivo ya no asume que `pricing-mlops-platform` contendra el codigo de modelo. Mientras exista `mlops/` en este repo, debe leerse como contrato/bootstrap de plataforma y no como implementacion autoritativa de scoring.

@@ -2,17 +2,17 @@
 
 ## Proposito
 
-Definir el contrato operativo entre `pricing-mlops-platform` y `pricing-mlops-eda` para ejecutar validaciones, scoring y generacion de artefactos sin acoplar innecesariamente ambos repositorios.
+Definir el contrato operativo entre `pricing-mlops-platform` y `pricing-mlops` para ejecutar validaciones, scoring y generacion de artefactos sin acoplar innecesariamente ambos repositorios.
 
 El contrato se basa en tres reglas:
 
 1. `pricing-mlops-platform` publica infraestructura, identidades, rutas y contratos no sensibles.
-2. `pricing-mlops-eda` consume esos inputs por configuracion, ejecuta la logica de modelo y escribe artefactos versionados.
+2. `pricing-mlops` consume esos inputs por configuracion, ejecuta la logica de modelo y escribe artefactos versionados.
 3. Ningun repo debe hardcodear secretos, account keys, rutas locales de datos reales ni supuestos de infraestructura no publicados.
 
 ## Responsabilidades
 
-| Responsabilidad | `pricing-mlops-platform` | `pricing-mlops-eda` |
+| Responsabilidad | `pricing-mlops-platform` | `pricing-mlops` |
 |---|---|---|
 | Resource Groups, tags y ambientes | Crea y gobierna. | No crea ni modifica. |
 | Storage/ADLS, contenedores y RBAC | Crea y publica nombres/rutas. | Consume y escribe artefactos autorizados. |
@@ -26,7 +26,7 @@ El contrato se basa en tres reglas:
 
 Platform debe publicar estos valores por ambiente. Los valores no sensibles pueden estar en GitHub environment variables o archivos versionados; los sensibles viven en Key Vault.
 
-| Input | Ejemplo de variable | Fuente recomendada | Uso en `pricing-mlops-eda` |
+| Input | Ejemplo de variable | Fuente recomendada | Uso en `pricing-mlops` |
 |---|---|---|---|
 | Nombre de ambiente | `MLOPS_ENVIRONMENT=staging` | GitHub environment variable | Seleccionar rutas, permisos y etiquetas de salida. |
 | Storage account | `AZURE_STORAGE_ACCOUNT=stpmlops...` | Output de IaC o GitHub environment variable | Construir URIs de lectura/escritura sin hardcodear. |
@@ -148,7 +148,7 @@ Usar Storage/ADLS como interfaz de datos entre repos:
 
 Platform no ejecuta scoring productivo ni notebooks. El workflow actual `.github/workflows/mlops.yml` debe mantenerse limitado a contratos/PoC hasta que el repo modelo asuma sus pipelines.
 
-### `pricing-mlops-eda`
+### `pricing-mlops`
 
 | Workflow | Trigger | Contrato |
 |---|---|---|
@@ -167,7 +167,7 @@ Cada corrida debe registrar:
 
 | Campo | Fuente | Regla |
 |---|---|---|
-| `git_commit_hash` | `pricing-mlops-eda` | SHA exacto que ejecuto scoring/validaciones. |
+| `git_commit_hash` | `pricing-mlops` | SHA exacto que ejecuto scoring/validaciones. |
 | `platform_commit_hash` | `pricing-mlops-platform` cuando sea conocido | SHA de IaC/contratos usados para el ambiente. |
 | `dataset_version` | Manifest de Storage o workflow input | Version del dataset masked/curated. |
 | `schema_version` | Archivo versionado o manifest | Version de contrato de datos validada. |
