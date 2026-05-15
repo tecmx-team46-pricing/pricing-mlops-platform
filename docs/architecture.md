@@ -24,6 +24,7 @@ Esta subscription aprovecha el credito incluido de 200 USD. No se crean subscrip
 | Resource Group | Capa | Proposito | Lifecycle |
 |---|---|---|---|
 | `rg-pricing-mlops-platform-shared` | Foundation | Key Vault, Log Analytics, identidades OIDC | Permanente |
+| `rg-pricing-mlops-data-lab` | Data lab | CSVs unmasked/masked, curated inicial y artefactos controlados sin Function/ADF/AML/SQL | Controlado |
 | `rg-pricing-mlops-staging` | Workload | Storage y Function App del MVP | Permanente |
 | `rg-pricing-mlops-sbx-david` | Workload | Sandbox personal temporal de David | Temporal |
 | `rg-pricing-mlops-validation` | Workload | Validacion controlada no productiva | Controlado |
@@ -45,6 +46,8 @@ No se despliega prod en el MVP. `shared` no es ambiente operativo de MLOps; es u
 |---|---|
 | Storage Account | Evidencia barata y simple para inputs, baselines, runs, snapshots, drift logs, reportes y artefactos |
 | Function App | Prototipo hello world y punto futuro para health/drift endpoints |
+
+`data-lab` usa solo Storage/ADLS minimo para `raw-unmasked`, `raw-masked`, `curated` y artefactos MLOps. No despliega Function App y mantiene `raw-unmasked` separado de `staging`.
 
 La Function App se crea por IaC, pero el codigo runtime se publica desde `src/functions/pricing-mlops-hello/` con `scripts/publish-hello-function.sh`. El prototipo usa App Service Plan `B1` por defecto porque algunas subscriptions academicas bloquean Consumption y Free; si la subscription no tiene cuota `Basic VMs >= 1`, primero se debe solicitar cuota o cambiar los parametros `functionPlanSku*`.
 

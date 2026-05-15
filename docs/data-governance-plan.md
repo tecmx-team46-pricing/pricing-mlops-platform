@@ -62,6 +62,7 @@ La implementacion actual de `mlops/configs/storage_layout.json` usa `input` para
 ### `data-lab` / `secure-sandbox`
 
 - Es el unico ambiente recomendado para recibir CSVs unmasked.
+- `rg-pricing-mlops-data-lab` queda modelado como IaC minimo: Storage/ADLS, contenedores de datos y tags controlados, sin ADF/AML/SQL ni Function App.
 - `raw-unmasked` debe tener acceso explicito por usuario/identidad, sin herencia amplia.
 - El proceso de masking lee `raw-unmasked`, consulta salts/secrets en Key Vault y escribe `raw-masked`.
 - Las salidas masked deben incluir `dataset_version`, `masking_version`, `schema_version`, `source_file_hash` y fecha de generacion.

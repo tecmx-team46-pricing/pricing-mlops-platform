@@ -25,7 +25,7 @@ La decision corrige el acoplamiento del MVP monorepo: `pricing-mlops-platform` n
 2. `pricing-mlops-eda` gobierna logica de datos/modelo. No crea infraestructura Azure por su cuenta, salvo pruebas locales o mocks sin recursos reales.
 3. Los repos se comunican por contratos versionados, artefactos y recursos Azure, no copiando secretos ni datos por Git.
 4. Los datos sensibles no se versionan en ningun repo. Se almacenan en Azure Storage/ADLS con RBAC, identidades administradas y secretos en Key Vault.
-5. `prod` sigue conceptual. La plataforma actual solo habilita `sandbox-david`, `staging` y `validation`.
+5. `prod` sigue conceptual. La plataforma actual habilita `data-lab`, `sandbox-david`, `staging` y `validation`.
 
 ## Responsabilidades por repo
 
@@ -75,7 +75,7 @@ No debe contener:
 
 | Servicio | Estado actual o futuro | Responsable | Uso |
 |---|---|---|---|
-| Resource Groups | Actual | Plataforma | Separacion por `shared`, `sandbox-david`, `staging` y `validation`. |
+| Resource Groups | Actual | Plataforma | Separacion por `shared`, `data-lab`, `sandbox-david`, `staging` y `validation`. |
 | Tags y budgets | Actual | Plataforma | Gobierno de costo y lifecycle en una sola subscription. |
 | User Assigned Managed Identities | Actual | Plataforma | OIDC para GitHub Actions y ejecuciones sin secretos persistentes. |
 | Key Vault | Actual | Plataforma | Secrets, salts de hashing, configuracion sensible y referencias de credenciales. |
@@ -290,7 +290,7 @@ La documentacion actual describe el MVP como monorepo minimo y evita servicios p
 - mantiene `prod` como conceptual;
 - no modifica IaC;
 - conserva `shared` como scope de plataforma, no ambiente MLOps;
-- mantiene `sandbox-david`, `staging` y `validation` como ambientes habilitados;
+- mantiene `data-lab`, `sandbox-david`, `staging` y `validation` como ambientes habilitados;
 - trata ADF, AML, SQL, ACR y red privada como fases futuras, no como despliegue actual;
 - redefine el ownership futuro del codigo de modelo hacia `pricing-mlops-eda`.
 

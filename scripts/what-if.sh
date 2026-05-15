@@ -14,18 +14,22 @@ if [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
   EXTRA_PARAMETERS+=(enableGithubActionsIdentity=false)
 fi
 
-if [[ -n "${ENABLE_HELLO_FUNCTION:-}" ]]; then
+if [[ -n "${ENABLE_HELLO_FUNCTION:-}" && "${ENVIRONMENT}" != "data-lab" ]]; then
   EXTRA_PARAMETERS+=(enableHelloFunction="${ENABLE_HELLO_FUNCTION}")
 fi
 
 case "${ENVIRONMENT}" in
-  staging|sandbox-david|validation) ;;
+  staging|sandbox-david|validation|data-lab) ;;
   *)
     echo "Unsupported environment: ${ENVIRONMENT}" >&2
-    echo "Allowed environments: staging, sandbox-david, validation" >&2
+    echo "Allowed environments: staging, sandbox-david, validation, data-lab" >&2
     exit 1
     ;;
 esac
+
+if [[ "${ENVIRONMENT}" == "data-lab" ]]; then
+  EXTRA_PARAMETERS+=(enableHelloFunction=false)
+fi
 
 if [[ ! -f "${PARAMETER_FILE}" ]]; then
   echo "Parameter file not found: ${PARAMETER_FILE}" >&2

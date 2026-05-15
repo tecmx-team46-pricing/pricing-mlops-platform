@@ -31,12 +31,14 @@ Estado: parcialmente implementado en `infra/foundation/`. Es la unica fase que d
 
 | Campo | Definicion |
 |---|---|
-| Resource Groups | Futuro `rg-pricing-mlops-data-lab` o `rg-pricing-mlops-secure-sandbox`; `rg-pricing-mlops-platform-shared` para Key Vault e identidades. |
+| Resource Groups | `rg-pricing-mlops-data-lab`; `rg-pricing-mlops-platform-shared` para Key Vault e identidades. |
 | Servicios Azure | Storage/ADLS con zonas `raw-unmasked`, `raw-masked`, `curated`, lifecycle policies, RBAC dedicado, Key Vault salts/secrets, Log Analytics para auditoria minima. |
 | Proposito | Recibir CSVs unmasked de forma controlada, ejecutar masking y producir datasets masked/curated reutilizables por el repo modelo. |
 | Costo/riesgo | Bajo a medio. Storage es barato, pero el riesgo de datos es alto porque contiene unmasked. Mitigacion: acceso explicito, retencion corta y sin GitHub Actions por default. |
 | Dependencias | Fase 0, data owner definido, reglas de masking, salt en Key Vault, convencion de `dataset_version` y checksums. |
 | Criterios para avanzar | `raw-unmasked` aislado, masking reproducible, `raw-masked` publicado, metadata minima registrada, evidencia de que `staging` no recibe unmasked. |
+
+Estado: IaC minimo modelado para `rg-pricing-mlops-data-lab` con Storage/ADLS y contenedores. No incluye ADF, AML, SQL, Function App ni produccion.
 
 No debe usarse como laboratorio abierto. Si un sandbox personal necesita unmasked, debe cumplir los mismos controles de `secure-sandbox`.
 

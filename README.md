@@ -66,6 +66,7 @@ infra/
         hello-function.bicep
         storage.bicep
   parameters/
+    data-lab.bicepparam
     sandbox-david.bicepparam
     staging.bicepparam
     validation.bicepparam
@@ -87,10 +88,12 @@ mlops/
 | Foundation | Workload Resource Groups | Separacion por ambiente |
 | Foundation | User Assigned Identities | OIDC para GitHub Actions |
 | Foundation | Budget | Alerta mensual opcional a nivel subscription |
-| Pricing MLOps workload | Storage Account | Inputs, baselines, runs, snapshots, drift logs, reportes y artefactos |
+| Pricing MLOps workload | Storage Account | Raw masked/unmasked controlado, curated, baselines, runs, snapshots, drift logs, reportes y artefactos |
 | Pricing MLOps workload | Function App | Hello world / health check del prototipo |
 
 La Function App usa App Service Plan `B1` por defecto. La subscription debe tener cuota `Basic VMs >= 1`; si no, foundation y storage pueden quedar desplegados, pero la Function App queda bloqueada por cuota de Azure.
+
+`data-lab` usa `eastus2` como scope controlado para CSVs unmasked/masked. No despliega Function App ni otorga acceso de datos a GitHub Actions por defecto.
 
 `sandbox-david` usa `centralus` para probar App Service/Functions fuera de `eastus2`, donde la cuenta con credito gratis reporto quota 0 para compute. `staging` y `validation` se mantienen en `eastus2`.
 
@@ -120,6 +123,7 @@ Ambientes permitidos:
 staging
 sandbox-david
 validation
+data-lab
 ```
 
 Los scripts ejecutan en orden:
@@ -156,6 +160,8 @@ staging
 sandbox-david
 validation
 ```
+
+`data-lab` se compila en CI, pero su bootstrap inicial se recomienda local/admin para no entregar acceso por defecto de GitHub Actions a `raw-unmasked`.
 
 Cada GitHub environment usado para what-if o deploy necesita:
 

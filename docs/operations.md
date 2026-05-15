@@ -7,6 +7,8 @@ az login
 az account set --subscription "<azure-subscription-name>"
 scripts/what-if.sh sandbox-david
 scripts/deploy.sh sandbox-david
+scripts/what-if.sh data-lab
+scripts/deploy.sh data-lab
 ```
 
 Los scripts aceptan solo:
@@ -15,6 +17,7 @@ Los scripts aceptan solo:
 staging
 sandbox-david
 validation
+data-lab
 ```
 
 Cada ejecucion despliega en orden:
@@ -23,6 +26,8 @@ Cada ejecucion despliega en orden:
 2. Workload Pricing MLOps: `infra/workloads/pricing-mlops/main.bicep`
 
 `shared` se despliega como scope compartido desde foundation, pero no se opera como ambiente MLOps. `prod` sigue fuera de alcance y no tiene parameter file.
+
+`data-lab` crea `rg-pricing-mlops-data-lab` y un Storage Account con contenedores `raw-unmasked`, `raw-masked`, `curated`, `baseline`, `runs`, `snapshots`, `drift-logs`, `reports` y `artifacts`. No despliega Function App y no crea identidad GitHub Actions por defecto para evitar acceso automatico a `raw-unmasked`.
 
 La Function App del workload usa App Service Plan `B1` por defecto. Si Azure devuelve `SubscriptionIsOverQuotaForSku` para `Basic VMs`, la infraestructura base queda preparada pero la Function App no puede crearse hasta pedir cuota `Basic VMs >= 1` o ajustar los parametros `functionPlanSkuName`, `functionPlanSkuTier` y `functionPlanSkuSize` en el despliegue.
 
@@ -80,6 +85,8 @@ staging
 sandbox-david
 validation
 ```
+
+`data-lab` se compila en CI, pero el bootstrap inicial se recomienda local/admin hasta que exista una identidad GitHub especifica con permisos revisados.
 
 Variables por environment:
 

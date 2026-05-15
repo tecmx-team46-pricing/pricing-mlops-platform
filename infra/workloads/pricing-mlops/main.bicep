@@ -12,6 +12,7 @@ param projectName string = 'pricing-mlops'
   'staging'
   'sandbox-david'
   'validation'
+  'data-lab'
 ])
 param environmentName string = 'staging'
 

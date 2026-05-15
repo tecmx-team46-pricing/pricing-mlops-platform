@@ -24,12 +24,13 @@ infra/
 
 ## Ambientes permitidos
 
-Los scripts y el workflow `platform-infra.yml` aceptan:
+Los scripts locales aceptan:
 
 ```text
 staging
 sandbox-david
 validation
+data-lab
 ```
 
 Agregar otro ambiente requiere:
@@ -39,6 +40,10 @@ Agregar otro ambiente requiere:
 - tags de owner, lifecycle y purpose;
 - actualizacion de documentacion;
 - revision explicita de costo y permisos.
+
+`platform-infra.yml` compila el parameter file de `data-lab` en pull requests, pero no lo expone todavia como opcion de `workflow_dispatch`.
+
+`data-lab` es un ambiente habilitado de forma controlada. Su parameter file debe mantener `environment=data-lab`, `owner=team46`, `lifecycle=controlled` y `purpose=secure-data-lab`; no debe habilitar Function App ni acceso GitHub Actions a `raw-unmasked` por defecto.
 
 ## Pull requests
 

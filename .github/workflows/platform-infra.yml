@@ -45,6 +45,7 @@ jobs:
           az bicep build-params --file infra/parameters/staging.bicepparam
           az bicep build-params --file infra/parameters/sandbox-david.bicepparam
           az bicep build-params --file infra/parameters/validation.bicepparam
+          az bicep build-params --file infra/parameters/data-lab.bicepparam
 
   what-if:
     if: github.event_name == 'workflow_dispatch' && (inputs.operation == 'what-if' || inputs.operation == 'deploy')

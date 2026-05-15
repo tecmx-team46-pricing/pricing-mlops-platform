@@ -20,6 +20,7 @@ Este plan toma como referencia el documento externo `Diseno Tecnico: Arquitectur
 | Resource Group | Tipo | Region inicial | Rol |
 |---|---|---|---|
 | `rg-pricing-mlops-platform-shared` | Foundation | `eastus2` | Servicios compartidos: Key Vault, Log Analytics, identidades OIDC, presupuestos y RBAC base. |
+| `rg-pricing-mlops-data-lab` | Secure data lab | `eastus2` | Zona controlada para CSVs unmasked/masked, curated inicial y evidencia sin Function/ADF/AML/SQL. |
 | `rg-pricing-mlops-sbx-david` | Workload sandbox | `centralus` para nuevos despliegues | Laboratorio personal para validar Function, storage layout, carga de CSVs y flujo hello/drift. |
 | `rg-pricing-mlops-staging` | Workload MVP | `eastus2` | Ambiente principal de validacion del MVP cuando el PoC ya este probado. |
 | `rg-pricing-mlops-validation` | Workload controlado | `eastus2` | Ambiente no productivo para validar cambios antes de una promocion formal futura. |
@@ -35,6 +36,7 @@ Nota: `rg-pricing-mlops-sbx-david` ya tiene recursos existentes en `eastus2`. Pa
 | Log Analytics | `rg-pricing-mlops-platform-shared` | Foundation | Si | Observabilidad minima de despliegues, Function y validaciones. |
 | User Assigned Managed Identity | `rg-pricing-mlops-platform-shared` | Foundation | Si | OIDC para GitHub Actions y ejecuciones sin secretos persistentes. |
 | Budget | Subscription scope | Foundation | Opcional | Control de gasto contra el credito disponible. |
+| Storage Account / ADLS Gen2 data-lab | `rg-pricing-mlops-data-lab` | Data lab | Si | Almacenar `raw-unmasked`, `raw-masked`, `curated` y artefactos controlados sin dar acceso por defecto a GitHub Actions. |
 | Storage Account / ADLS Gen2 | `rg-pricing-mlops-sbx-david` | Workload | Si | Almacenar datasets enmascarados, features, baselines, snapshots y evidencia. Los CSVs unmasked pertenecen a `data-lab`/`secure-sandbox`. |
 | Azure Function hello/health | `rg-pricing-mlops-sbx-david` | Workload | Si, cuando quota lo permita | Endpoint `/api/health` y base para futuro motor de drift. |
 | App Service Plan o Functions Consumption | `rg-pricing-mlops-sbx-david` | Workload | Condicionado a quota | Compute minimo para la Function. Preferido a futuro: Consumption/Flex Consumption. |
