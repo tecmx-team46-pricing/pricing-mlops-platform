@@ -206,6 +206,7 @@ Este contrato concreta la interfaz descrita en:
 - `docs/multi-repo-mlops-deployment-plan.md`;
 - `docs/data-governance-plan.md`;
 - `docs/azure-phased-deployment-plan.md`;
+- `docs/github-actions-multirepo-integration.md`;
 - `mlops/docs/data-contracts.md`.
 
 No cambia IaC ni mueve responsabilidades. Define como operar el modelo sin hardcodear infraestructura y sin convertir `pricing-mlops-platform` en repo de modelo.
