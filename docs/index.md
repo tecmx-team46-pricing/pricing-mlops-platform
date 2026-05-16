@@ -25,6 +25,6 @@ Esta es la ruta recomendada para entender y operar el repo sin leer todos los pl
 | `pricing-mlops` | Validacion, scoring, drift, reportes y artefactos del flujo ML. |
 | `pricing-mlops-eda` | Referencia historica/documental y EDA inicial. No es el repo operativo objetivo. |
 
-## Documentos archivados
+## Archivo
 
-Los documentos en [`archive/`](archive/) conservan planes largos y decisiones anteriores. No son el punto de entrada operativo.
+Los planes largos anteriores se retiraron para evitar duplicidad. [`archive/README.md`](archive/README.md) indica como consultar el historial de Git si hace falta.
