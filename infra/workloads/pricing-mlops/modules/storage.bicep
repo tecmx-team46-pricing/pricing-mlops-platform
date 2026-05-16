@@ -23,6 +23,15 @@ param githubActionsIdentityName string
 @description('Create GitHub Actions workload role assignments.')
 param enableGithubActionsIdentity bool = true
 
+@description('Principal id of the functional model repo GitHub Actions managed identity.')
+param modelGithubActionsPrincipalId string = ''
+
+@description('Functional model repo managed identity name. Used to create stable role assignment ids.')
+param modelGithubActionsIdentityName string = ''
+
+@description('Create model repo GitHub Actions storage role assignment.')
+param enableModelGithubActionsIdentity bool = false
+
 var storageBlobDataContributorRoleDefinitionId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
@@ -72,6 +81,16 @@ resource githubStorageBlobContributor 'Microsoft.Authorization/roleAssignments@2
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
     principalId: githubActionsPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource modelGithubStorageBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableModelGithubActionsIdentity && !empty(modelGithubActionsPrincipalId) && !empty(modelGithubActionsIdentityName)) {
+  scope: storage
+  name: guid(storage.id, modelGithubActionsIdentityName, storageBlobDataContributorRoleDefinitionId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
+    principalId: modelGithubActionsPrincipalId
     principalType: 'ServicePrincipal'
   }
 }

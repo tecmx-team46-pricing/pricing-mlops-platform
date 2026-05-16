@@ -70,6 +70,15 @@ param githubEnvironment string = environmentName
 @description('Create GitHub Actions OIDC identity and base role assignments for this environment.')
 param enableGithubActionsIdentity bool = !empty(githubRepository)
 
+@description('Functional model GitHub repository in org/repo format. Empty value skips model repo federated credential creation.')
+param modelGithubRepository string = ''
+
+@description('GitHub environment used by the functional model repo.')
+param modelGithubEnvironment string = githubEnvironment
+
+@description('Create a separate GitHub Actions OIDC identity for the functional model repo.')
+param enableModelGithubActionsIdentity bool = !empty(modelGithubRepository)
+
 @description('Monthly budget amount in subscription currency. Set 0 to skip budget creation.')
 param monthlyBudgetAmount int = 25
 
@@ -83,6 +92,7 @@ var sharedResourceGroupName = 'rg-${projectName}-platform-shared'
 var keyVaultName = take('kv-pmlops-${uniqueString(subscription().id, sharedResourceGroupName)}', 24)
 var logAnalyticsName = 'log-${projectName}-shared'
 var githubActionsIdentityName = 'id-gha-${projectName}-${environmentName}'
+var modelGithubActionsIdentityName = 'id-gha-${projectName}-model-${environmentName}'
 var contributorRoleDefinitionId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
 
 var sharedTags = {
@@ -163,6 +173,10 @@ module identities 'modules/identities.bicep' = {
     githubRepository: githubRepository
     githubEnvironment: githubEnvironment
     enableGithubActionsIdentity: enableGithubActionsIdentity
+    modelGithubActionsIdentityName: modelGithubActionsIdentityName
+    modelGithubRepository: modelGithubRepository
+    modelGithubEnvironment: modelGithubEnvironment
+    enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
   }
 }
 
@@ -210,3 +224,6 @@ output logAnalyticsWorkspaceName string = observability.outputs.logAnalyticsWork
 output githubActionsClientId string = identities.outputs.githubActionsClientId
 output githubActionsPrincipalId string = identities.outputs.githubActionsPrincipalId
 output githubActionsSubject string = identities.outputs.githubActionsSubject
+output modelGithubActionsClientId string = identities.outputs.modelGithubActionsClientId
+output modelGithubActionsPrincipalId string = identities.outputs.modelGithubActionsPrincipalId
+output modelGithubActionsSubject string = identities.outputs.modelGithubActionsSubject

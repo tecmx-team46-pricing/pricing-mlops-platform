@@ -21,9 +21,23 @@ param githubEnvironment string
 @description('Create the GitHub Actions identity and federated credential.')
 param enableGithubActionsIdentity bool = !empty(githubRepository)
 
+@description('Optional user-assigned managed identity for the functional model repo GitHub Actions OIDC.')
+param modelGithubActionsIdentityName string = ''
+
+@description('Functional model GitHub repository in org/repo format. Empty value skips model federated credential creation.')
+param modelGithubRepository string = ''
+
+@description('GitHub environment used by the functional model repo.')
+param modelGithubEnvironment string = githubEnvironment
+
+@description('Create the functional model repo GitHub Actions identity and federated credential.')
+param enableModelGithubActionsIdentity bool = !empty(modelGithubRepository)
+
 var keyVaultSecretsUserRoleDefinitionId = '4633458b-17de-408a-b874-0445c86b69e6'
 var githubActionsSubject = 'repo:${githubRepository}:environment:${githubEnvironment}'
 var shouldCreateFederatedCredential = enableGithubActionsIdentity && !empty(githubRepository)
+var modelGithubActionsSubject = 'repo:${modelGithubRepository}:environment:${modelGithubEnvironment}'
+var shouldCreateModelFederatedCredential = enableModelGithubActionsIdentity && !empty(modelGithubRepository) && !empty(modelGithubActionsIdentityName)
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   name: keyVaultName
@@ -57,6 +71,29 @@ resource githubKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022
   }
 }
 
+resource modelGithubActionsIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = if (enableModelGithubActionsIdentity && !empty(modelGithubActionsIdentityName)) {
+  name: modelGithubActionsIdentityName
+  location: location
+  tags: union(tags, {
+    repo_role: 'model'
+  })
+}
+
+resource modelGithubActionsCredential 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2023-01-31' = if (shouldCreateModelFederatedCredential) {
+  parent: modelGithubActionsIdentity
+  name: 'github-model-${modelGithubEnvironment}'
+  properties: {
+    issuer: 'https://token.actions.githubusercontent.com'
+    subject: modelGithubActionsSubject
+    audiences: [
+      'api://AzureADTokenExchange'
+    ]
+  }
+}
+
 output githubActionsClientId string = enableGithubActionsIdentity ? githubActionsIdentity!.properties.clientId : ''
 output githubActionsPrincipalId string = enableGithubActionsIdentity ? githubActionsIdentity!.properties.principalId : ''
 output githubActionsSubject string = shouldCreateFederatedCredential ? githubActionsSubject : ''
+output modelGithubActionsClientId string = shouldCreateModelFederatedCredential ? modelGithubActionsIdentity!.properties.clientId : ''
+output modelGithubActionsPrincipalId string = shouldCreateModelFederatedCredential ? modelGithubActionsIdentity!.properties.principalId : ''
+output modelGithubActionsSubject string = shouldCreateModelFederatedCredential ? modelGithubActionsSubject : ''

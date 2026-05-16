@@ -49,6 +49,8 @@ param sharedOwner string = 'team46'
 @description('Storage containers used by the MLOps flow.')
 param storageContainers array = [
   'input'
+  'raw-masked'
+  'curated'
   'baseline'
   'runs'
   'snapshots'
@@ -82,6 +84,16 @@ param githubEnvironment string = environmentName
 @description('Use the GitHub Actions OIDC identity created by foundation.')
 param enableGithubActionsIdentity bool = !empty(githubRepository)
 
+@description('Functional model GitHub repository in org/repo format. Empty value skips model repo workload role assignments.')
+param modelGithubRepository string = ''
+
+@description('GitHub environment used by the functional model repo.')
+#disable-next-line no-unused-params
+param modelGithubEnvironment string = githubEnvironment
+
+@description('Use the separate GitHub Actions OIDC identity created for the functional model repo.')
+param enableModelGithubActionsIdentity bool = !empty(modelGithubRepository)
+
 @description('Monthly budget amount in subscription currency. Kept here so parameter files can be shared with foundation.')
 #disable-next-line no-unused-params
 param monthlyBudgetAmount int = 25
@@ -103,6 +115,19 @@ var functionHostStorageAccountName = take('stfn${workloadUniqueSuffix}', 24)
 var hostingPlanName = 'asp-${projectName}-${environmentName}'
 var functionAppName = take('func-${projectName}-${replace(environmentName, 'sandbox-', 'sbx-')}-${shortSuffix}', 60)
 var githubActionsIdentityName = 'id-gha-${projectName}-${environmentName}'
+var modelGithubActionsIdentityName = 'id-gha-${projectName}-model-${environmentName}'
+var dataRoot = 'https://${storageAccountName}.dfs.${environment().suffixes.storage}'
+var containerNames = {
+  rawMasked: 'raw-masked'
+  input: 'input'
+  curated: 'curated'
+  baseline: 'baseline'
+  runs: 'runs'
+  snapshots: 'snapshots'
+  driftLogs: 'drift-logs'
+  reports: 'reports'
+  artifacts: 'artifacts'
+}
 
 var workloadTags = union({
   project: projectName
@@ -120,6 +145,11 @@ resource githubActionsIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities
   name: githubActionsIdentityName
 }
 
+resource modelGithubActionsIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = if (enableModelGithubActionsIdentity) {
+  scope: resourceGroup(sharedResourceGroupName)
+  name: modelGithubActionsIdentityName
+}
+
 module storage 'modules/storage.bicep' = {
   name: 'pricing-mlops-storage-${uniqueString(workloadResourceGroupName)}'
   scope: resourceGroup(workloadResourceGroupName)
@@ -131,6 +161,9 @@ module storage 'modules/storage.bicep' = {
     githubActionsPrincipalId: enableGithubActionsIdentity ? githubActionsIdentity!.properties.principalId : ''
     githubActionsIdentityName: githubActionsIdentityName
     enableGithubActionsIdentity: enableGithubActionsIdentity
+    modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
+    modelGithubActionsIdentityName: modelGithubActionsIdentityName
+    enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
   }
 }
 
@@ -153,5 +186,10 @@ module helloFunction 'modules/hello-function.bicep' = if (enableHelloFunction) {
 
 output workloadResourceGroupName string = workloadResourceGroupName
 output storageAccountName string = storage.outputs.storageAccountName
+output dataRoot string = dataRoot
+output storageDfsEndpoint string = dataRoot
+output containerNames object = containerNames
+output modelGithubActionsClientId string = enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.clientId : ''
 output functionAppName string = enableHelloFunction ? helloFunction!.outputs.functionAppName : ''
+output functionHealthEndpoint string = enableHelloFunction ? 'https://${helloFunction!.outputs.functionAppName}.azurewebsites.net/api/health' : ''
 output functionHostStorageAccountName string = enableHelloFunction ? helloFunction!.outputs.functionHostStorageAccountName : ''

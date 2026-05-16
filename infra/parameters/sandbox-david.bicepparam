@@ -1,6 +1,6 @@
 using '../foundation/main.bicep'
 
-param location = 'centralus'
+param location = 'eastus2'
 param projectName = 'pricing-mlops'
 param environmentName = 'sandbox-david'
 param owner = 'david'
@@ -14,7 +14,22 @@ param sharedOwner = 'team46'
 param githubRepository = 'tecmx-team46-pricing/pricing-mlops-platform'
 param githubEnvironment = 'sandbox-david'
 param enableGithubActionsIdentity = true
+param modelGithubRepository = 'tecmx-team46-pricing/pricing-mlops'
+param modelGithubEnvironment = 'sandbox-david'
+param enableModelGithubActionsIdentity = true
 param enableHelloFunction = true
+
+param storageContainers = [
+  'input'
+  'raw-masked'
+  'curated'
+  'baseline'
+  'runs'
+  'snapshots'
+  'drift-logs'
+  'reports'
+  'artifacts'
+]
 
 // Personal sandboxes should stay cheap and temporary.
 param monthlyBudgetAmount = 0
