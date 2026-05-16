@@ -48,6 +48,56 @@ flowchart LR
   MLOps --> Snapshot["model_output_snapshot"]
 ```
 
+## Pipeline MLOps
+
+El pipeline MLOps separa la plataforma Azure del codigo funcional del modelo. Este repo despliega y gobierna recursos; el repo funcional objetivo `pricing-mlops` ejecuta validaciones, scoring, drift y publicacion de artefactos.
+
+```mermaid
+flowchart TD
+  Source["CSV fuente o carga controlada"] --> DataLab["data-lab / secure-sandbox"]
+  DataLab --> RawUnmasked["raw-unmasked<br/>acceso restringido"]
+  RawUnmasked --> Masking["Masking autorizado<br/>salt en Key Vault"]
+  Masking --> RawMasked["raw-masked"]
+
+  RawMasked --> Validate["pricing-mlops<br/>validacion de schema y calidad"]
+  Validate --> Curated["curated"]
+  Curated --> Score["scoring / reglas de pricing"]
+  Curated --> Drift["drift checks<br/>PSI, KS, reglas de negocio"]
+
+  Score --> Snapshot["model_output_snapshot"]
+  Drift --> DriftLog["model_drift_log"]
+  Validate --> RunLog["model_run_log"]
+  Score --> Report["report.md / reporte humano"]
+
+  Snapshot --> Storage["Storage / ADLS workload"]
+  DriftLog --> Storage
+  RunLog --> Storage
+  Report --> Storage
+
+  Platform["pricing-mlops-platform"] --> Foundation["foundation<br/>Key Vault, Log Analytics, OIDC"]
+  Platform --> WorkloadInfra["workload infra<br/>Storage, Function health"]
+  Foundation --> DataLab
+  WorkloadInfra --> Storage
+
+  GHAPlatform["GitHub Actions platform"] --> Platform
+  GHAModel["GitHub Actions pricing-mlops"] --> Validate
+
+  Storage --> Review["revision tecnica / negocio"]
+  Review --> Decision{"semaforo"}
+  Decision --> Green["green<br/>mantener modelo"]
+  Decision --> Yellow["yellow<br/>revisar"]
+  Decision --> Red["red<br/>bloquear promocion o recalibrar"]
+```
+
+Reglas principales:
+
+- `shared` guarda servicios comunes, no datasets.
+- `raw-unmasked` solo vive en `data-lab` o `secure-sandbox` con acceso restringido.
+- `staging` y `validation` consumen datos `masked`, `curated` o sinteticos.
+- `pricing-mlops-platform` no ejecuta scoring productivo.
+- `pricing-mlops` no crea Resource Groups, Key Vault, Storage Accounts ni permisos permanentes.
+- `prod` sigue fuera de alcance.
+
 ## Que contiene
 
 ```text
