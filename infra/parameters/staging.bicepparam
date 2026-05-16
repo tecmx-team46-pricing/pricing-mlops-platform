@@ -16,6 +16,9 @@ param sharedOwner = 'team46'
 param githubRepository = 'tecmx-team46-pricing/pricing-mlops-platform'
 param githubEnvironment = 'staging'
 param enableGithubActionsIdentity = true
+param modelGithubRepository = 'tecmx-team46-pricing/pricing-mlops'
+param modelGithubEnvironment = 'staging'
+param enableModelGithubActionsIdentity = true
 param enableHelloFunction = true
 
 // The MVP uses the included 200 USD Azure credit in "<azure-subscription-name>".

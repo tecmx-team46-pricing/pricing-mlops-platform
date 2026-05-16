@@ -22,15 +22,16 @@ Estado: preparado para PoC.
 
 Siguiente paso recomendado.
 
-- Desplegar `sandbox-david` con `ENABLE_HELLO_FUNCTION=false` si la quota de Function/App Service bloquea.
-- Crear identidad OIDC para `pricing-mlops`.
-- Dar `Storage Blob Data Contributor` solo al Storage Account del workload.
+- Mantener `sandbox-david` para pruebas local/admin con `ENABLE_HELLO_FUNCTION=false` si la quota de Function/App Service bloquea.
+- Desplegar `staging` como ambiente compartido para GitHub Actions.
+- Crear identidad OIDC para `pricing-mlops` en `staging`.
+- Dar `Storage Blob Data Contributor` solo al Storage Account de `staging`.
 - Ejecutar workflow manual en `pricing-mlops`.
 - Subir `model_run_log`, snapshots, drift logs, reports y artifacts a Storage.
 
 ## Fase 3: Staging MVP
 
-Cuando sandbox funcione:
+Cuando el pipeline minimo funcione:
 
 - Promover el flujo a `staging`.
 - Usar datos masked/curated aprobados.

@@ -81,3 +81,4 @@ flowchart LR
 - No usar account keys o connection strings.
 - No dar `Owner` o `Contributor` de subscription al repo modelo.
 - No exponer `raw-unmasked` en `sandbox-david`, `staging` o `validation`.
+- No operar sandboxes personales desde GitHub Actions. Para el modelo, usar `staging` con `MLOPS_ENVIRONMENT=staging` y `MLOPS_RUN_OWNER=<user/team>`.

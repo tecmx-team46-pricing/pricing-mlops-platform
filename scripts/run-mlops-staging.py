@@ -133,7 +133,7 @@ def worst_status(records: list[dict]) -> str:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate an MVP MLOps staging run package.")
-    parser.add_argument("--environment", default="staging", choices=["sandbox", "staging", "prod"])
+    parser.add_argument("--environment", default="staging", choices=["staging", "validation"])
     parser.add_argument("--output-dir", default=str(ROOT / "outputs" / "runs"))
     parser.add_argument("--executed-by", default=os.getenv("GITHUB_ACTOR", os.getenv("USER", "local")))
     parser.add_argument("--git-commit", default=os.getenv("GITHUB_SHA", git_commit()))

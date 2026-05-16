@@ -36,7 +36,9 @@ az bicep build-params --file infra/parameters/sandbox-david.bicepparam
 scripts/what-if.sh sandbox-david
 ```
 
-Mientras la cuota de App Service/Functions siga bloqueada, validar solo foundation, Storage, OIDC y RBAC:
+Los sandboxes personales se operan solo desde local/admin. Los scripts bloquean `sandbox-*` cuando `GITHUB_ACTIONS=true`.
+
+Mientras la cuota de App Service/Functions siga bloqueada, validar solo foundation y Storage:
 
 ```bash
 ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-david
@@ -53,8 +55,7 @@ Ese despliegue prepara el pipeline Azure minimo:
 - Resource Groups.
 - Key Vault y Log Analytics en `shared`.
 - Storage/ADLS y containers del workload.
-- Identidades OIDC.
-- RBAC de Storage para el repo `pricing-mlops`.
+- Sin identidades OIDC por default para sandboxes personales.
 
 No crea AML, ADF, SQL, ACR ni prod.
 
@@ -97,6 +98,8 @@ scripts/deploy.sh data-lab
 | `workflow_dispatch`, `deploy` | What-if y luego `scripts/deploy.sh`. |
 
 Configurar environments y variables en [`github-actions.md`](github-actions.md).
+
+GitHub Actions solo opera ambientes compartidos/controlados (`staging`, `validation`). `sandbox-david` y futuros `sandbox-*` son local/admin only.
 
 ## Revision Semanal
 

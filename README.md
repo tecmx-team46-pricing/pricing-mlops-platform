@@ -37,8 +37,8 @@ flowchart TD
 |---|---|---|---|
 | `shared` | `rg-pricing-mlops-platform-shared` | Servicios comunes: Key Vault, Log Analytics, identidades. No es ambiente MLOps. | No |
 | `data-lab` | `rg-pricing-mlops-data-lab` | Landing restringido para datos sensibles y masking. | Si, restringido |
-| `sandbox-david` | `rg-pricing-mlops-sbx-david` | PoC principal para Storage/OIDC/RBAC y pipeline minimo. | No |
-| `staging` | `rg-pricing-mlops-staging` | MVP integrado con datos masked/curated. | No |
+| `sandbox-david` | `rg-pricing-mlops-sbx-david` | Sandbox personal local/admin. No se opera desde GitHub Actions. | No |
+| `staging` | `rg-pricing-mlops-staging` | MVP integrado con datos masked/curated y GitHub Actions del modelo. | No |
 | `validation` | `rg-pricing-mlops-validation` | Validacion controlada no productiva futura. | No por default |
 
 `prod` no existe en IaC, parameters ni workflows.
@@ -74,7 +74,7 @@ az bicep build --file infra/workloads/pricing-mlops/main.bicep
 az bicep build-params --file infra/parameters/sandbox-david.bicepparam
 ```
 
-What-if/deploy minimo para Storage + OIDC/RBAC sin Function App:
+What-if/deploy local/admin de sandbox sin Function App:
 
 ```bash
 az login
@@ -83,7 +83,7 @@ ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-david
 ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-david
 ```
 
-La Function App es opcional en el PoC porque la subscription puede tener cuota App Service en cero.
+GitHub Actions queda reservado para `staging` y `validation`. La Function App es opcional en el PoC porque la subscription puede tener cuota App Service en cero.
 
 ## Documentacion
 

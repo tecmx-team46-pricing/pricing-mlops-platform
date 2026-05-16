@@ -17,8 +17,9 @@ Valores no sensibles por ambiente:
 
 | Variable | Uso |
 |---|---|
-| `MLOPS_ENVIRONMENT` | Ambiente logico: `sandbox-david`, `staging`, `validation`. |
-| `AZURE_CLIENT_ID` | Client ID OIDC del repo `pricing-mlops`; para sandbox viene de `modelGithubActionsClientId`. |
+| `MLOPS_ENVIRONMENT` | Ambiente logico compartido: `staging` o `validation` para GitHub Actions. Sandboxes personales son local/admin. |
+| `MLOPS_RUN_OWNER` | Owner logico de la corrida, por ejemplo `team46` o usuario. |
+| `AZURE_CLIENT_ID` | Client ID OIDC del repo `pricing-mlops`; para GitHub Actions debe venir del ambiente compartido, normalmente `staging`. |
 | `AZURE_TENANT_ID` | Tenant Azure. |
 | `AZURE_SUBSCRIPTION_ID` | Subscription Azure. |
 | `AZURE_STORAGE_ACCOUNT` | Storage Account del workload. |
@@ -40,7 +41,7 @@ Valores no sensibles por ambiente:
 Cada corrida escribe bajo:
 
 ```text
-environment=<environment>/run_date=<yyyy-mm-dd>/run_id=<run_id>/
+environment=<environment>/owner=<owner>/run_date=<yyyy-mm-dd>/run_id=<run_id>/
 ```
 
 | Output | Container | Formato PoC | Obligatorio |
@@ -78,7 +79,7 @@ environment=<environment>/run_date=<yyyy-mm-dd>/run_id=<run_id>/
 Primera meta operativa:
 
 ```text
-pricing-mlops workflow_dispatch
+pricing-mlops workflow_dispatch en staging/validation
 -> azure/login con OIDC
 -> ejecutar flow ML
 -> subir outputs a Storage/ADLS
@@ -93,3 +94,4 @@ Puede usar sample local masked como input inicial y subir solo outputs a Storage
 - No se comparten secrets por Git.
 - No se usan account keys ni connection strings.
 - `staging`, `validation` y `sandbox-david` no reciben `raw-unmasked`.
+- `sandbox-david` no es patron para GitHub Actions del modelo; cualquier identidad OIDC sandbox existente queda legacy/deprecated.

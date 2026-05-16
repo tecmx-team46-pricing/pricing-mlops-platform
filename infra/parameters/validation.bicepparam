@@ -16,6 +16,10 @@ param sharedOwner = 'team46'
 param githubRepository = 'tecmx-team46-pricing/pricing-mlops-platform'
 param githubEnvironment = 'validation'
 param enableGithubActionsIdentity = true
+// Validation can be enabled for the model repo when the controlled environment is ready.
+param modelGithubRepository = 'tecmx-team46-pricing/pricing-mlops'
+param modelGithubEnvironment = 'validation'
+param enableModelGithubActionsIdentity = false
 param enableHelloFunction = true
 
 // Validation is non-production. Keep budget creation explicit.

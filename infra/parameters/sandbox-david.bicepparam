@@ -11,12 +11,13 @@ param workloadPurpose = 'personal-sandbox'
 param workloadEnvironmentTag = 'sandbox'
 param sharedOwner = 'team46'
 
-param githubRepository = 'tecmx-team46-pricing/pricing-mlops-platform'
+// Personal sandbox: local/admin only. GitHub Actions OIDC is disabled by default.
+param githubRepository = ''
 param githubEnvironment = 'sandbox-david'
-param enableGithubActionsIdentity = true
-param modelGithubRepository = 'tecmx-team46-pricing/pricing-mlops'
+param enableGithubActionsIdentity = false
+param modelGithubRepository = ''
 param modelGithubEnvironment = 'sandbox-david'
-param enableModelGithubActionsIdentity = true
+param enableModelGithubActionsIdentity = false
 param enableHelloFunction = true
 
 param storageContainers = [

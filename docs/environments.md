@@ -8,8 +8,8 @@ El MVP usa una sola subscription y separa responsabilidades con Resource Groups,
 |---|---|---|---|---|
 | `shared` | Scope foundation | `rg-pricing-mlops-platform-shared` | Key Vault, Log Analytics, identidades OIDC y budgets. No es ambiente MLOps. | No |
 | `data-lab` | Secure data lab | `rg-pricing-mlops-data-lab` | Landing controlado para unmasked, masking y datasets masked iniciales. | Si, restringido |
-| `sandbox-david` | Sandbox personal | `rg-pricing-mlops-sbx-david` | Prueba principal del pipeline minimo con Storage/OIDC/RBAC. | No |
-| `staging` | MVP | `rg-pricing-mlops-staging` | Validacion integrada del MVP con datos masked/curated. | No |
+| `sandbox-david` | Sandbox personal | `rg-pricing-mlops-sbx-david` | Pruebas locales/admin temporales. No se opera desde GitHub Actions. | No |
+| `staging` | MVP compartido | `rg-pricing-mlops-staging` | Validacion integrada del MVP con datos masked/curated y GitHub Actions del modelo. | No |
 | `validation` | No-prod controlado | `rg-pricing-mlops-validation` | Validacion futura antes de promocion formal. | No por default |
 
 `prod` sigue conceptual. No hay IaC, parameter file ni workflow de produccion.
@@ -24,7 +24,7 @@ El MVP usa una sola subscription y separa responsabilidades con Resource Groups,
 
 ## Regla de sandbox
 
-Los sandboxes son temporales. Un recurso pasa a IaC formal solo si se usa mas de una vez, otra persona depende de el, es necesario para staging o no se puede reconstruir facilmente.
+Los sandboxes son temporales y se despliegan desde local/admin. GitHub Actions no debe crear, actualizar ni destruir sandboxes personales. Un recurso pasa a IaC formal solo si se usa mas de una vez, otra persona depende de el, es necesario para staging o no se puede reconstruir facilmente.
 
 Para destruir un sandbox temporal:
 

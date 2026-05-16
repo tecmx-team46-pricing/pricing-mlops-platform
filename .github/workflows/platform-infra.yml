@@ -16,7 +16,6 @@ on:
         type: choice
         options:
           - staging
-          - sandbox-david
           - validation
       operation:
         description: "Manual operation"

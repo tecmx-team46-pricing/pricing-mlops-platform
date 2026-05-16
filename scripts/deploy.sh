@@ -12,6 +12,11 @@ WORKLOAD_TEMPLATE="infra/workloads/pricing-mlops/main.bicep"
 EXTRA_PARAMETERS=()
 PARAMETERS_JSON=""
 
+if [[ "${GITHUB_ACTIONS:-false}" == "true" && "${ENVIRONMENT}" == sandbox* ]]; then
+  echo "Personal sandboxes (${ENVIRONMENT}) are local/admin only and cannot be deployed from GitHub Actions." >&2
+  exit 1
+fi
+
 if [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
   EXTRA_PARAMETERS+=(enableGithubActionsIdentity=false)
 fi

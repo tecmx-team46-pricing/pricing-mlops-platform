@@ -17,9 +17,9 @@ az account set --subscription "<azure-subscription-name>"
 az account show --query "{name:name, id:id}" --output table
 ```
 
-## Ejecutar what-if de sandbox
+## Ejecutar what-if de sandbox local/admin
 
-Para validar Storage, OIDC y RBAC sin crear Function App:
+Para validar Storage y contenedores sin crear Function App:
 
 ```bash
 ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-david
@@ -31,7 +31,7 @@ ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-david
 ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-david
 ```
 
-Este despliegue apunta al pipeline Azure minimo: Storage/ADLS, contenedores e identidad OIDC/RBAC para que `pricing-mlops` suba artefactos. No crea AML, ADF, SQL, ACR ni prod.
+Este despliegue apunta a pruebas personales local/admin: Storage/ADLS y contenedores. No crea OIDC/RBAC para GitHub Actions por default y no crea AML, ADF, SQL, ACR ni prod.
 
 ## Publicar Function hello world
 
@@ -46,12 +46,13 @@ Si Azure devuelve quota 0 para App Service/Functions, mantener `ENABLE_HELLO_FUN
 
 ## Siguiente repo
 
-El flujo ML vive en `pricing-mlops`. Ese repo debe usar los outputs de plataforma:
+El flujo ML vive en `pricing-mlops`. Para GitHub Actions debe usar un ambiente compartido como `staging`, no un sandbox personal:
 
 ```text
 AZURE_CLIENT_ID=<modelGithubActionsClientId>
 AZURE_TENANT_ID=<tenant id>
 AZURE_SUBSCRIPTION_ID=<subscription id>
 AZURE_STORAGE_ACCOUNT=<storageAccountName>
-MLOPS_ENVIRONMENT=sandbox-david
+MLOPS_ENVIRONMENT=staging
+MLOPS_RUN_OWNER=team46
 ```
