@@ -89,6 +89,24 @@ flowchart TD
   Decision --> Red["red<br/>bloquear promocion o recalibrar"]
 ```
 
+Servicios Azure por parte del pipeline:
+
+| Parte del pipeline | Servicio Azure | Resource Group esperado | Estado |
+|---|---|---|---|
+| Foundation compartida | Resource Group, Key Vault, Log Analytics, User Assigned Managed Identity, OIDC | `rg-pricing-mlops-platform-shared` | Implementado como base del PoC |
+| Carga controlada de datos | Storage Account / ADLS Gen2 containers | `rg-pricing-mlops-data-lab` o `rg-pricing-mlops-secure-sandbox` | Preparado para PoC; `raw-unmasked` requiere acceso restringido |
+| Secretos de masking | Azure Key Vault | `rg-pricing-mlops-platform-shared` | Foundation compartida |
+| Datos masked y curated | Storage Account / ADLS Gen2 containers `raw-masked`, `curated`, `baseline` | `rg-pricing-mlops-sbx-david`, luego `rg-pricing-mlops-staging` | PoC en sandbox, promocion futura a staging |
+| Validacion de schema/calidad | GitHub Actions del repo `pricing-mlops`; futuro Azure Functions o Azure ML si se justifica | No crea RG propio; consume Storage/ADLS | Local/CI primero |
+| Scoring y reglas de pricing | Scripts del repo `pricing-mlops`; futuro Azure Functions, Azure ML o ADF segun necesidad | Workload RG del ambiente | Local/CI primero; servicio administrado futuro |
+| Drift checks | Scripts del repo `pricing-mlops`; futuro Azure Function drift endpoint | Workload RG del ambiente | PoC con scripts; Function futura |
+| Health endpoint | Azure Function App | `rg-pricing-mlops-sbx-david` | Hello world del prototipo, condicionado a quota de App Service |
+| Artefactos MLOps | Storage Account / ADLS Gen2 containers `runs`, `snapshots`, `drift-logs`, `reports`, `artifacts` | Workload RG del ambiente | PoC en sandbox |
+| Observabilidad tecnica | Log Analytics; futuro Azure Monitor alerts | `rg-pricing-mlops-platform-shared` | Log Analytics ahora; alertas despues |
+| Auditoria historica consultable | Storage JSON/Parquet ahora; futuro Azure SQL Serverless | Futuro `rg-pricing-mlops-validation` o RG audit | SQL no se despliega en PoC |
+| Orquestacion formal | GitHub Actions manual ahora; futuro Azure Data Factory | Futuro workload RG controlado | ADF no se despliega en PoC |
+| Empaquetado de modelo | No requerido ahora; futuro Azure Container Registry si hay contenedores | Futuro shared o workload controlado | ACR fuera del PoC |
+
 Reglas principales:
 
 - `shared` guarda servicios comunes, no datasets.
