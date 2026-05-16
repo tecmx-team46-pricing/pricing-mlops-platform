@@ -54,63 +54,44 @@ El pipeline MLOps separa la plataforma Azure del codigo funcional del modelo. Es
 
 ```mermaid
 flowchart TD
-  subgraph Platform["pricing-mlops-platform"]
-    Foundation["Foundation<br/>Azure Resource Groups<br/>Key Vault<br/>Log Analytics<br/>Managed Identity + OIDC"]
-    WorkloadInfra["Workload infra<br/>Azure Storage / ADLS Gen2<br/>Azure Function App /api/health"]
-    PlatformGHA["GitHub Actions<br/>Bicep validate, what-if, deploy"]
-  end
+  GHAPlatform["GitHub Actions<br/>platform infra workflow"] --> ARM["Azure Resource Manager<br/>Bicep deployments"]
+  ARM --> RGShared["Resource Group<br/>rg-pricing-mlops-platform-shared"]
+  ARM --> RGDataLab["Resource Group<br/>rg-pricing-mlops-data-lab"]
+  ARM --> RGWorkload["Resource Group<br/>sandbox / staging / validation"]
 
-  subgraph Data["Data landing y gobierno"]
-    Source["CSV fuente o carga controlada"]
-    DataLab["data-lab / secure-sandbox<br/>Storage / ADLS Gen2"]
-    RawUnmasked["raw-unmasked<br/>Storage container<br/>acceso restringido"]
-    Masking["Masking autorizado<br/>Key Vault salt/secrets"]
-    RawMasked["raw-masked<br/>Storage container"]
-    Curated["curated / baseline<br/>Storage containers"]
-  end
+  RGShared --> KV["Azure Key Vault<br/>salts, secrets, config sensible"]
+  RGShared --> LAW["Log Analytics Workspace<br/>logs tecnicos"]
+  RGShared --> UAMI["User Assigned Managed Identity<br/>GitHub OIDC"]
 
-  subgraph ModelRepo["pricing-mlops"]
-    ModelGHA["GitHub Actions<br/>tests, validaciones, smoke runs"]
-    Validate["Validacion de schema y calidad<br/>Python / Great Expectations futuro"]
-    Score["Scoring y reglas de pricing<br/>Python scripts ahora<br/>Azure ML futuro si se justifica"]
-    Drift["Drift checks<br/>PSI, KS, reglas de negocio<br/>Azure Function futura"]
-  end
+  Source["CSV fuente o carga controlada"] --> ADLSDataLab["Storage / ADLS Gen2<br/>data-lab"]
+  RGDataLab --> ADLSDataLab
+  ADLSDataLab --> RawUnmasked["Container raw-unmasked<br/>acceso restringido"]
+  RawUnmasked --> Masking["Masking job/script<br/>usa Key Vault"]
+  KV --> Masking
+  Masking --> RawMasked["Container raw-masked"]
 
-  subgraph Evidence["Artefactos MLOps"]
-    RunLog["model_run_log<br/>Storage runs"]
-    Snapshot["model_output_snapshot<br/>Storage snapshots"]
-    DriftLog["model_drift_log<br/>Storage drift-logs"]
-    Report["report.md<br/>Storage reports / GitHub artifact no sensible"]
-  end
+  RGWorkload --> ADLSWorkload["Storage / ADLS Gen2<br/>workload"]
+  RawMasked --> ADLSWorkload
+  ADLSWorkload --> Curated["Containers curated / baseline"]
 
-  subgraph Future["Servicios futuros no desplegados en PoC"]
-    SQL["Azure SQL Serverless<br/>auditoria historica"]
-    ADF["Azure Data Factory<br/>orquestacion formal"]
-    ACR["Azure Container Registry<br/>imagenes si hay contenedores"]
-  end
+  GHAmodel["GitHub Actions<br/>model flow"] --> Validate["Validacion schema/calidad<br/>Python ahora<br/>Great Expectations futuro"]
+  Curated --> Validate
+  Validate --> Score["Scoring y reglas de pricing<br/>Python ahora<br/>Azure ML futuro"]
+  Curated --> Drift["Drift checks<br/>PSI, KS, reglas negocio<br/>Azure Function futura"]
 
-  PlatformGHA --> Foundation
-  PlatformGHA --> WorkloadInfra
-  Foundation --> DataLab
-  Foundation --> Masking
-  WorkloadInfra --> RawMasked
-  WorkloadInfra --> Curated
-  WorkloadInfra --> Evidence
+  RGWorkload --> Function["Azure Function App<br/>/api/health ahora<br/>drift endpoint futuro"]
+  Function -. "compute futuro para drift" .-> Drift
 
-  Source --> DataLab
-  DataLab --> RawUnmasked
-  RawUnmasked --> Masking
-  Masking --> RawMasked
-  RawMasked --> Validate
-  Validate --> Curated
-  Curated --> Score
-  Curated --> Drift
+  Validate --> RunLog["Container runs<br/>model_run_log"]
+  Score --> Snapshot["Container snapshots<br/>model_output_snapshot"]
+  Drift --> DriftLog["Container drift-logs<br/>model_drift_log"]
+  Score --> Report["Container reports<br/>report.md"]
 
-  ModelGHA --> Validate
-  Score --> Snapshot
-  Score --> Report
-  Drift --> DriftLog
-  Validate --> RunLog
+  RunLog --> ADLSWorkload
+  Snapshot --> ADLSWorkload
+  DriftLog --> ADLSWorkload
+  Report --> ADLSWorkload
+  LAW -. "telemetria" .-> Function
 
   RunLog --> Review["revision tecnica / negocio"]
   Snapshot --> Review
@@ -121,9 +102,9 @@ flowchart TD
   Decision --> Yellow["yellow<br/>revisar"]
   Decision --> Red["red<br/>bloquear promocion o recalibrar"]
 
-  RunLog -. "cuando Storage no baste" .-> SQL
-  ModelGHA -. "cuando haya scheduling formal" .-> ADF
-  Score -. "cuando se empaquete modelo" .-> ACR
+  RunLog -. "si Storage no basta" .-> SQL["Azure SQL Serverless futuro<br/>auditoria historica"]
+  GHAmodel -. "si hay scheduling formal" .-> ADF["Azure Data Factory futuro<br/>orquestacion"]
+  Score -. "si se empaqueta modelo" .-> ACR["Azure Container Registry futuro<br/>imagenes"]
 ```
 
 Servicios Azure por parte del pipeline:
