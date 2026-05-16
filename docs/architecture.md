@@ -2,7 +2,7 @@
 
 ## Decision principal
 
-Este repo es el monorepo del MVP: infraestructura Azure, contratos MLOps, scripts, workflows y documentacion.
+Este repo es la plataforma del MVP: infraestructura Azure, contratos MLOps, scripts operativos, workflows de despliegue y documentacion.
 
 La infraestructura se separa en dos capas:
 
@@ -37,7 +37,7 @@ No se despliega prod en el MVP. `shared` no es ambiente operativo de MLOps; es u
 |---|---|---|
 | Key Vault | Foundation | Evitar secretos en GitHub o configs |
 | Log Analytics | Foundation | Observabilidad tecnica minima |
-| User Assigned Identity | Foundation | OIDC para GitHub Actions |
+| User Assigned Identities | Foundation | OIDC para GitHub Actions de plataforma y repo modelo |
 | Budget | Foundation | Control de gasto de la subscription |
 
 ## Workload Pricing MLOps
@@ -57,8 +57,11 @@ La Function App se crea por IaC, pero el codigo runtime se publica desde `src/fu
 |---|---|
 | Admin cloud | Owner temporal para bootstrap local |
 | Equipo tecnico | Contributor en ambientes de trabajo, Reader en shared |
-| GitHub Actions | User Assigned Identity con OIDC y Contributor a nivel subscription para deployments subscription-scope |
+| GitHub Actions plataforma | User Assigned Identity con OIDC y permisos suficientes para deployments subscription-scope |
+| GitHub Actions `pricing-mlops` | User Assigned Identity separada con `Storage Blob Data Contributor` solo sobre el Storage Account del workload |
 | Negocio | Sin acceso directo a Azure en MVP |
+
+El repo modelo no recibe `Owner`, no recibe `Contributor` sobre la subscription y no recibe acceso a `raw-unmasked`.
 
 ## Anti-patterns evitados
 

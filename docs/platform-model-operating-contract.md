@@ -16,7 +16,7 @@ El contrato se basa en tres reglas:
 |---|---|---|
 | Resource Groups, tags y ambientes | Crea y gobierna. | No crea ni modifica. |
 | Storage/ADLS, contenedores y RBAC | Crea y publica nombres/rutas. | Consume y escribe artefactos autorizados. |
-| Key Vault, salts/secrets e identidades | Crea y gobierna. | Lee secretos solo por identidad autorizada cuando aplica. |
+| Key Vault, salts/secrets e identidades | Crea y gobierna. | Lee secretos solo por identidad autorizada cuando aplica; el pipeline minimo no requiere Key Vault. |
 | IaC y despliegues Azure | Mantiene Bicep, workflows de validate/what-if/deploy. | No contiene IaC de plataforma. |
 | Modelo, scoring y validaciones | No contiene notebooks ni model code. | Implementa notebooks, scripts, validadores y scoring. |
 | Contratos operativos | Define schemas y convenciones compartidas. | Implementa outputs que cumplen esos contratos. |
@@ -47,7 +47,9 @@ Platform debe publicar estos valores por ambiente. Los valores no sensibles pued
 | Dataset version | `MLOPS_DATASET_VERSION=dataset_2026Q2_v1` | Workflow input o manifest en Storage | Registrar reproducibilidad de corrida. |
 | Schema version | `MLOPS_SCHEMA_VERSION=pricing_input_schema_v1` | Archivo versionado o manifest | Validar compatibilidad de datos. |
 
-`raw-unmasked` no es input normal del repo modelo. Solo un proceso de masking autorizado puede leerlo, y solo en `data-lab`/`secure-sandbox`.
+Para `sandbox-david`, `AZURE_CLIENT_ID` del repo modelo debe apuntar al output `modelGithubActionsClientId`, no al client id del repo plataforma.
+
+`raw-unmasked` no es input normal del repo modelo. Solo un proceso de masking autorizado puede leerlo, y solo en `data-lab`/`secure-sandbox`. `sandbox-david` no crea `raw-unmasked`.
 
 ## Outputs obligatorios del repo modelo
 
@@ -134,6 +136,7 @@ Usar Storage/ADLS como interfaz de datos entre repos:
 - platform crea contenedores y permisos;
 - modelo lee `raw-masked`, `curated` y `baseline`;
 - modelo escribe `runs`, `snapshots`, `drift-logs`, `reports` y `artifacts`;
+- en el primer pipeline Azure minimo, el repo modelo puede usar el sample local masked como input y subir solo outputs a Storage mientras se habilita lectura de `raw-masked`;
 - `raw-unmasked` queda fuera del flujo normal de scoring.
 
 ## GitHub Actions esperadas
@@ -154,7 +157,7 @@ Platform no ejecuta scoring productivo ni notebooks. El workflow actual `.github
 |---|---|---|
 | `model-ci.yml` | PR | Lint, tests unitarios, validaciones con fixtures sinteticos o masked. |
 | `data-contract-ci.yml` | PR | Verifica compatibilidad con schemas y reglas de calidad. |
-| `run-sandbox.yml` | Manual | Ejecuta validacion/scoring en sandbox con Storage/ADLS y OIDC. |
+| `model-flow.yml` manual | Manual | Ejecuta validacion/scoring en sandbox con Storage/ADLS y OIDC, sin crear infraestructura. |
 | `run-staging.yml` | Manual con aprobacion si aplica | Ejecuta corrida staging con masked/curated, publica outputs obligatorios. |
 | `run-validation.yml` | Manual con aprobacion | Ejecuta corrida controlada, conserva evidencia y reportes. |
 | `model-package.yml` futuro | Tag o manual | Empaqueta version de modelo/scoring sin datos sensibles. |
@@ -203,10 +206,11 @@ Sin estos campos, la corrida no es reproducible y no debe promoverse.
 
 Este contrato concreta la interfaz descrita en:
 
-- `docs/multi-repo-mlops-deployment-plan.md`;
+- `docs/index.md`;
+- `docs/github-actions.md`;
 - `docs/data-governance-plan.md`;
-- `docs/azure-phased-deployment-plan.md`;
-- `docs/github-actions-multirepo-integration.md`;
+- `docs/azure-services.md`;
+- `docs/roadmap.md`;
 - `mlops/docs/data-contracts.md`.
 
 No cambia IaC ni mueve responsabilidades. Define como operar el modelo sin hardcodear infraestructura y sin convertir `pricing-mlops-platform` en repo de modelo.

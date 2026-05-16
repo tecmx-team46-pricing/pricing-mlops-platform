@@ -31,9 +31,7 @@ Cada ejecucion despliega en orden:
 
 La Function App del workload usa App Service Plan `B1` por defecto. Si Azure devuelve `SubscriptionIsOverQuotaForSku` para `Basic VMs`, la infraestructura base queda preparada pero la Function App no puede crearse hasta pedir cuota `Basic VMs >= 1` o ajustar los parametros `functionPlanSkuName`, `functionPlanSkuTier` y `functionPlanSkuSize` en el despliegue.
 
-`sandbox-david` puede usar una region distinta a `staging` para evitar saturacion o quotas regionales. El bloqueo original fue App Service/Functions quota 0 en `eastus2`; el parameter file del sandbox usa `centralus` para esta prueba.
-
-Si `sandbox-david` ya tiene recursos en otra region, Azure no puede moverlos en sitio. Un cambio de region requiere borrar y recrear `rg-pricing-mlops-sbx-david` o usar nombres nuevos de recursos.
+`sandbox-david` usa `eastus2` porque los recursos existentes de `rg-pricing-mlops-sbx-david` ya viven ahi. Azure no mueve Storage Accounts ni Function Apps en sitio. Un cambio de region requiere borrar y recrear `rg-pricing-mlops-sbx-david` o usar nombres nuevos, siempre con confirmacion explicita.
 
 Mientras se resuelve la cuota de compute, se puede validar foundation y storage sin crear Function App:
 
@@ -78,6 +76,8 @@ Debe responder JSON con `status=ok`, `message=hello world`, `workload=pricing-ml
 
 ## Configurar GitHub Actions
 
+La referencia compacta de workflows, variables y OIDC esta en [`github-actions.md`](github-actions.md).
+
 Crear GitHub environments para los ambientes que se quieran operar desde Actions:
 
 ```text
@@ -96,6 +96,28 @@ AZURE_TENANT_ID=<tenant id>
 AZURE_SUBSCRIPTION_ID=<subscription id>
 AZURE_STORAGE_ACCOUNT=<output storageAccountName>
 ```
+
+Para el repo funcional `tecmx-team46-pricing/pricing-mlops`, crear tambien el environment `sandbox-david` con:
+
+```text
+AZURE_CLIENT_ID=<output modelGithubActionsClientId>
+AZURE_TENANT_ID=<tenant id>
+AZURE_SUBSCRIPTION_ID=<subscription id>
+AZURE_STORAGE_ACCOUNT=<output storageAccountName>
+AZURE_STORAGE_DFS_ENDPOINT=<output storageDfsEndpoint>
+MLOPS_ENVIRONMENT=sandbox-david
+MLOPS_CONTAINER_RAW_MASKED=raw-masked
+MLOPS_CONTAINER_CURATED=curated
+MLOPS_CONTAINER_BASELINE=baseline
+MLOPS_CONTAINER_RUNS=runs
+MLOPS_CONTAINER_SNAPSHOTS=snapshots
+MLOPS_CONTAINER_DRIFT_LOGS=drift-logs
+MLOPS_CONTAINER_REPORTS=reports
+MLOPS_CONTAINER_ARTIFACTS=artifacts
+FUNCTION_HEALTH_ENDPOINT=<output functionHealthEndpoint, si existe>
+```
+
+La identidad del repo funcional es `id-gha-pricing-mlops-model-sandbox-david`. Solo recibe `Storage Blob Data Contributor` sobre el Storage Account del workload. No recibe `Owner`, no recibe `Contributor` de subscription y no recibe acceso a `raw-unmasked`.
 
 `platform-infra.yml` se comporta asi:
 

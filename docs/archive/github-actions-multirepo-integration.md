@@ -23,7 +23,7 @@ Este documento define el contrato operativo de CI/CD. No ejecuta despliegues nue
 | `platform-infra.yml` validate | `pull_request` | No | Compilar `infra/foundation/main.bicep`, `infra/workloads/pricing-mlops/main.bicep` y parameter files. | Actual. |
 | `platform-infra.yml` what-if | `workflow_dispatch` | Si, OIDC | Ejecutar `scripts/what-if.sh <environment>` con aprobacion manual del usuario. | Actual. |
 | `platform-infra.yml` deploy | `workflow_dispatch` | Si, OIDC | Ejecutar deploy manual despues de what-if. No corre automaticamente en PR. | Actual. |
-| Publicacion de outputs | Despues de deploy manual | Si, OIDC | Publicar valores no sensibles para el repo modelo: storage, Key Vault URI, containers y `DATA_ROOT`. | Preparar; no requiere secretos. |
+| Publicacion de outputs | Despues de deploy manual | Si, OIDC | Publicar valores no sensibles para el repo modelo: storage, client id modelo, containers y `DATA_ROOT`. | Preparar; no requiere secretos. |
 
 Los outputs publicados deben ser no sensibles. El mecanismo puede ser un GitHub Actions artifact `platform-outputs-<environment>.json`, una actualizacion manual de GitHub environment variables o documentacion operativa desde los outputs de IaC. No se deben publicar secrets de Key Vault.
 
@@ -76,6 +76,18 @@ Estas variables son valores no secretos. Deben vivir como GitHub environment var
 
 `raw-unmasked` no debe exponerse como variable normal para el repo modelo. Si se crea un proceso de masking en `pricing-mlops`, debe usar un environment separado, aprobacion explicita y RBAC restringido a esa identidad.
 
+Para `sandbox-david`, el repo modelo debe usar una identidad separada:
+
+```text
+id-gha-pricing-mlops-model-sandbox-david
+```
+
+El repo plataforma mantiene su identidad existente para compatibilidad:
+
+```text
+id-gha-pricing-mlops-sandbox-david
+```
+
 ## Outputs que platform debe publicar
 
 Despues de un deploy manual, platform debe entregar este payload no sensible:
@@ -85,8 +97,9 @@ Despues de un deploy manual, platform debe entregar este payload no sensible:
   "environment": "staging",
   "storageAccount": "stpmlops...",
   "dataRoot": "https://stpmlops....dfs.core.windows.net",
-  "keyVaultUri": "https://kv-pmlops-....vault.azure.net/",
+  "modelGithubActionsClientId": "<client-id>",
   "containers": {
+    "input": "input",
     "rawMasked": "raw-masked",
     "curated": "curated",
     "baseline": "baseline",
@@ -115,9 +128,9 @@ Para ambientes existentes que todavia usan `input`, `rawMasked` puede mapear a `
 
 | Scope | Rol recomendado | Motivo |
 |---|---|---|
-| Contenedores `raw-masked`, `curated`, `baseline` | `Storage Blob Data Reader` o `Storage Blob Data Contributor` si escribe curated | Leer inputs sin acceso a RG. |
+| Storage Account del workload sandbox | `Storage Blob Data Contributor` | Leer `input`/`raw-masked` y escribir `curated`/outputs en el PoC sin permisos de management plane. |
 | Contenedores `runs`, `snapshots`, `drift-logs`, `reports`, `artifacts` | `Storage Blob Data Contributor` | Publicar outputs MLOps. |
-| Key Vault | `Key Vault Secrets User` solo si necesita salts/secrets aprobados | Resolver secretos sin hardcodearlos. |
+| Key Vault | Futuro `Key Vault Secrets User` solo si necesita salts/secrets aprobados | El pipeline minimo no usa Key Vault. |
 | Resource Groups/subscription | Ningun `Owner`; evitar `Contributor` | El modelo no despliega infraestructura. |
 | `raw-unmasked` | Sin acceso por default | Separar unmasked del scoring normal. |
 
@@ -128,7 +141,7 @@ El repo modelo debe operar con permisos de data plane sobre Storage/Key Vault, n
 Los workflows manuales del repo modelo deben:
 
 1. Autenticarse con `azure/login@v2` usando OIDC.
-2. Ejecutar preflight de variables: `STORAGE_ACCOUNT`, `DATA_ROOT`, `MLOPS_ENVIRONMENT` y containers requeridos.
+2. Ejecutar preflight de variables: `AZURE_STORAGE_ACCOUNT`, `MLOPS_ENVIRONMENT` y containers requeridos.
 3. Generar `run_id` y registrar `git_commit_hash`, `dataset_version`, `schema_version`, `model_version` y `config_version`.
 4. Subir outputs a Storage con `--auth-mode login` o SDK Azure con credenciales federadas.
 5. Publicar tambien un GitHub artifact solo con reportes no sensibles.

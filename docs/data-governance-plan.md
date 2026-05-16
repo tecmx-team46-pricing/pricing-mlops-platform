@@ -197,7 +197,7 @@ Las reglas exactas deben ajustarse por costo, requisitos academicos/legales y va
 
 ## Relacion con docs actuales
 
-Este plan extiende `docs/multi-repo-mlops-deployment-plan.md` y `docs/poc-mlops-services-plan.md` con reglas de seguridad mas concretas. No cambia el alcance actual:
+Este plan complementa `docs/environments.md`, `docs/azure-services.md`, `docs/platform-model-operating-contract.md` y `docs/roadmap.md` con reglas de seguridad mas concretas. No cambia el alcance actual:
 
 - no implementa infraestructura;
 - mantiene `prod` como conceptual;
