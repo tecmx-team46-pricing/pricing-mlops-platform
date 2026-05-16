@@ -8,7 +8,7 @@ El MVP usa una sola subscription y separa responsabilidades con Resource Groups,
 |---|---|---|---|---|
 | `shared` | Scope foundation | `rg-pricing-mlops-platform-shared` | Key Vault, Log Analytics, identidades OIDC y budgets. No es ambiente MLOps. | No |
 | `data-lab` | Secure data lab | `rg-pricing-mlops-data-lab` | Landing controlado para unmasked, masking y datasets masked iniciales. | Si, restringido |
-| `sandbox-david` | Sandbox personal | `rg-pricing-mlops-sbx-david` | Pruebas locales/admin temporales. No se opera desde GitHub Actions. | No |
+| `sandbox-local` | Sandbox personal | `rg-pricing-mlops-sbx-local` | Pruebas locales/admin temporales. No se opera desde GitHub Actions. | No |
 | `staging` | MVP compartido | `rg-pricing-mlops-staging` | Validacion integrada del MVP con datos masked/curated y GitHub Actions del modelo. | No |
 | `validation` | No-prod controlado | `rg-pricing-mlops-validation` | Validacion futura antes de promocion formal. | No por default |
 
@@ -18,7 +18,7 @@ El MVP usa una sola subscription y separa responsabilidades con Resource Groups,
 
 | Ambiente | Tags clave |
 |---|---|
-| `sandbox-david` | `environment=sandbox`, `owner=david`, `lifecycle=temporary`, `purpose=personal-sandbox` |
+| `sandbox-local` | `environment=sandbox`, `owner=<owner>`, `lifecycle=temporary`, `purpose=personal-sandbox` |
 | `data-lab` | `environment=data-lab`, `owner=team46`, `lifecycle=controlled`, `purpose=secure-data-lab` |
 | `validation` | `environment=validation`, `owner=team46`, `lifecycle=controlled`, `purpose=controlled-validation` |
 
@@ -32,4 +32,4 @@ Para destruir un sandbox temporal:
 scripts/destroy-sandbox.sh rg-pricing-mlops-sbx-<owner>-<yyyymmdd>
 ```
 
-No borrar `rg-pricing-mlops-sbx-david` sin confirmacion explicita si contiene recursos existentes.
+No borrar `rg-pricing-mlops-sbx-local` sin confirmacion explicita si contiene recursos existentes.

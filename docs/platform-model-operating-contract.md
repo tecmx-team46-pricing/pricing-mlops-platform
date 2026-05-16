@@ -93,5 +93,5 @@ Puede usar sample local masked como input inicial y subir solo outputs a Storage
 - El repo plataforma no interpreta la logica interna del modelo.
 - No se comparten secrets por Git.
 - No se usan account keys ni connection strings.
-- `staging`, `validation` y `sandbox-david` no reciben `raw-unmasked`.
-- `sandbox-david` no es patron para GitHub Actions del modelo; cualquier identidad OIDC sandbox existente queda legacy/deprecated.
+- `staging`, `validation` y `sandbox-local` no reciben `raw-unmasked`.
+- `sandbox-local` no es patron para GitHub Actions del modelo; cualquier identidad OIDC sandbox existente queda legacy/deprecated.

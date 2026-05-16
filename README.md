@@ -37,7 +37,7 @@ flowchart TD
 |---|---|---|---|
 | `shared` | `rg-pricing-mlops-platform-shared` | Servicios comunes: Key Vault, Log Analytics, identidades. No es ambiente MLOps. | No |
 | `data-lab` | `rg-pricing-mlops-data-lab` | Landing restringido para datos sensibles y masking. | Si, restringido |
-| `sandbox-david` | `rg-pricing-mlops-sbx-david` | Sandbox personal local/admin. No se opera desde GitHub Actions. | No |
+| `sandbox-local` | `rg-pricing-mlops-sbx-local` | Sandbox personal local/admin. No se opera desde GitHub Actions. | No |
 | `staging` | `rg-pricing-mlops-staging` | MVP integrado con datos masked/curated y GitHub Actions del modelo. | No |
 | `validation` | `rg-pricing-mlops-validation` | Validacion controlada no productiva futura. | No por default |
 
@@ -71,7 +71,7 @@ Validar:
 scripts/validate-mlops-contracts.py
 az bicep build --file infra/foundation/main.bicep
 az bicep build --file infra/workloads/pricing-mlops/main.bicep
-az bicep build-params --file infra/parameters/sandbox-david.bicepparam
+az bicep build-params --file infra/parameters/sandbox-local.bicepparam
 ```
 
 What-if/deploy local/admin de sandbox sin Function App:
@@ -79,8 +79,8 @@ What-if/deploy local/admin de sandbox sin Function App:
 ```bash
 az login
 az account set --subscription "<azure-subscription-name>"
-ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-david
-ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-david
+ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-local
+ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-local
 ```
 
 GitHub Actions queda reservado para `staging` y `validation`. La Function App es opcional en el PoC porque la subscription puede tener cuota App Service en cero.
@@ -108,5 +108,5 @@ Los planes largos anteriores fueron retirados de la ruta activa; `docs/archive/R
 
 - Produccion real.
 - Azure ML, Data Factory, SQL, ACR, Hub-Spoke y Private Endpoints.
-- Datos `raw-unmasked` en `sandbox-david`, `staging` o `validation`.
+- Datos `raw-unmasked` en `sandbox-local`, `staging` o `validation`.
 - Account keys, connection strings o secretos versionados.

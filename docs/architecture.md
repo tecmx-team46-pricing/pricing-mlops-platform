@@ -26,7 +26,7 @@ Esta subscription aprovecha el credito incluido de 200 USD. No se crean subscrip
 | `rg-pricing-mlops-platform-shared` | Foundation | Key Vault, Log Analytics, identidades OIDC | Permanente |
 | `rg-pricing-mlops-data-lab` | Data lab | CSVs unmasked/masked, curated inicial y artefactos controlados sin Function/ADF/AML/SQL | Controlado |
 | `rg-pricing-mlops-staging` | Workload | Storage y Function App del MVP | Permanente |
-| `rg-pricing-mlops-sbx-david` | Workload | Sandbox personal temporal de David | Temporal |
+| `rg-pricing-mlops-sbx-local` | Workload | Sandbox personal temporal de un owner local | Temporal |
 | `rg-pricing-mlops-validation` | Workload | Validacion controlada no productiva | Controlado |
 
 No se despliega prod en el MVP. `shared` no es ambiente operativo de MLOps; es un scope comun para servicios reutilizables.

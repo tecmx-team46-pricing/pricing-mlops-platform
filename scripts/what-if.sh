@@ -24,10 +24,10 @@ if [[ -n "${ENABLE_HELLO_FUNCTION:-}" && "${ENVIRONMENT}" != "data-lab" ]]; then
 fi
 
 case "${ENVIRONMENT}" in
-  staging|sandbox-david|validation|data-lab) ;;
+  staging|sandbox-local|validation|data-lab) ;;
   *)
     echo "Unsupported environment: ${ENVIRONMENT}" >&2
-    echo "Allowed environments: staging, sandbox-david, validation, data-lab" >&2
+    echo "Allowed environments: staging, sandbox-local, validation, data-lab" >&2
     exit 1
     ;;
 esac

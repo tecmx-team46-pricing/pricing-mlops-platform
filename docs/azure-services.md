@@ -45,4 +45,4 @@ No requiere Azure ML, ADF, SQL ni Function App.
 - Produccion real.
 - AML, ADF, SQL y ACR.
 - Private Endpoints, Private DNS y Hub-Spoke.
-- `raw-unmasked` en `sandbox-david`, `staging` o `validation`.
+- `raw-unmasked` en `sandbox-local`, `staging` o `validation`.

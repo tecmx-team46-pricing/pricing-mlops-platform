@@ -55,7 +55,7 @@ MLOPS_CONTAINER_ARTIFACTS=artifacts
 
 La identidad modelo solo debe tener `Storage Blob Data Contributor` sobre el Storage Account del workload compartido. No debe recibir acceso a `raw-unmasked`, `Owner` ni `Contributor` de subscription.
 
-`sandbox-david` puede tener identidades OIDC heredadas de pruebas previas. Quedan consideradas legacy/deprecated para GitHub Actions y no deben usarse como patron de equipo.
+`sandbox-local` puede tener identidades OIDC heredadas de pruebas previas. Quedan consideradas legacy/deprecated para GitHub Actions y no deben usarse como patron de equipo.
 
 ## Outputs de plataforma
 

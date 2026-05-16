@@ -14,7 +14,7 @@ Los scripts aceptan:
 
 ```text
 staging
-sandbox-david
+sandbox-local
 validation
 data-lab
 ```
@@ -27,13 +27,13 @@ data-lab
 scripts/validate-mlops-contracts.py
 az bicep build --file infra/foundation/main.bicep
 az bicep build --file infra/workloads/pricing-mlops/main.bicep
-az bicep build-params --file infra/parameters/sandbox-david.bicepparam
+az bicep build-params --file infra/parameters/sandbox-local.bicepparam
 ```
 
 ## What-If
 
 ```bash
-scripts/what-if.sh sandbox-david
+scripts/what-if.sh sandbox-local
 ```
 
 Los sandboxes personales se operan solo desde local/admin. Los scripts bloquean `sandbox-*` cuando `GITHUB_ACTIONS=true`.
@@ -41,13 +41,13 @@ Los sandboxes personales se operan solo desde local/admin. Los scripts bloquean 
 Mientras la cuota de App Service/Functions siga bloqueada, validar solo foundation y Storage:
 
 ```bash
-ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-david
+ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-local
 ```
 
 ## Deploy Minimo
 
 ```bash
-ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-david
+ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-local
 ```
 
 Ese despliegue prepara el pipeline Azure minimo:
@@ -64,9 +64,9 @@ No crea AML, ADF, SQL, ACR ni prod.
 La Function App es opcional. Solo intentar si hay cuota App Service disponible:
 
 ```bash
-scripts/deploy.sh sandbox-david
+scripts/deploy.sh sandbox-local
 npm test --prefix src/functions/pricing-mlops-hello
-scripts/publish-hello-function.sh sandbox-david
+scripts/publish-hello-function.sh sandbox-local
 ```
 
 Endpoint esperado:
@@ -99,7 +99,7 @@ scripts/deploy.sh data-lab
 
 Configurar environments y variables en [`github-actions.md`](github-actions.md).
 
-GitHub Actions solo opera ambientes compartidos/controlados (`staging`, `validation`). `sandbox-david` y futuros `sandbox-*` son local/admin only.
+GitHub Actions solo opera ambientes compartidos/controlados (`staging`, `validation`). `sandbox-local` y futuros `sandbox-*` son local/admin only.
 
 ## Revision Semanal
 

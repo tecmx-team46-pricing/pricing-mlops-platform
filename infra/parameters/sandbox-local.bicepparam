@@ -2,10 +2,10 @@ using '../foundation/main.bicep'
 
 param location = 'eastus2'
 param projectName = 'pricing-mlops'
-param environmentName = 'sandbox-david'
-param owner = 'david'
+param environmentName = 'sandbox-local'
+param owner = 'local'
 param costCenter = 'academic'
-param workloadResourceGroupName = 'rg-pricing-mlops-sbx-david'
+param workloadResourceGroupName = 'rg-pricing-mlops-sbx-local'
 param workloadLifecycle = 'temporary'
 param workloadPurpose = 'personal-sandbox'
 param workloadEnvironmentTag = 'sandbox'
@@ -13,10 +13,10 @@ param sharedOwner = 'team46'
 
 // Personal sandbox: local/admin only. GitHub Actions OIDC is disabled by default.
 param githubRepository = ''
-param githubEnvironment = 'sandbox-david'
+param githubEnvironment = 'sandbox-local'
 param enableGithubActionsIdentity = false
 param modelGithubRepository = ''
-param modelGithubEnvironment = 'sandbox-david'
+param modelGithubEnvironment = 'sandbox-local'
 param enableModelGithubActionsIdentity = false
 param enableHelloFunction = true
 

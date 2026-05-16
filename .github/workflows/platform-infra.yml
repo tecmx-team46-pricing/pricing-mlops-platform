@@ -42,7 +42,7 @@ jobs:
       - name: Build Bicep parameter files
         run: |
           az bicep build-params --file infra/parameters/staging.bicepparam
-          az bicep build-params --file infra/parameters/sandbox-david.bicepparam
+          az bicep build-params --file infra/parameters/sandbox-local.bicepparam
           az bicep build-params --file infra/parameters/validation.bicepparam
           az bicep build-params --file infra/parameters/data-lab.bicepparam
 

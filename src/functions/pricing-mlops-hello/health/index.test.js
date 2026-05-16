@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const health = require("./index");
 
 async function main() {
-  process.env.PRICING_MLOPS_ENVIRONMENT = "sandbox-david";
+  process.env.PRICING_MLOPS_ENVIRONMENT = "sandbox-local";
   process.env.PRICING_MLOPS_HELLO_MESSAGE = "hello world";
 
   const context = {};
@@ -15,7 +15,7 @@ async function main() {
   assert.equal(body.status, "ok");
   assert.equal(body.message, "hello world");
   assert.equal(body.workload, "pricing-mlops");
-  assert.equal(body.environment, "sandbox-david");
+  assert.equal(body.environment, "sandbox-local");
 
   console.log("pricing-mlops hello function OK");
 }

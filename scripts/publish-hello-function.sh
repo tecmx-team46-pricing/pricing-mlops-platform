@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENVIRONMENT="${1:-sandbox-david}"
+ENVIRONMENT="${1:-sandbox-local}"
 EXPECTED_SUBSCRIPTION_NAME="${AZURE_SUBSCRIPTION_NAME:-<azure-subscription-name>}"
 SOURCE_DIR="src/functions/pricing-mlops-hello"
 
@@ -9,15 +9,15 @@ case "${ENVIRONMENT}" in
   staging)
     RESOURCE_GROUP_NAME="rg-pricing-mlops-staging"
     ;;
-  sandbox-david)
-    RESOURCE_GROUP_NAME="rg-pricing-mlops-sbx-david"
+  sandbox-local)
+    RESOURCE_GROUP_NAME="rg-pricing-mlops-sbx-local"
     ;;
   validation)
     RESOURCE_GROUP_NAME="rg-pricing-mlops-validation"
     ;;
   *)
     echo "Unsupported environment: ${ENVIRONMENT}" >&2
-    echo "Allowed environments: staging, sandbox-david, validation" >&2
+    echo "Allowed environments: staging, sandbox-local, validation" >&2
     exit 1
     ;;
 esac

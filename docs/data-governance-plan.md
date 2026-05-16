@@ -7,7 +7,7 @@ Reglas para datos, artefactos y acceso en el MVP Pricing MLOps.
 1. No commitear datos reales ni `raw-unmasked`.
 2. `shared` guarda servicios comunes, no datasets.
 3. `raw-unmasked` solo vive en `data-lab`/`secure-sandbox`.
-4. `sandbox-david`, `staging` y `validation` usan datos masked, curated o sinteticos.
+4. `sandbox-local`, `staging` y `validation` usan datos masked, curated o sinteticos.
 5. El repo `pricing-mlops` consume Storage/ADLS con OIDC/RBAC, no account keys.
 6. El equipo de negocio consume reportes o snapshots aprobados, no datasets raw.
 
@@ -80,5 +80,5 @@ flowchart LR
 - No subir `raw-unmasked` como GitHub artifact.
 - No usar account keys o connection strings.
 - No dar `Owner` o `Contributor` de subscription al repo modelo.
-- No exponer `raw-unmasked` en `sandbox-david`, `staging` o `validation`.
+- No exponer `raw-unmasked` en `sandbox-local`, `staging` o `validation`.
 - No operar sandboxes personales desde GitHub Actions. Para el modelo, usar `staging` con `MLOPS_ENVIRONMENT=staging` y `MLOPS_RUN_OWNER=<user/team>`.

@@ -6,7 +6,7 @@
 scripts/validate-mlops-contracts.py
 az bicep build --file infra/foundation/main.bicep
 az bicep build --file infra/workloads/pricing-mlops/main.bicep
-az bicep build-params --file infra/parameters/sandbox-david.bicepparam
+az bicep build-params --file infra/parameters/sandbox-local.bicepparam
 ```
 
 ## Revisar Azure antes de desplegar
@@ -22,13 +22,13 @@ az account show --query "{name:name, id:id}" --output table
 Para validar Storage y contenedores sin crear Function App:
 
 ```bash
-ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-david
+ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-local
 ```
 
 ## Desplegar minimo sandbox
 
 ```bash
-ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-david
+ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-local
 ```
 
 Este despliegue apunta a pruebas personales local/admin: Storage/ADLS y contenedores. No crea OIDC/RBAC para GitHub Actions por default y no crea AML, ADF, SQL, ACR ni prod.
@@ -38,8 +38,8 @@ Este despliegue apunta a pruebas personales local/admin: Storage/ADLS y contened
 Solo si la subscription tiene cuota App Service:
 
 ```bash
-scripts/deploy.sh sandbox-david
-scripts/publish-hello-function.sh sandbox-david
+scripts/deploy.sh sandbox-local
+scripts/publish-hello-function.sh sandbox-local
 ```
 
 Si Azure devuelve quota 0 para App Service/Functions, mantener `ENABLE_HELLO_FUNCTION=false`.

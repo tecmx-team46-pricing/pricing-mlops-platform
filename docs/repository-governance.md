@@ -28,7 +28,7 @@ Los scripts locales aceptan:
 
 ```text
 staging
-sandbox-david
+sandbox-local
 validation
 data-lab
 ```

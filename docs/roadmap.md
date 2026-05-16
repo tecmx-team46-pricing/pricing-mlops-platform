@@ -22,7 +22,7 @@ Estado: preparado para PoC.
 
 Siguiente paso recomendado.
 
-- Mantener `sandbox-david` para pruebas local/admin con `ENABLE_HELLO_FUNCTION=false` si la quota de Function/App Service bloquea.
+- Mantener `sandbox-local` para pruebas local/admin con `ENABLE_HELLO_FUNCTION=false` si la quota de Function/App Service bloquea.
 - Desplegar `staging` como ambiente compartido para GitHub Actions.
 - Crear identidad OIDC para `pricing-mlops` en `staging`.
 - Dar `Storage Blob Data Contributor` solo al Storage Account de `staging`.

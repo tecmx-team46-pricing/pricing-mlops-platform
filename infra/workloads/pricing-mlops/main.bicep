@@ -10,7 +10,7 @@ param projectName string = 'pricing-mlops'
 @description('Operational environment.')
 @allowed([
   'staging'
-  'sandbox-david'
+  'sandbox-local'
   'validation'
   'data-lab'
 ])
