@@ -16,6 +16,8 @@ param sharedOwner = 'team46'
 param githubRepository = 'tecmx-team46-pricing/pricing-mlops-platform'
 param githubEnvironment = 'staging'
 param enableGithubActionsIdentity = true
+// Existing staging Contributor assignment was created previously with a different role assignment id.
+param enableGithubSubscriptionContributor = false
 param modelGithubRepository = 'tecmx-team46-pricing/pricing-mlops'
 param modelGithubEnvironment = 'staging'
 param enableModelGithubActionsIdentity = true

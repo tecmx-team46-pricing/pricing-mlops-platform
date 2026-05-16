@@ -49,6 +49,8 @@ param sharedOwner string = 'team46'
 #disable-next-line no-unused-params
 param storageContainers array = [
   'input'
+  'raw-masked'
+  'curated'
   'baseline'
   'runs'
   'snapshots'
@@ -69,6 +71,9 @@ param githubEnvironment string = environmentName
 
 @description('Create GitHub Actions OIDC identity and base role assignments for this environment.')
 param enableGithubActionsIdentity bool = !empty(githubRepository)
+
+@description('Create the subscription Contributor role assignment for the platform GitHub Actions identity. Disable when the assignment already exists outside this deployment.')
+param enableGithubSubscriptionContributor bool = enableGithubActionsIdentity
 
 @description('Functional model GitHub repository in org/repo format. Empty value skips model repo federated credential creation.')
 param modelGithubRepository string = ''
@@ -180,7 +185,7 @@ module identities 'modules/identities.bicep' = {
   }
 }
 
-resource githubSubscriptionContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableGithubActionsIdentity) {
+resource githubSubscriptionContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableGithubSubscriptionContributor) {
   name: guid(subscription().id, githubActionsIdentityName, contributorRoleDefinitionId)
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', contributorRoleDefinitionId)

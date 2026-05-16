@@ -84,6 +84,10 @@ param githubEnvironment string = environmentName
 @description('Use the GitHub Actions OIDC identity created by foundation.')
 param enableGithubActionsIdentity bool = !empty(githubRepository)
 
+@description('Accepted for compatibility with shared environment parameter files. Subscription-level Contributor is managed by foundation only.')
+#disable-next-line no-unused-params
+param enableGithubSubscriptionContributor bool = enableGithubActionsIdentity
+
 @description('Functional model GitHub repository in org/repo format. Empty value skips model repo workload role assignments.')
 param modelGithubRepository string = ''
 
