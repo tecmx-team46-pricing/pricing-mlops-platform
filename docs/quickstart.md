@@ -29,17 +29,17 @@ scripts/what-if.sh sandbox-local
 scripts/deploy.sh sandbox-local
 ```
 
-Este despliegue apunta a pruebas personales local/admin: Storage/ADLS y contenedores. No crea OIDC/RBAC para GitHub Actions por default y no crea AML, ADF, SQL ni prod.
+Este despliegue apunta a pruebas personales local/admin: Storage/ADLS y contenedores. No crea OIDC/RBAC para GitHub Actions por default y no crea Azure ML, ADF, SQL ni prod.
 
 ## Ejecutar flujo Azure del modelo
 
-Para `staging`, la plataforma crea ACR Basic y Container Apps Job:
+Para `staging`, la plataforma crea Storage/ADLS y Azure ML Workspace:
 
 ```bash
 scripts/deploy.sh staging
 ```
 
-El codigo runtime se publica desde el repo `pricing-mlops` con GitHub Actions: construye la imagen, la sube a ACR, inicia el Container Apps Job y verifica outputs en Storage.
+El codigo runtime vive en el repo `pricing-mlops`. GitHub Actions somete un Azure ML command job, espera el resultado y verifica outputs en Storage. GitHub no ejecuta el ML.
 
 ## Siguiente repo
 
@@ -51,10 +51,7 @@ AZURE_TENANT_ID=<tenant id>
 AZURE_SUBSCRIPTION_ID=<subscription id>
 AZURE_STORAGE_ACCOUNT=<storageAccountName>
 AZURE_RESOURCE_GROUP=rg-pricing-mlops-staging
-AZURE_CONTAINER_REGISTRY=<containerRegistryName>
-AZURE_CONTAINERAPP_JOB_NAME=job-pricing-mlops-staging
-AZURE_CONTAINERAPP_JOB_IDENTITY=id-pricing-mlops-job-staging-legacy
-AZURE_CONTAINERAPP_JOB_CLIENT_ID=<modelContainerJobIdentityClientId>
+AZURE_ML_WORKSPACE=<azureMlWorkspaceName>
 MLOPS_ENVIRONMENT=staging
 MLOPS_RUN_OWNER=team46
 ```

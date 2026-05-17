@@ -9,7 +9,7 @@ La infraestructura se separa en dos capas:
 | Capa | Ruta | Responsabilidad |
 |---|---|---|
 | Foundation | `infra/foundation/` | Base reusable de plataforma: Resource Groups, Key Vault, Log Analytics, identidades OIDC, RBAC base y budget. |
-| Workload Pricing MLOps | `infra/workloads/pricing-mlops/` | Recursos especificos del flujo Pricing MLOps: Storage, Azure Container Registry y Container Apps Job para ejecutar el flujo minimo. |
+| Workload Pricing MLOps | `infra/workloads/pricing-mlops/` | Recursos especificos del flujo Pricing MLOps: Storage/ADLS, Azure ML Workspace y Azure Functions como orquestador ligero. |
 
 `mlops/` no contiene IaC. Contiene contratos, schemas, thresholds, reglas y documentacion del flujo del modelo.
 
@@ -25,7 +25,7 @@ Esta subscription aprovecha el credito incluido de 200 USD. No se crean subscrip
 |---|---|---|---|
 | `rg-pricing-mlops-platform-shared` | Foundation | Key Vault, Log Analytics, identidades OIDC | Permanente |
 | `rg-pricing-mlops-data-lab` | Data lab | CSVs unmasked/masked, curated inicial y artefactos controlados sin compute MLOps/ADF/AML/SQL | Controlado |
-| `rg-pricing-mlops-staging` | Workload | Storage, ACR y Container Apps Job del MVP | Permanente |
+| `rg-pricing-mlops-staging` | Workload | Storage, Azure ML Workspace y Function orquestadora del MVP | Permanente |
 | `rg-pricing-mlops-sbx-local` | Workload | Sandbox personal temporal de un owner local | Temporal |
 | `rg-pricing-mlops-validation` | Workload | Validacion controlada no productiva | Controlado |
 
@@ -45,14 +45,14 @@ No se despliega prod en el MVP. `shared` no es ambiente operativo de MLOps; es u
 | Servicio | Justificacion |
 |---|---|
 | Storage Account | Evidencia barata y simple para inputs, baselines, runs, snapshots, drift logs, reportes y artefactos |
-| Azure Container Registry Basic | Registro barato para la imagen del repo `pricing-mlops` |
-| Azure Container Apps Job | Compute minimo del flujo: validacion, curated, scoring, drift y escritura de artefactos |
+| Azure Machine Learning Workspace | Compute ML principal para command jobs de validacion, curated/features, scoring minimo, drift/semaforo y escritura de artefactos |
+| Azure Functions | Orquestador ligero para disparar jobs AML y exponer health/trigger controlado; no ejecuta scoring pesado |
 
 `data-lab` usa solo Storage/ADLS minimo para `raw-unmasked`, `raw-masked`, `curated` y artefactos MLOps. No despliega compute del modelo y mantiene `raw-unmasked` separado de `staging`.
 
-El Container Apps Job se crea por IaC en plataforma. El codigo runtime operativo se empaqueta como imagen desde el repo `pricing-mlops`; GitHub Actions solo publica la imagen en ACR, inicia el job y verifica outputs. El prototipo usa ACR Basic y un job manual de baja capacidad (`0.25` CPU, `0.5Gi`) para mantener costo bajo.
+Azure ML se crea por IaC en plataforma. El codigo runtime operativo vive en el repo `pricing-mlops` y se ejecuta como command job. GitHub Actions solo somete el job y espera el estado; no ejecuta el ML en el runner. La Function queda preparada como trigger/orquestador, pero si la subscription sigue con quota App Service/Functions en `0`, GitHub Actions puede someter el job AML temporalmente.
 
-La comparacion Functions vs Container Apps Job se documenta en [`compute-target-comparison.md`](compute-target-comparison.md). Mientras `staging` sea el ambiente estable, los experimentos deben separar evidencia con `compute=functions` o `compute=container-job` en Storage y no crear sandboxes personales.
+Container Apps Job + ACR queda documentado como PoC anterior en [`compute-target-comparison.md`](compute-target-comparison.md). No se borra automaticamente; cualquier limpieza de ACR/Container Apps requiere confirmacion explicita.
 
 ## RBAC
 
@@ -61,8 +61,9 @@ La comparacion Functions vs Container Apps Job se documenta en [`compute-target-
 | Admin cloud | Owner temporal para bootstrap local |
 | Equipo tecnico | Contributor en ambientes de trabajo, Reader en shared |
 | GitHub Actions plataforma | User Assigned Identity con OIDC y permisos suficientes para deployments subscription-scope |
-| GitHub Actions `pricing-mlops` | User Assigned Identity separada con `AcrPush` sobre ACR, `Container Apps Jobs Operator` sobre el job y permiso de verificacion sobre Storage |
-| Container Apps Job | User Assigned Identity con `AcrPull` sobre ACR y `Storage Blob Data Contributor` sobre el Storage Account del workload |
+| GitHub Actions `pricing-mlops` | User Assigned Identity separada con permiso `AzureML Data Scientist` sobre el workspace y permiso de verificacion sobre Storage |
+| Azure ML Workspace/Job | Managed Identity con `Storage Blob Data Contributor` sobre el Storage Account del workload |
+| Azure Function | Managed Identity con permiso minimo para iniciar jobs AML y consultar Storage cuando la quota permita desplegarla |
 | Negocio | Sin acceso directo a Azure en MVP |
 
 El repo modelo no recibe `Owner`, no recibe `Contributor` sobre la subscription y no recibe acceso a `raw-unmasked`.
@@ -70,7 +71,6 @@ El repo modelo no recibe `Owner`, no recibe `Contributor` sobre la subscription 
 ## Anti-patterns evitados
 
 - Kubernetes.
-- Azure ML workspace completo desde el inicio.
 - Azure Data Factory.
 - Azure SQL.
 - Hub-and-Spoke.
@@ -80,4 +80,5 @@ El repo modelo no recibe `Owner`, no recibe `Contributor` sobre la subscription 
 - Ambientes `dev`, `qa`, `uat`, `prod` sin uso real.
 - Subscriptions separadas por ambiente.
 - Retraining automatico.
+- Endpoints online de Azure ML.
 - Dashboards avanzados antes de tener logs confiables.

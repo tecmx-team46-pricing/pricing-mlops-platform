@@ -22,7 +22,9 @@ param modelGithubRepository = 'tecmx-team46-pricing/pricing-mlops'
 param modelGithubEnvironment = 'staging'
 param enableModelGithubActionsIdentity = true
 param enableHelloFunction = false
-param enableModelContainerJob = true
+param enableModelContainerJob = false
+param enableAzureMl = true
+param azureMlContainerRegistryName = ''
 param modelJobCpu = '0.25'
 param modelJobMemory = '0.5Gi'
 

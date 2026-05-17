@@ -9,18 +9,19 @@
 | Log Analytics | `rg-pricing-mlops-platform-shared` | Logs tecnicos y observabilidad base. | Actual |
 | User Assigned Managed Identity + OIDC | `rg-pricing-mlops-platform-shared` | Login federado desde GitHub Actions sin client secrets. | Actual |
 | Storage / ADLS Gen2 | Workload RG o `data-lab` | Inputs masked, curated, baselines, runs, snapshots, drift logs, reports y artifacts. | Actual |
-| Azure Container Registry Basic | Workload RG | Guarda la imagen del flujo `pricing-mlops`. | Actual |
-| Azure Container Apps Job | Workload RG | Ejecuta el flujo MLOps minimo dentro de Azure bajo demanda. | Actual |
-| Azure Functions | Workload RG o compute PoC | Target experimental comparable para ejecutar el mismo core Python. | Bloqueado si App Service quota = 0 |
+| Azure Machine Learning Workspace | `rg-pricing-mlops-staging` | Ejecuta el flujo MLOps minimo como command job administrado. | Ruta activa |
+| Azure Functions | Workload RG | Orquestador ligero para disparar jobs AML y health checks. | Preparado; bloqueado si App Service quota = 0 |
+| Azure Container Registry Basic | Workload RG | Guarda la imagen del PoC anterior de Container Apps. | Legacy/PoC |
+| Azure Container Apps Job | Workload RG | PoC anterior de compute batch. | Legacy/PoC |
 
-El job usa capacidad minima (`0.25` CPU, `0.5Gi`) y se ejecuta solo cuando GitHub Actions lo inicia. ACR queda en SKU Basic. Esta ruta evita la cuota App Service/Functions que bloqueo el intento anterior.
+Azure ML debe usarse sin compute persistente al inicio. El primer intento preferido es command job serverless/administrado, sin GPU, sin endpoints online y sin cluster 24/7. Si Azure ML serverless no esta disponible por provider, quota o capacidad, el bloqueo debe quedar documentado con el error exacto.
 
 ## Pipeline minimo en Azure
 
 El primer pipeline real usa:
 
 ```text
-GitHub Actions + OIDC + ACR + Azure Container Apps Job + Storage/ADLS
+GitHub Actions + OIDC + Azure ML command job + Storage/ADLS
 ```
 
 Flujo:
@@ -28,30 +29,29 @@ Flujo:
 ```text
 pricing-mlops workflow_dispatch
 -> azure/login con OIDC
--> construir y publicar imagen en ACR
--> iniciar Container Apps Job
--> el job ejecuta flow ML
--> el job sube outputs a Storage containers
+-> someter Azure ML command job
+-> Azure ML ejecuta flow ML
+-> Azure ML sube outputs a Storage containers
 -> GitHub Actions verifica outputs
 ```
 
-GitHub Actions no es el compute ML. Solo publica imagen, inicia el job y verifica. No requiere Azure ML, ADF ni SQL.
+GitHub Actions no es el compute ML. Solo somete el job AML, espera estado y verifica outputs. No requiere ADF ni SQL.
 
-La prueba comparativa contra Functions debe conservar el mismo input y el mismo contrato de outputs. Si App Service/Functions sigue sin cuota, el resultado valido de la comparacion es "Functions no viable en esta subscription sin aumento de cuota".
+Azure Functions debe convertirse en el trigger/orquestador cuando la quota lo permita: recibe parametros controlados, inicia el job AML y retorna el id de job. No debe ejecutar scoring pesado.
 
 ## Servicios futuros
 
 | Servicio | Cuando activarlo |
 |---|---|
 | Azure SQL Serverless | Cuando Storage JSON/Parquet no baste para auditoria historica por `run_id`. |
-| Azure Machine Learning | Cuando el scoring requiera jobs administrados, registry o tracking formal de modelos. |
 | Azure Data Factory | Cuando existan fuentes formales, calendario, reintentos y dependencias de ingesta. |
-| Azure ML | Cuando el scoring requiera jobs administrados, registry o tracking formal de modelos. |
+| Azure ML Registry / tracking formal | Cuando haya modelos versionados y promocion de campeon/retador. |
 | Private Endpoints / Hub-Spoke | Cuando haya prod o datos productivos con requisito de red privada. |
 
 ## Fuera de alcance actual
 
 - Produccion real.
-- AML, ADF y SQL.
+- ADF y SQL.
+- Azure ML online endpoints, GPU y clusters persistentes.
 - Private Endpoints, Private DNS y Hub-Spoke.
 - `raw-unmasked` en `sandbox-local`, `staging` o `validation`.

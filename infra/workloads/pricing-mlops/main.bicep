@@ -62,8 +62,14 @@ param storageContainers array = [
 @description('Deploy the hello world Function App for the Pricing MLOps workload.')
 param enableHelloFunction bool = true
 
-@description('Deploy the Azure Container Apps Job that runs the Pricing MLOps model flow inside Azure.')
+@description('Deploy the legacy Azure Container Apps Job PoC. Azure ML is the active compute path.')
 param enableModelContainerJob bool = false
+
+@description('Deploy Azure Machine Learning as the primary ML compute control plane.')
+param enableAzureMl bool = false
+
+@description('Existing Azure ML associated Container Registry name. Set after Azure ML creates one automatically, or leave empty for first create.')
+param azureMlContainerRegistryName string = ''
 
 @description('App Service Plan SKU name for the Function App. Y1 is Azure Functions Consumption.')
 param functionPlanSkuName string = 'Y1'
@@ -131,8 +137,12 @@ var functionAppName = take('func-${projectName}-${replace(environmentName, 'sand
 var managedEnvironmentName = take('cae-${projectName}-${environmentName}', 32)
 var modelJobIdentityName = 'id-${projectName}-job-${environmentName}'
 var modelJobName = take('job-${projectName}-${environmentName}', 32)
+var azureMlWorkspaceName = take('mlw-${projectName}-${environmentName}-${shortSuffix}', 33)
+var azureMlApplicationInsightsName = take('appi-${projectName}-${environmentName}-${shortSuffix}', 255)
+var azureMlJobIdentityName = 'id-${projectName}-aml-${environmentName}'
 var githubActionsIdentityName = 'id-gha-${projectName}-${environmentName}'
 var modelGithubActionsIdentityName = 'id-gha-${projectName}-model-${environmentName}'
+var keyVaultName = take('kv-pmlops-${uniqueString(subscription().id, sharedResourceGroupName)}', 24)
 var dataRoot = 'https://${storageAccountName}.dfs.${environment().suffixes.storage}'
 var containerNames = {
   rawMasked: 'raw-masked'
@@ -224,6 +234,57 @@ module modelContainerJob 'modules/model-container-job.bicep' = if (enableModelCo
   }
 }
 
+module azureMlJobIdentity 'modules/managed-identity.bicep' = if (enableAzureMl) {
+  name: 'pricing-mlops-aml-identity-${uniqueString(workloadResourceGroupName)}'
+  scope: resourceGroup(workloadResourceGroupName)
+  params: {
+    location: location
+    tags: union(workloadTags, {
+      purpose: 'ml-compute'
+      compute_target: 'azure-ml'
+    })
+    identityName: azureMlJobIdentityName
+  }
+}
+
+module azureMlKeyVaultAccess 'modules/key-vault-identity-access.bicep' = if (enableAzureMl) {
+  name: 'pricing-mlops-aml-keyvault-access-${uniqueString(workloadResourceGroupName)}'
+  scope: resourceGroup(sharedResourceGroupName)
+  params: {
+    keyVaultName: keyVaultName
+    principalId: azureMlJobIdentity!.outputs.principalId
+  }
+}
+
+module azureMl 'modules/azure-ml.bicep' = if (enableAzureMl) {
+  name: 'pricing-mlops-azure-ml-${uniqueString(workloadResourceGroupName)}'
+  scope: resourceGroup(workloadResourceGroupName)
+  dependsOn: [
+    azureMlKeyVaultAccess
+  ]
+  params: {
+    location: location
+    tags: union(workloadTags, {
+      purpose: 'ml-compute'
+      compute_target: 'azure-ml'
+    })
+    azureMlWorkspaceName: azureMlWorkspaceName
+    applicationInsightsName: azureMlApplicationInsightsName
+    azureMlJobIdentityId: azureMlJobIdentity!.outputs.identityId
+    azureMlJobIdentityName: azureMlJobIdentity!.outputs.identityName
+    azureMlJobIdentityPrincipalId: azureMlJobIdentity!.outputs.principalId
+    azureMlJobIdentityClientId: azureMlJobIdentity!.outputs.clientId
+    azureMlContainerRegistryName: azureMlContainerRegistryName
+    storageAccountName: storage.outputs.storageAccountName
+    keyVaultResourceGroupName: sharedResourceGroupName
+    keyVaultName: keyVaultName
+    logAnalyticsResourceGroupName: sharedResourceGroupName
+    logAnalyticsWorkspaceName: 'log-${projectName}-shared'
+    modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
+    enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
+  }
+}
+
 output workloadResourceGroupName string = workloadResourceGroupName
 output storageAccountName string = storage.outputs.storageAccountName
 output dataRoot string = dataRoot
@@ -238,3 +299,8 @@ output containerRegistryLoginServer string = enableModelContainerJob ? modelCont
 output modelContainerJobName string = enableModelContainerJob ? modelContainerJob!.outputs.modelJobName : ''
 output modelContainerJobIdentityName string = enableModelContainerJob ? modelContainerJob!.outputs.modelJobIdentityName : ''
 output modelContainerJobIdentityClientId string = enableModelContainerJob ? modelContainerJob!.outputs.modelJobIdentityClientId : ''
+output azureMlWorkspaceName string = enableAzureMl ? azureMl!.outputs.azureMlWorkspaceName : ''
+output azureMlWorkspaceId string = enableAzureMl ? azureMl!.outputs.azureMlWorkspaceId : ''
+output azureMlApplicationInsightsName string = enableAzureMl ? azureMl!.outputs.applicationInsightsName : ''
+output azureMlJobIdentityName string = enableAzureMl ? azureMlJobIdentity!.outputs.identityName : ''
+output azureMlJobIdentityClientId string = enableAzureMl ? azureMlJobIdentity!.outputs.clientId : ''

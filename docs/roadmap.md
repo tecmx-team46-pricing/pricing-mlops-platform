@@ -25,8 +25,8 @@ Siguiente paso recomendado.
 - Mantener `sandbox-local` para pruebas local/admin.
 - Desplegar `staging` como ambiente compartido para GitHub Actions.
 - Crear identidad OIDC para `pricing-mlops` en `staging`.
-- Dar `AcrPush` y `Container Apps Jobs Operator` a la identidad GitHub del modelo.
-- Dar `AcrPull` y `Storage Blob Data Contributor` a la identidad del Container Apps Job.
+- Dar `AzureML Data Scientist` a la identidad GitHub del modelo sobre el workspace AML.
+- Dar `Storage Blob Data Contributor` a la identidad de Azure ML sobre Storage.
 - Ejecutar workflow manual en `pricing-mlops`.
 - Subir `model_run_log`, snapshots, drift logs, reports y artifacts a Storage.
 
@@ -45,7 +45,7 @@ Cuando staging sea estable:
 
 - Ejecutar validaciones controladas antes de promocion formal.
 - Considerar SQL Serverless si Storage ya no basta para auditoria.
-- Considerar Azure ML si el scoring necesita jobs administrados.
+- Considerar registro formal de modelos en Azure ML si aparece flujo campeon/retador.
 
 ## Fase 5: Prod conceptual
 

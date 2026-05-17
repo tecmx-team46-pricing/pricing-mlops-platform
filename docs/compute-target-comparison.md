@@ -2,12 +2,13 @@
 
 ## Objetivo
 
-Comparar dos targets de compute para el flujo minimo de Pricing MLOps sin cambiar el contrato funcional:
+Comparar y cerrar la decision de compute para el flujo minimo de Pricing MLOps sin cambiar el contrato funcional:
 
 | Target | Proposito |
 |---|---|
-| Azure Functions | Probar si el flujo cabe como invocacion serverless HTTP con Managed Identity. |
-| Azure Container Apps Job + ACR | Probar si el flujo es mas reproducible como proceso batch empaquetado en contenedor. |
+| Azure Machine Learning | Ruta activa alineada al diseno tecnico: command jobs administrados para validacion, scoring, drift y evidencia. |
+| Azure Functions | Orquestador ligero para iniciar jobs AML; no ejecuta scoring pesado. |
+| Azure Container Apps Job + ACR | PoC anterior de batch empaquetado en contenedor; queda como referencia/fallback, no como recomendacion activa. |
 
 La comparacion usa `staging` como storage compartido estable y separa evidencia por `compute=<target>` en los paths de Storage. No crea ambientes personales ni usa nombres de usuarios.
 
@@ -28,7 +29,7 @@ Ambos targets deben usar:
 ```text
 MLOPS_ENVIRONMENT=staging
 MLOPS_RUN_OWNER=team46
-MLOPS_COMPUTE_TARGET=functions|container-job
+MLOPS_COMPUTE_TARGET=azure-ml
 AZURE_STORAGE_ACCOUNT=<mlops-storage-account>
 MLOPS_CONTAINER_RAW_MASKED=raw-masked
 MLOPS_CONTAINER_CURATED=curated
@@ -49,7 +50,7 @@ MLOPS_INPUT_BLOB_PATH=samples/sample_pricing_v1.csv
 Ejemplos:
 
 ```text
-runs/environment=staging/compute=functions/owner=team46/run_date=20260517/run_id=<run_id>/model_run_log.json
+runs/environment=staging/compute=azure-ml/owner=team46/run_date=20260517/run_id=<run_id>/model_run_log.json
 runs/environment=staging/compute=container-job/owner=team46/run_date=20260517/run_id=<run_id>/model_run_log.json
 ```
 
@@ -57,13 +58,15 @@ runs/environment=staging/compute=container-job/owner=team46/run_date=20260517/ru
 
 | Target | Recursos | Permisos minimos |
 |---|---|---|
-| Functions | Function App Linux, host storage, Managed Identity, app settings del contrato. | Function identity: `Storage Blob Data Contributor` sobre Storage de staging. GitHub model identity: permiso de publicacion/invocacion controlada si se despliega desde Actions. |
-| Container Apps Job + ACR | ACR Basic, Container Apps Environment, manual job, Managed Identity. | Job identity: `AcrPull` y `Storage Blob Data Contributor`. GitHub model identity: `AcrPush`, `Container Apps Jobs Operator` y lectura de Storage para verificar outputs. |
+| Azure ML | AML Workspace, Application Insights, Storage asociado, Key Vault compartido. Sin cluster persistente al inicio. | GitHub model identity: `AzureML Data Scientist` sobre workspace y lectura de Storage para verificar. AML identity: `Storage Blob Data Contributor` sobre Storage de staging. |
+| Functions | Function App Linux, host storage, Managed Identity, app settings del contrato. | Function identity: permiso minimo para iniciar AML jobs y consultar Storage. |
+| Container Apps Job + ACR | ACR Basic, Container Apps Environment, manual job, Managed Identity. | Legacy: Job identity con `AcrPull` y `Storage Blob Data Contributor`; GitHub model identity con `AcrPush` y `Container Apps Jobs Operator`. |
 
 ## Riesgos
 
 | Target | Riesgo |
 |---|---|
+| Azure ML | Requiere registrar `Microsoft.MachineLearningServices` y puede tener quota/capacidad serverless limitada en la subscription. El primer job puede tardar por creacion de environment. |
 | Functions | La subscription actual puede tener cuota App Service/Functions en `0`. Python dependencies pueden complicar cold start y empaquetado. El host de Functions requiere storage runtime; debe evitarse exponer secretos de aplicacion. |
 | Container Apps Job + ACR | Requiere Docker/imagen y ACR. La primera ejecucion puede tardar mas por pull de imagen. Hay que configurar explicitamente el `AZURE_CLIENT_ID` de la user-assigned identity dentro del contenedor. |
 
@@ -87,14 +90,15 @@ runs/environment=staging/compute=container-job/owner=team46/run_date=20260517/ru
 
 ## Estado actual
 
-Container Apps Job + ACR ya fue desplegado y validado en `staging` con el flujo end-to-end. Functions queda como PoC comparable, pero no debe desplegarse si `what-if` o deploy confirma cuota App Service/Functions insuficiente.
+Container Apps Job + ACR ya fue desplegado y validado en `staging` con el flujo end-to-end. Esa evidencia se conserva como PoC anterior. La direccion activa cambia a Azure ML como compute principal y Azure Functions como orquestador ligero, porque el PDF tecnico ubica AML como motor de entrenamiento, validacion y scoring, y Functions como coordinacion/reglas.
 
-El intento previo de Functions fallo por `SubscriptionIsOverQuotaForSku` con cuota `Dynamic VMs = 0`. Ese bloqueo cuenta como evidencia operacional a favor de Container Apps Job para esta subscription, salvo que Azure apruebe cuota.
+El intento previo de Functions fallo por `SubscriptionIsOverQuotaForSku` con cuota `Dynamic VMs = 0`. Ese bloqueo no cambia la decision de compute ML: si Functions sigue bloqueado, GitHub Actions somete el job AML temporalmente; el ML no corre en GitHub.
 
 ## Resultado PoC actual
 
 | Target | Resultado | Evidencia |
 |---|---|---|
+| Azure ML | Infra desplegada; job bloqueado por Storage key policy | Workspace `mlw-pricing-mlops-staging-<suffix>`, identity `id-pricing-mlops-aml-staging` y job YAML preparados. La primera corrida `upbeat_rice_wnyswb7t1v` fallo inmediatamente; al descargar logs, AML SDK intento usar key auth contra Storage y Azure respondio `KeyBasedAuthenticationNotPermitted`. |
 | Container Apps Job + ACR | Exitoso | Ejecucion `job-pricing-mlops-staging-5mtlm2a`, `run_id=20260517T021325Z-compute-contract`, outputs completos bajo `compute=container-job`. |
 | Azure Functions | Preparado, no desplegado | El wrapper `function_app.py` en `pricing-mlops` usa el mismo core. El `what-if` de Functions no dio un plan confiable por nested deployments short-circuited y el historial de deploy indica bloqueo por cuota App Service/Functions. |
 
@@ -111,22 +115,23 @@ curated/environment=staging/compute=container-job/owner=team46/run_date=20260517
 
 Duracion observada de la ejecucion del job: termino como `Succeeded` en el tercer intento de polling de 10 segundos, aproximadamente 20-30 segundos desde el start hasta estado final.
 
-## Criterio de decision
+## Decision activa
 
-Recomendar Functions solo si:
+Recomendacion: usar Azure ML como compute principal del MVP y Azure Functions como orquestador ligero. Container Apps Job + ACR deja de ser la ruta recomendada activa y se conserva solo como PoC/fallback hasta que el equipo confirme cleanup.
 
-- La cuota App Service/Functions permite deploy.
-- El paquete Python despliega sin workarounds.
-- El tiempo de ejecucion y logs son suficientes.
-- No requiere permisos mas amplios que Container Apps Job.
+Condiciones para sostener Azure ML:
 
-Recomendar Container Apps Job si:
+- El workspace despliega sin crear GPU, endpoints online ni clusters persistentes.
+- El job AML produce los mismos seis outputs bajo `compute=azure-ml`.
+- GitHub Actions solo orquesta: login OIDC, submit, wait y verificacion.
+- La identidad AML usa RBAC sobre Storage; no account keys ni connection strings.
 
-- Sigue funcionando con ACR Basic y bajo consumo.
-- El mismo contenedor puede reproducirse localmente.
-- El job produce outputs en el layout `compute=container-job`.
-- Functions queda bloqueado por cuota o empaquetado.
+Condiciones para habilitar Functions:
 
-## Recomendacion actual
+- La quota App Service/Functions permite deploy.
+- La Function solo valida parametros e inicia jobs AML.
+- No duplica logica de pricing ni scoring.
 
-Recomendacion: mantener Container Apps Job + ACR como target activo de `staging` y usar Functions solo como experimento si se libera cuota App Service/Functions. Con la evidencia actual, Container Apps Job gana por viabilidad inmediata, reproducibilidad con Docker, bajo consumo configurado y outputs auditables con `compute=container-job`.
+Si Azure ML falla por provider/quota/capacidad, documentar el error exacto antes de volver a invertir en Container Apps.
+
+Bloqueo actual de AML: el Storage de `staging` tiene shared key access deshabilitado. Esto es correcto para el flujo de datos del MVP, pero Azure ML todavia intento usar key-based auth para artifacts/log download del workspace asociado. No habilitar account keys sin una decision explicita de seguridad. El siguiente paso tecnico es configurar AML con acceso identity-based para artifacts/datastores, o separar un storage interno de AML con riesgo documentado.

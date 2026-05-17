@@ -38,7 +38,7 @@ scripts/what-if.sh sandbox-local
 
 Los sandboxes personales se operan solo desde local/admin. Los scripts bloquean `sandbox-*` cuando `GITHUB_ACTIONS=true`.
 
-`staging` habilita el Container Apps Job del modelo. `sandbox-local` queda para pruebas local/admin y no se opera desde GitHub Actions.
+`staging` habilita Azure ML como compute del modelo. `sandbox-local` queda para pruebas local/admin y no se opera desde GitHub Actions.
 
 ## Deploy Minimo
 
@@ -53,11 +53,11 @@ Ese despliegue prepara el pipeline Azure minimo:
 - Storage/ADLS y containers del workload.
 - Sin identidades OIDC por default para sandboxes personales.
 
-No crea AML, ADF, SQL ni prod.
+No crea ADF, SQL ni prod.
 
-## Container Apps Model Flow
+## Azure ML Model Flow
 
-El Container Apps Job es el compute minimo del flujo MLOps. La infraestructura se crea desde este repo; el codigo runtime se empaqueta como imagen desde `pricing-mlops` y GitHub Actions la publica en ACR antes de iniciar el job:
+Azure ML es el compute principal del flujo MLOps. La infraestructura se crea desde este repo; el codigo runtime vive en `pricing-mlops` y se ejecuta como command job:
 
 ```bash
 scripts/deploy.sh staging
@@ -66,24 +66,29 @@ scripts/deploy.sh staging
 Recursos esperados en `staging`:
 
 ```text
-acrpmlops...
-cae-pricing-mlops-staging
-job-pricing-mlops-staging
-id-pricing-mlops-job-staging-legacy
+mlw-pricing-mlops-staging-...
+appi-pricing-mlops-staging-...
+stpmlops...
 ```
 
-La identidad de GitHub del repo modelo publica la imagen y arranca el job. La identidad del job lee `raw-masked` y escribe outputs en Storage. No se usan account keys ni connection strings.
+La identidad de GitHub del repo modelo somete el job AML. La identidad administrada del workspace/job lee `raw-masked` y escribe outputs en Storage. No se usan account keys ni connection strings.
 
-## Compute Comparison
+## Azure Functions Orchestrator
 
-Para comparar Functions contra Container Apps Job, usar el mismo input y separar outputs con `MLOPS_COMPUTE_TARGET`:
+Azure Functions queda como orquestador ligero: health check, validacion de parametros e inicio del job AML. La Function no entrena, no hace scoring pesado y no reemplaza Azure ML.
+
+Si App Service/Functions sigue bloqueado por quota, GitHub Actions puede someter AML directamente como alternativa temporal de orquestacion. Ese caso debe documentarse con el error exacto.
+
+## Compute Legacy
+
+Container Apps Job + ACR fue un PoC anterior. Si se consulta evidencia historica, separar outputs con `MLOPS_COMPUTE_TARGET`:
 
 ```text
 raw-masked/samples/sample_pricing_v1.csv
-environment=staging/compute=<functions|container-job>/owner=team46/run_date=<yyyymmdd>/run_id=<run_id>/
+environment=staging/compute=<azure-ml|functions|container-job>/owner=team46/run_date=<yyyymmdd>/run_id=<run_id>/
 ```
 
-No promover un target nuevo a `staging` estable hasta que produzca los mismos artefactos y quede documentado en [`compute-target-comparison.md`](compute-target-comparison.md).
+No borrar ACR/Container Apps sin confirmacion explicita. La ruta recomendada nueva queda documentada en [`compute-target-comparison.md`](compute-target-comparison.md).
 
 ## Data-Lab
 

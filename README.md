@@ -18,7 +18,7 @@ No contiene el codigo operativo del modelo. Ese codigo vive en el repo funcional
 flowchart TD
   GHAPlatform["GitHub Actions<br/>platform workflow"] --> ARM["Azure Resource Manager<br/>Bicep"]
   ARM --> Shared["Shared RG<br/>Key Vault<br/>Log Analytics<br/>OIDC identities"]
-  ARM --> Workload["Workload RG<br/>Storage / ADLS<br/>ACR<br/>Container Apps Job"]
+  ARM --> Workload["Workload RG<br/>Storage / ADLS<br/>Azure ML Workspace<br/>Function orchestrator"]
   ARM --> DataLab["Data-lab RG<br/>Storage / ADLS restringido"]
 
   DataLab --> RawUnmasked["raw-unmasked<br/>solo data-lab"]
@@ -26,11 +26,13 @@ flowchart TD
   Masking --> RawMasked["raw-masked"]
   RawMasked --> Workload
 
-  GHAModel["GitHub Actions<br/>pricing-mlops<br/>orquestacion"] --> ModelIdentity["OIDC model identity<br/>ACR push / job start"]
+  GHAModel["GitHub Actions<br/>pricing-mlops<br/>orquestacion"] --> ModelIdentity["OIDC model identity<br/>Azure ML job submit"]
   ModelIdentity --> Workload
-  Workload --> ModelJob["Container Apps Job<br/>compute ML minimo"]
-  ModelJob --> RawMasked
-  ModelJob --> Runs["curated / runs / snapshots<br/>drift-logs / reports / artifacts"]
+  Function["Azure Function<br/>orquestador ligero"] --> AML["Azure ML Job<br/>compute ML principal"]
+  Workload --> Function
+  Workload --> AML
+  AML --> RawMasked
+  AML --> Runs["curated / runs / snapshots<br/>drift-logs / reports / artifacts"]
 ```
 
 ## Ambientes
@@ -84,7 +86,7 @@ scripts/what-if.sh sandbox-local
 scripts/deploy.sh sandbox-local
 ```
 
-GitHub Actions queda reservado para `staging` y `validation`. En el flujo MLOps real, GitHub Actions construye la imagen del repo `pricing-mlops`, la publica en Azure Container Registry e inicia un Azure Container Apps Job. El compute ML corre dentro de Azure, no en el runner de GitHub.
+GitHub Actions queda reservado para `staging` y `validation`. En el flujo MLOps objetivo, GitHub Actions solo autentica con OIDC y somete un Azure ML command job; Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de evidencia. Azure Functions queda como orquestador ligero para disparar ese job cuando la quota de App Service/Functions lo permita.
 
 ## Documentacion
 
@@ -108,6 +110,6 @@ Los planes largos anteriores fueron retirados de la ruta activa; `docs/archive/R
 ## Fuera De Alcance
 
 - Produccion real.
-- Azure ML, Data Factory, SQL, Hub-Spoke y Private Endpoints.
+- Data Factory, SQL, Hub-Spoke, Private Endpoints y endpoints online de Azure ML.
 - Datos `raw-unmasked` en `sandbox-local`, `staging` o `validation`.
 - Account keys, connection strings o secretos versionados.

@@ -19,7 +19,7 @@ Valores no sensibles por ambiente:
 |---|---|
 | `MLOPS_ENVIRONMENT` | Ambiente logico compartido: `staging` o `validation` para GitHub Actions. Sandboxes personales son local/admin. |
 | `MLOPS_RUN_OWNER` | Owner logico de la corrida, por ejemplo `team46` o usuario. |
-| `MLOPS_COMPUTE_TARGET` | Target que ejecuto el flujo: `functions` o `container-job`. |
+| `MLOPS_COMPUTE_TARGET` | Target que ejecuto el flujo: `azure-ml`; `functions` y `container-job` solo para evidencia PoC/legacy. |
 | `AZURE_CLIENT_ID` | Client ID OIDC del repo `pricing-mlops`; para GitHub Actions debe venir del ambiente compartido, normalmente `staging`. |
 | `AZURE_TENANT_ID` | Tenant Azure. |
 | `AZURE_SUBSCRIPTION_ID` | Subscription Azure. |
@@ -88,12 +88,14 @@ Meta operativa actual:
 ```text
 pricing-mlops workflow_dispatch en staging/validation
 -> azure/login con OIDC
--> construir/publicar imagen o invocar compute target
--> ejecutar flow ML dentro de Azure
--> subir outputs a Storage/ADLS con compute=<target>
+-> someter Azure ML command job
+-> ejecutar flow ML dentro de Azure ML
+-> subir outputs a Storage/ADLS con compute=azure-ml
 ```
 
 El input compartido minimo es `raw-masked/samples/sample_pricing_v1.csv`. GitHub Actions orquesta; no debe ser el compute principal del scoring/drift.
+
+Azure Functions queda como orquestador ligero para iniciar jobs AML cuando la quota de App Service/Functions lo permita. Si la Function no despliega, GitHub Actions puede someter AML directamente como orquestador temporal, sin ejecutar el ML en el runner.
 
 ## Limites
 
