@@ -58,7 +58,7 @@ runs/environment=staging/compute=container-job/owner=team46/run_date=20260517/ru
 
 | Target | Recursos | Permisos minimos |
 |---|---|---|
-| Azure ML | AML Workspace, Application Insights, Storage asociado, Key Vault compartido. Sin cluster persistente al inicio. | GitHub model identity: `AzureML Data Scientist` sobre workspace y lectura de Storage para verificar. AML identity: `Storage Blob Data Contributor` sobre Storage de staging. |
+| Azure ML | AML Workspace, Application Insights, Storage asociado, Key Vault compartido y ACR asociado por AML para imagenes de runtime. Sin cluster persistente al inicio. | GitHub model identity: `AzureML Data Scientist` sobre workspace y lectura/escritura de Storage via `user_identity`. Workspace/job identities: `AcrPull` sobre el ACR asociado y Storage RBAC para datastores/artifacts. |
 | Functions | Function App Linux, host storage, Managed Identity, app settings del contrato. | Function identity: permiso minimo para iniciar AML jobs y consultar Storage. |
 | Container Apps Job + ACR | ACR Basic, Container Apps Environment, manual job, Managed Identity. | Legacy: Job identity con `AcrPull` y `Storage Blob Data Contributor`; GitHub model identity con `AcrPush` y `Container Apps Jobs Operator`. |
 
@@ -98,7 +98,7 @@ El intento previo de Functions fallo por `SubscriptionIsOverQuotaForSku` con cuo
 
 | Target | Resultado | Evidencia |
 |---|---|---|
-| Azure ML | Infra desplegada; job bloqueado por Storage key policy | Workspace `mlw-pricing-mlops-staging-<suffix>`, identity `id-pricing-mlops-aml-staging` y job YAML preparados. La primera corrida `upbeat_rice_wnyswb7t1v` fallo inmediatamente; al descargar logs, AML SDK intento usar key auth contra Storage y Azure respondio `KeyBasedAuthenticationNotPermitted`. |
+| Azure ML | Exitoso | Workspace `mlw-pricing-mlops-staging-<suffix>`, job `lime_papaya_w5w3y78kd3`, `run_id=20260517T180407Z-azure-ml`, outputs completos bajo `compute=azure-ml`. |
 | Container Apps Job + ACR | Exitoso | Ejecucion `job-pricing-mlops-staging-5mtlm2a`, `run_id=20260517T021325Z-compute-contract`, outputs completos bajo `compute=container-job`. |
 | Azure Functions | Preparado, no desplegado | El wrapper `function_app.py` en `pricing-mlops` usa el mismo core. El `what-if` de Functions no dio un plan confiable por nested deployments short-circuited y el historial de deploy indica bloqueo por cuota App Service/Functions. |
 
@@ -113,6 +113,17 @@ artifacts/environment=staging/compute=container-job/owner=team46/run_date=202605
 curated/environment=staging/compute=container-job/owner=team46/run_date=20260517/run_id=20260517T021325Z-compute-contract/curated_pricing.csv
 ```
 
+Outputs verificados para Azure ML:
+
+```text
+runs/environment=staging/compute=azure-ml/owner=team46/run_date=20260517/run_id=20260517T180407Z-azure-ml/model_run_log.json
+snapshots/environment=staging/compute=azure-ml/owner=team46/run_date=20260517/run_id=20260517T180407Z-azure-ml/model_output_snapshot.csv
+drift-logs/environment=staging/compute=azure-ml/owner=team46/run_date=20260517/run_id=20260517T180407Z-azure-ml/model_drift_log.json
+reports/environment=staging/compute=azure-ml/owner=team46/run_date=20260517/run_id=20260517T180407Z-azure-ml/report.md
+artifacts/environment=staging/compute=azure-ml/owner=team46/run_date=20260517/run_id=20260517T180407Z-azure-ml/curated_pricing.csv
+curated/environment=staging/compute=azure-ml/owner=team46/run_date=20260517/run_id=20260517T180407Z-azure-ml/curated_pricing.csv
+```
+
 Duracion observada de la ejecucion del job: termino como `Succeeded` en el tercer intento de polling de 10 segundos, aproximadamente 20-30 segundos desde el start hasta estado final.
 
 ## Decision activa
@@ -124,7 +135,8 @@ Condiciones para sostener Azure ML:
 - El workspace despliega sin crear GPU, endpoints online ni clusters persistentes.
 - El job AML produce los mismos seis outputs bajo `compute=azure-ml`.
 - GitHub Actions solo orquesta: login OIDC, submit, wait y verificacion.
-- La identidad AML usa RBAC sobre Storage; no account keys ni connection strings.
+- El command job usa `identity: user_identity`; en GitHub esa identidad es la UAMI OIDC del repo modelo. No usa account keys ni connection strings para datos MLOps.
+- El workspace AML usa `systemDatastoresAuthMode=identity` y las identidades de AML tienen `AcrPull` sobre el ACR asociado para preparar imagenes de runtime.
 
 Condiciones para habilitar Functions:
 
@@ -134,4 +146,4 @@ Condiciones para habilitar Functions:
 
 Si Azure ML falla por provider/quota/capacidad, documentar el error exacto antes de volver a invertir en Container Apps.
 
-Bloqueo actual de AML: el Storage de `staging` tiene shared key access deshabilitado. Esto es correcto para el flujo de datos del MVP, pero Azure ML todavia intento usar key-based auth para artifacts/log download del workspace asociado. No habilitar account keys sin una decision explicita de seguridad. El siguiente paso tecnico es configurar AML con acceso identity-based para artifacts/datastores, o separar un storage interno de AML con riesgo documentado.
+El bloqueo `KeyBasedAuthenticationNotPermitted` se resolvio manteniendo shared keys deshabilitadas en el Storage MLOps principal y configurando el workspace AML con `systemDatastoresAuthMode=identity`. El siguiente bloqueo fue autenticacion contra el ACR asociado; se resolvio con `AcrPull` minimo para las identidades de AML. Para el acceso de datos dentro de serverless AML, la ruta activa usa `user_identity` y `AzureMLOnBehalfOfCredential`; en GitHub esa identidad corresponde a la UAMI OIDC del repo modelo.

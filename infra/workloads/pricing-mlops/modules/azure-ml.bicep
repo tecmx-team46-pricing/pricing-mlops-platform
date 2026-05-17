@@ -49,6 +49,7 @@ param enableModelGithubActionsIdentity bool = false
 var azureMlDataScientistRoleDefinitionId = 'f6c7c914-8db3-469d-8ca1-694a8f32e121'
 var storageBlobDataContributorRoleDefinitionId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 var managedIdentityOperatorRoleDefinitionId = 'f1a07417-d97a-45cb-824c-7a7467783830'
+var acrPullRoleDefinitionId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 
 resource workloadStorage 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
   name: storageAccountName
@@ -102,6 +103,7 @@ resource workspace 'Microsoft.MachineLearningServices/workspaces@2024-04-01' = {
     keyVault: keyVault.id
     applicationInsights: appInsights.id
     primaryUserAssignedIdentity: azureMlJobIdentityId
+    systemDatastoresAuthMode: 'identity'
     publicNetworkAccess: 'Enabled'
   }, !empty(azureMlContainerRegistryName) ? {
     containerRegistry: azureMlContainerRegistry.id
@@ -113,6 +115,26 @@ resource azureMlJobStorageContributor 'Microsoft.Authorization/roleAssignments@2
   scope: workloadStorage
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
+    principalId: azureMlJobIdentityPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource azureMlWorkspaceAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(azureMlContainerRegistryName)) {
+  name: guid(azureMlContainerRegistry.id, workspace.id, acrPullRoleDefinitionId)
+  scope: azureMlContainerRegistry
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleDefinitionId)
+    principalId: workspace.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource azureMlJobAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(azureMlContainerRegistryName)) {
+  name: guid(azureMlContainerRegistry.id, azureMlJobIdentityId, acrPullRoleDefinitionId)
+  scope: azureMlContainerRegistry
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleDefinitionId)
     principalId: azureMlJobIdentityPrincipalId
     principalType: 'ServicePrincipal'
   }

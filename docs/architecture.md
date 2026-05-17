@@ -62,7 +62,7 @@ Container Apps Job + ACR queda documentado como PoC anterior en [`compute-target
 | Equipo tecnico | Contributor en ambientes de trabajo, Reader en shared |
 | GitHub Actions plataforma | User Assigned Identity con OIDC y permisos suficientes para deployments subscription-scope |
 | GitHub Actions `pricing-mlops` | User Assigned Identity separada con permiso `AzureML Data Scientist` sobre el workspace y permiso de verificacion sobre Storage |
-| Azure ML Workspace/Job | Managed Identity con `Storage Blob Data Contributor` sobre el Storage Account del workload |
+| Azure ML Workspace/Job | Workspace con `systemDatastoresAuthMode=identity`; identidades AML con `AcrPull` sobre el ACR asociado para runtime |
 | Azure Function | Managed Identity con permiso minimo para iniciar jobs AML y consultar Storage cuando la quota permita desplegarla |
 | Negocio | Sin acceso directo a Azure en MVP |
 

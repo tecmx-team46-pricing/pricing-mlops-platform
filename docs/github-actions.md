@@ -55,7 +55,7 @@ MLOPS_CONTAINER_REPORTS=reports
 MLOPS_CONTAINER_ARTIFACTS=artifacts
 ```
 
-La identidad modelo necesita `AzureML Data Scientist` sobre el workspace AML y permiso de verificacion sobre Storage. El compute real corre con identidad administrada de Azure ML, que recibe `Storage Blob Data Contributor` sobre el Storage Account del workload compartido. El repo modelo no debe recibir acceso a `raw-unmasked`, `Owner` ni `Contributor` de subscription.
+La identidad modelo necesita `AzureML Data Scientist` sobre el workspace AML y permiso de verificacion/escritura sobre Storage. El command job serverless usa `identity: user_identity`, por lo que en GitHub el acceso a datos ocurre con la UAMI OIDC del repo modelo mediante Entra ID. El workspace AML mantiene `systemDatastoresAuthMode=identity`; las identidades de AML reciben `AcrPull` sobre el ACR asociado para preparar el runtime. El repo modelo no debe recibir acceso a `raw-unmasked`, `Owner` ni `Contributor` de subscription.
 
 `sandbox-local` puede tener identidades OIDC heredadas de pruebas previas. Quedan consideradas legacy/deprecated para GitHub Actions y no deben usarse como patron de equipo.
 
