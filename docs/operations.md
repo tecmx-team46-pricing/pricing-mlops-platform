@@ -76,6 +76,21 @@ https://<function-app-name>.azurewebsites.net/api/model-flow
 
 Si Azure devuelve `SubscriptionIsOverQuotaForSku`, el bloqueo esta en la subscription. Solicitar quota `Dynamic VMs >= 1` para Consumption `Y1` o cambiar parametros `functionPlanSku*` de forma explicita.
 
+### Solicitar quota para Azure Functions
+
+Para este PoC la solicitud minima es:
+
+```text
+Provider: Microsoft.Web
+Service family: App Service / Azure Functions
+Region: eastus2
+Quota: Dynamic VMs
+Requested limit: 1
+Justification: Low-cost Azure Functions Consumption plan for Pricing MLOps staging. GitHub Actions only orchestrates; Azure Function runs the minimal masked-data model flow and writes outputs to Storage.
+```
+
+Si Azure no ofrece `Dynamic VMs` para la region, solicitar el equivalente de App Service/Functions que permita crear un plan Consumption `Y1`. No pedir GPU, Premium, Dedicated grande ni recursos productivos para este MVP.
+
 ## Data-Lab
 
 ```bash

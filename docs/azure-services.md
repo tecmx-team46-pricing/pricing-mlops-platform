@@ -11,6 +11,8 @@
 | Storage / ADLS Gen2 | Workload RG o `data-lab` | Inputs masked, curated, baselines, runs, snapshots, drift logs, reports y artifacts. | Actual |
 | Azure Function App | Workload RG | `/api/health` y `/api/model-flow`; ejecuta el flujo MLOps minimo dentro de Azure. | Condicionado a quota |
 
+La Function App usa Azure Functions Consumption `Y1/Dynamic` como opcion de bajo costo. En esta subscription el despliegue queda bloqueado si `Dynamic VMs` o la quota equivalente de App Service/Functions esta en `0`; pedir limite minimo `1` para `eastus2`.
+
 ## Pipeline minimo en Azure
 
 El primer pipeline real usa:
