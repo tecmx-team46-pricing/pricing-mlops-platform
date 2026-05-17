@@ -9,7 +9,7 @@ La infraestructura se separa en dos capas:
 | Capa | Ruta | Responsabilidad |
 |---|---|---|
 | Foundation | `infra/foundation/` | Base reusable de plataforma: Resource Groups, Key Vault, Log Analytics, identidades OIDC, RBAC base y budget. |
-| Workload Pricing MLOps | `infra/workloads/pricing-mlops/` | Recursos especificos del flujo Pricing MLOps: Storage y Function App hello world. |
+| Workload Pricing MLOps | `infra/workloads/pricing-mlops/` | Recursos especificos del flujo Pricing MLOps: Storage y Azure Function para health/model-flow. |
 
 `mlops/` no contiene IaC. Contiene contratos, schemas, thresholds, reglas y documentacion del flujo del modelo.
 
@@ -45,11 +45,11 @@ No se despliega prod en el MVP. `shared` no es ambiente operativo de MLOps; es u
 | Servicio | Justificacion |
 |---|---|
 | Storage Account | Evidencia barata y simple para inputs, baselines, runs, snapshots, drift logs, reportes y artefactos |
-| Function App | Prototipo hello world y punto futuro para health/drift endpoints |
+| Function App | Compute minimo del flujo: `/api/health` y `/api/model-flow` para validacion, curated, scoring y drift |
 
 `data-lab` usa solo Storage/ADLS minimo para `raw-unmasked`, `raw-masked`, `curated` y artefactos MLOps. No despliega Function App y mantiene `raw-unmasked` separado de `staging`.
 
-La Function App se crea por IaC, pero el codigo runtime se publica desde `src/functions/pricing-mlops-hello/` con `scripts/publish-hello-function.sh`. El prototipo usa App Service Plan `B1` por defecto porque algunas subscriptions academicas bloquean Consumption y Free; si la subscription no tiene cuota `Basic VMs >= 1`, primero se debe solicitar cuota o cambiar los parametros `functionPlanSku*`.
+La Function App se crea por IaC en plataforma. El codigo runtime operativo se publica desde el repo `pricing-mlops`; GitHub Actions solo despliega el paquete e invoca `/api/model-flow`. El prototipo usa Azure Functions Consumption `Y1/Dynamic` por default para mantener costo bajo. Si la subscription tiene quota `Dynamic VMs = 0`, se debe solicitar quota o cambiar los parametros `functionPlanSku*` de forma explicita.
 
 ## RBAC
 
@@ -58,7 +58,8 @@ La Function App se crea por IaC, pero el codigo runtime se publica desde `src/fu
 | Admin cloud | Owner temporal para bootstrap local |
 | Equipo tecnico | Contributor en ambientes de trabajo, Reader en shared |
 | GitHub Actions plataforma | User Assigned Identity con OIDC y permisos suficientes para deployments subscription-scope |
-| GitHub Actions `pricing-mlops` | User Assigned Identity separada con `Storage Blob Data Contributor` solo sobre el Storage Account del workload |
+| GitHub Actions `pricing-mlops` | User Assigned Identity separada con permiso para publicar Function App e invocar/verificar el flujo |
+| Azure Function App | System assigned identity con `Storage Blob Data Contributor` sobre el Storage Account del workload |
 | Negocio | Sin acceso directo a Azure en MVP |
 
 El repo modelo no recibe `Owner`, no recibe `Contributor` sobre la subscription y no recibe acceso a `raw-unmasked`.

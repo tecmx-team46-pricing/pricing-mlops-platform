@@ -62,14 +62,14 @@ param storageContainers array = [
 @description('Deploy the hello world Function App for the Pricing MLOps workload.')
 param enableHelloFunction bool = true
 
-@description('App Service Plan SKU name for the hello Function App. Default is Basic B1 because Consumption and Free quotas may be unavailable in student subscriptions.')
-param functionPlanSkuName string = 'B1'
+@description('App Service Plan SKU name for the Function App. Y1 is Azure Functions Consumption.')
+param functionPlanSkuName string = 'Y1'
 
 @description('App Service Plan SKU tier for the hello Function App.')
-param functionPlanSkuTier string = 'Basic'
+param functionPlanSkuTier string = 'Dynamic'
 
 @description('App Service Plan SKU size for the hello Function App.')
-param functionPlanSkuSize string = 'B1'
+param functionPlanSkuSize string = 'Y1'
 
 @description('App Service Plan instance count for the hello Function App.')
 param functionPlanCapacity int = 1
@@ -181,6 +181,9 @@ module helloFunction 'modules/hello-function.bicep' = if (enableHelloFunction) {
     functionAppName: functionAppName
     hostingPlanName: hostingPlanName
     functionHostStorageAccountName: functionHostStorageAccountName
+    workloadStorageAccountName: storage.outputs.storageAccountName
+    modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
+    enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
     functionPlanSkuName: functionPlanSkuName
     functionPlanSkuTier: functionPlanSkuTier
     functionPlanSkuSize: functionPlanSkuSize

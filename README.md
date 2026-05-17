@@ -18,7 +18,7 @@ No contiene el codigo operativo del modelo. Ese codigo vive en el repo funcional
 flowchart TD
   GHAPlatform["GitHub Actions<br/>platform workflow"] --> ARM["Azure Resource Manager<br/>Bicep"]
   ARM --> Shared["Shared RG<br/>Key Vault<br/>Log Analytics<br/>OIDC identities"]
-  ARM --> Workload["Workload RG<br/>Storage / ADLS<br/>Function health opcional"]
+  ARM --> Workload["Workload RG<br/>Storage / ADLS<br/>Azure Function"]
   ARM --> DataLab["Data-lab RG<br/>Storage / ADLS restringido"]
 
   DataLab --> RawUnmasked["raw-unmasked<br/>solo data-lab"]
@@ -26,9 +26,11 @@ flowchart TD
   Masking --> RawMasked["raw-masked"]
   RawMasked --> Workload
 
-  GHAModel["GitHub Actions<br/>pricing-mlops"] --> ModelIdentity["OIDC model identity<br/>Storage Blob Data Contributor"]
+  GHAModel["GitHub Actions<br/>pricing-mlops<br/>orquestacion"] --> ModelIdentity["OIDC model identity<br/>Function publish/invoke"]
   ModelIdentity --> Workload
-  Workload --> Runs["runs / snapshots<br/>drift-logs / reports<br/>artifacts"]
+  Workload --> AzureFunction["Azure Function<br/>compute ML minimo"]
+  AzureFunction --> RawMasked
+  AzureFunction --> Runs["curated / runs / snapshots<br/>drift-logs / reports / artifacts"]
 ```
 
 ## Ambientes
@@ -56,7 +58,6 @@ mlops/
   docs/
   schemas/
 
-src/functions/pricing-mlops-hello/
 scripts/
 docs/
 ```
@@ -83,7 +84,7 @@ ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-local
 ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-local
 ```
 
-GitHub Actions queda reservado para `staging` y `validation`. La Function App es opcional en el PoC porque la subscription puede tener cuota App Service en cero.
+GitHub Actions queda reservado para `staging` y `validation`. En el flujo MLOps real, GitHub Actions publica e invoca Azure Function; el compute ML corre dentro de Azure. La Function App depende de cuota App Service disponible.
 
 ## Documentacion
 

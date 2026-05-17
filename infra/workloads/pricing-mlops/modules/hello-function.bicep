@@ -20,17 +20,33 @@ param hostingPlanName string
 @maxLength(24)
 param functionHostStorageAccountName string
 
+@description('Workload Storage Account used by the Pricing MLOps flow.')
+param workloadStorageAccountName string
+
+@description('Principal id of the functional model repo GitHub Actions managed identity.')
+param modelGithubActionsPrincipalId string = ''
+
+@description('Create publish permissions for the model repo GitHub Actions identity.')
+param enableModelGithubActionsIdentity bool = false
+
 @description('App Service Plan SKU name.')
-param functionPlanSkuName string = 'B1'
+param functionPlanSkuName string = 'Y1'
 
 @description('App Service Plan SKU tier.')
-param functionPlanSkuTier string = 'Basic'
+param functionPlanSkuTier string = 'Dynamic'
 
 @description('App Service Plan SKU size.')
-param functionPlanSkuSize string = 'B1'
+param functionPlanSkuSize string = 'Y1'
 
 @description('App Service Plan instance count.')
 param functionPlanCapacity int = 1
+
+var storageBlobDataContributorRoleDefinitionId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
+var websiteContributorRoleDefinitionId = 'de139f84-1756-47ae-9be6-808fbbe84772'
+
+resource workloadStorage 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
+  name: workloadStorageAccountName
+}
 
 resource functionStorage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: functionHostStorageAccountName
@@ -53,12 +69,16 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: hostingPlanName
   location: location
   tags: tags
-  kind: 'app'
-  sku: {
+  kind: 'linux'
+  sku: union({
     name: functionPlanSkuName
     tier: functionPlanSkuTier
     size: functionPlanSkuSize
+  }, functionPlanSkuTier == 'Dynamic' ? {} : {
     capacity: functionPlanCapacity
+  })
+  properties: {
+    reserved: true
   }
 }
 
@@ -66,13 +86,17 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
   name: functionAppName
   location: location
   tags: tags
-  kind: 'functionapp'
+  kind: 'functionapp,linux'
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     serverFarmId: hostingPlan.id
     httpsOnly: true
     siteConfig: {
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
+      linuxFxVersion: 'Python|3.11'
       appSettings: [
         {
           name: 'AzureWebJobsStorage'
@@ -84,11 +108,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'node'
-        }
-        {
-          name: 'WEBSITE_NODE_DEFAULT_VERSION'
-          value: '~20'
+          value: 'python'
         }
         {
           name: 'PRICING_MLOPS_ENVIRONMENT'
@@ -98,8 +118,60 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           name: 'PRICING_MLOPS_HELLO_MESSAGE'
           value: 'hello world'
         }
+        {
+          name: 'AZURE_STORAGE_ACCOUNT'
+          value: workloadStorageAccountName
+        }
+        {
+          name: 'MLOPS_CONTAINER_RAW_MASKED'
+          value: 'raw-masked'
+        }
+        {
+          name: 'MLOPS_CONTAINER_CURATED'
+          value: 'curated'
+        }
+        {
+          name: 'MLOPS_CONTAINER_RUNS'
+          value: 'runs'
+        }
+        {
+          name: 'MLOPS_CONTAINER_SNAPSHOTS'
+          value: 'snapshots'
+        }
+        {
+          name: 'MLOPS_CONTAINER_DRIFT_LOGS'
+          value: 'drift-logs'
+        }
+        {
+          name: 'MLOPS_CONTAINER_REPORTS'
+          value: 'reports'
+        }
+        {
+          name: 'MLOPS_CONTAINER_ARTIFACTS'
+          value: 'artifacts'
+        }
       ]
     }
+  }
+}
+
+resource functionStorageContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: workloadStorage
+  name: guid(workloadStorage.id, functionApp.name, storageBlobDataContributorRoleDefinitionId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource modelGithubFunctionPublisher 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableModelGithubActionsIdentity && !empty(modelGithubActionsPrincipalId)) {
+  scope: functionApp
+  name: guid(functionApp.id, modelGithubActionsPrincipalId, websiteContributorRoleDefinitionId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', websiteContributorRoleDefinitionId)
+    principalId: modelGithubActionsPrincipalId
+    principalType: 'ServicePrincipal'
   }
 }
 

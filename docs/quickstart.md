@@ -33,16 +33,15 @@ ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-local
 
 Este despliegue apunta a pruebas personales local/admin: Storage/ADLS y contenedores. No crea OIDC/RBAC para GitHub Actions por default y no crea AML, ADF, SQL, ACR ni prod.
 
-## Publicar Function hello world
+## Publicar Azure Function del modelo
 
 Solo si la subscription tiene cuota App Service:
 
 ```bash
 scripts/deploy.sh sandbox-local
-scripts/publish-hello-function.sh sandbox-local
 ```
 
-Si Azure devuelve quota 0 para App Service/Functions, mantener `ENABLE_HELLO_FUNCTION=false`.
+El codigo runtime se publica desde el repo `pricing-mlops` con GitHub Actions. Si Azure devuelve quota 0 para App Service/Functions, solicitar quota `Dynamic VMs >= 1` o mantener `ENABLE_HELLO_FUNCTION=false` mientras se valida Storage.
 
 ## Siguiente repo
 

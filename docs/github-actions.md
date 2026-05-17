@@ -5,7 +5,7 @@
 - Pull requests validan sin Azure login.
 - Deploys solo ocurren por `workflow_dispatch`.
 - El repo plataforma despliega infraestructura.
-- El repo `pricing-mlops` ejecuta el flujo ML y sube artefactos.
+- El repo `pricing-mlops` publica e invoca Azure Function; el compute ML corre en Azure.
 - No usar account keys ni connection strings.
 - No dar `Owner` ni `Contributor` de subscription al repo modelo.
 
@@ -41,6 +41,8 @@ AZURE_TENANT_ID=<tenant id>
 AZURE_SUBSCRIPTION_ID=<subscription id>
 AZURE_STORAGE_ACCOUNT=<storageAccountName>
 AZURE_STORAGE_DFS_ENDPOINT=<storageDfsEndpoint>
+AZURE_RESOURCE_GROUP=rg-pricing-mlops-staging
+FUNCTION_APP_NAME=<functionAppName>
 MLOPS_ENVIRONMENT=staging
 MLOPS_RUN_OWNER=team46
 MLOPS_CONTAINER_RAW_MASKED=raw-masked
@@ -53,7 +55,7 @@ MLOPS_CONTAINER_REPORTS=reports
 MLOPS_CONTAINER_ARTIFACTS=artifacts
 ```
 
-La identidad modelo solo debe tener `Storage Blob Data Contributor` sobre el Storage Account del workload compartido. No debe recibir acceso a `raw-unmasked`, `Owner` ni `Contributor` de subscription.
+La identidad modelo necesita permiso para publicar la Function App, obtener la function key e invocar/verificar la corrida. El compute real corre con la managed identity de la Function App, que recibe `Storage Blob Data Contributor` sobre el Storage Account del workload compartido. El repo modelo no debe recibir acceso a `raw-unmasked`, `Owner` ni `Contributor` de subscription.
 
 `sandbox-local` puede tener identidades OIDC heredadas de pruebas previas. Quedan consideradas legacy/deprecated para GitHub Actions y no deben usarse como patron de equipo.
 
@@ -67,6 +69,8 @@ Despues del deploy, la plataforma debe publicar valores no sensibles:
   "storageAccount": "stpmlops...",
   "storageDfsEndpoint": "https://stpmlops....dfs.core.windows.net",
   "modelGithubActionsClientId": "<client-id>",
+  "functionAppName": "func-pricing-mlops-staging-...",
+  "functionHealthEndpoint": "https://func-pricing-mlops-staging-....azurewebsites.net/api/health",
   "containers": {
     "input": "input",
     "rawMasked": "raw-masked",

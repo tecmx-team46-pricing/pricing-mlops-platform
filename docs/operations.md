@@ -59,23 +59,22 @@ Ese despliegue prepara el pipeline Azure minimo:
 
 No crea AML, ADF, SQL, ACR ni prod.
 
-## Function Hello World
+## Azure Function Model Flow
 
-La Function App es opcional. Solo intentar si hay cuota App Service disponible:
+La Function App es el compute minimo del flujo MLOps. La infraestructura se crea desde este repo; el codigo runtime se publica desde `pricing-mlops` por GitHub Actions. Solo intentar si hay cuota App Service/Functions disponible:
 
 ```bash
 scripts/deploy.sh sandbox-local
-npm test --prefix src/functions/pricing-mlops-hello
-scripts/publish-hello-function.sh sandbox-local
 ```
 
 Endpoint esperado:
 
 ```text
 https://<function-app-name>.azurewebsites.net/api/health
+https://<function-app-name>.azurewebsites.net/api/model-flow
 ```
 
-Si Azure devuelve `SubscriptionIsOverQuotaForSku`, volver a `ENABLE_HELLO_FUNCTION=false`.
+Si Azure devuelve `SubscriptionIsOverQuotaForSku`, el bloqueo esta en la subscription. Solicitar quota `Dynamic VMs >= 1` para Consumption `Y1` o cambiar parametros `functionPlanSku*` de forma explicita.
 
 ## Data-Lab
 

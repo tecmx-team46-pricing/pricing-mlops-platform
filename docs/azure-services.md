@@ -9,14 +9,14 @@
 | Log Analytics | `rg-pricing-mlops-platform-shared` | Logs tecnicos y observabilidad base. | Actual |
 | User Assigned Managed Identity + OIDC | `rg-pricing-mlops-platform-shared` | Login federado desde GitHub Actions sin client secrets. | Actual |
 | Storage / ADLS Gen2 | Workload RG o `data-lab` | Inputs masked, curated, baselines, runs, snapshots, drift logs, reports y artifacts. | Actual |
-| Azure Function App | Workload RG | `/api/health` y posible drift endpoint futuro. | Condicionado a quota |
+| Azure Function App | Workload RG | `/api/health` y `/api/model-flow`; ejecuta el flujo MLOps minimo dentro de Azure. | Condicionado a quota |
 
 ## Pipeline minimo en Azure
 
-El primer pipeline real debe usar solo:
+El primer pipeline real usa:
 
 ```text
-GitHub Actions + OIDC + Storage/ADLS
+GitHub Actions + OIDC + Azure Function App + Storage/ADLS
 ```
 
 Flujo:
@@ -24,11 +24,14 @@ Flujo:
 ```text
 pricing-mlops workflow_dispatch
 -> azure/login con OIDC
--> ejecutar flow ML
--> subir outputs a Storage containers
+-> publicar paquete de Azure Function
+-> invocar /api/model-flow
+-> Azure Function ejecuta flow ML
+-> Azure Function sube outputs a Storage containers
+-> GitHub Actions verifica outputs
 ```
 
-No requiere Azure ML, ADF, SQL ni Function App.
+GitHub Actions no es el compute ML. Solo publica, invoca y verifica. No requiere Azure ML, ADF, SQL ni ACR.
 
 ## Servicios futuros
 
