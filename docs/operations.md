@@ -86,11 +86,34 @@ POST /api/model-flow
 
 `POST /api/model-flow` recibe `environment`, `run_owner` e `input_blob_path`, genera o acepta un `run_id`, somete el Azure ML command job y devuelve el `azure_ml_job_name` junto con el prefijo esperado de outputs. Si App Service/Functions sigue bloqueado por quota, GitHub Actions puede someter AML directamente como alternativa temporal de orquestacion. Ese caso debe documentarse con el error exacto.
 
-Estado observado en `staging`: el deploy de la Function Consumption fallo con `SubscriptionIsOverQuotaForSku`. La subscription tiene `Current Limit (Total VMs): 0`, `Current Usage: 0` y requiere `Amount required: 1`. Hasta pedir cuota o cambiar a un plan/region viable, `infra/parameters/staging.bicepparam` mantiene `enableHelloFunction=false` para no romper despliegues normales. Se puede reintentar localmente con:
+Estado observado en `staging`: el deploy de la Function Consumption fallo en `eastus2` con `SubscriptionIsOverQuotaForSku`. La subscription tenia `Current Limit (Total VMs): 0`, `Current Usage: 0` y requeria `Amount required: 1`. Para mantener bajo costo sin mover Storage ni Azure ML, `staging` habilita la Function en `centralus` mediante `functionLocation=centralus`.
+
+Estado actual:
+
+```text
+Function App: func-pricing-mlops-staging-<suffix>
+Region: centralus
+Plan: Y1 / Dynamic Consumption
+Health: https://func-pricing-mlops-staging-<suffix>.azurewebsites.net/api/health
+Trigger: https://func-pricing-mlops-staging-<suffix>.azurewebsites.net/api/model-flow
+```
+
+Se puede revisar el plan con:
 
 ```bash
-ENABLE_HELLO_FUNCTION=true scripts/deploy.sh staging
+scripts/what-if.sh staging
+scripts/deploy.sh staging
 ```
+
+Si `centralus` tambien falla por quota, no probar regiones al azar. Capturar el error exacto y pedir quota App Service/Functions minima (`Total VMs >= 1`) para la region/SKU elegida.
+
+Publicar codigo de Function desde el repo `pricing-mlops`:
+
+```bash
+AZURE_FUNCTION_APP=func-pricing-mlops-staging-<suffix> scripts/publish_orchestrator_function.sh staging
+```
+
+La Function usa una key de Function para el prototipo. El siguiente hardening debe reemplazar o complementar esto con autenticacion gestionada aprobada por el equipo.
 
 ## Compute Legacy
 

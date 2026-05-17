@@ -25,7 +25,7 @@ Esta subscription aprovecha el credito incluido de 200 USD. No se crean subscrip
 |---|---|---|---|
 | `rg-pricing-mlops-platform-shared` | Foundation | Key Vault, Log Analytics, identidades OIDC | Permanente |
 | `rg-pricing-mlops-data-lab` | Data lab | CSVs unmasked/masked, curated inicial y artefactos controlados sin compute MLOps/ADF/AML/SQL | Controlado |
-| `rg-pricing-mlops-staging` | Workload | Storage, Azure ML Workspace y Function orquestadora del MVP | Permanente |
+| `rg-pricing-mlops-staging` | Workload | Storage, Azure ML Workspace y Function orquestadora del MVP. Storage/AML quedan en `eastus2`; la Function puede vivir en `centralus` por quota. | Permanente |
 | `rg-pricing-mlops-sbx-local` | Workload | Sandbox personal temporal de un owner local | Temporal |
 | `rg-pricing-mlops-validation` | Workload | Validacion controlada no productiva | Controlado |
 
@@ -50,7 +50,7 @@ No se despliega prod en el MVP. `shared` no es ambiente operativo de MLOps; es u
 
 `data-lab` usa solo Storage/ADLS minimo para `raw-unmasked`, `raw-masked`, `curated` y artefactos MLOps. No despliega compute del modelo y mantiene `raw-unmasked` separado de `staging`.
 
-Azure ML se crea por IaC en plataforma. El codigo runtime operativo vive en el repo `pricing-mlops` y se ejecuta como command job. GitHub Actions solo somete el job y espera el estado; no ejecuta el ML en el runner. La Function queda preparada como trigger/orquestador, pero si la subscription sigue con quota App Service/Functions en `0`, GitHub Actions puede someter el job AML temporalmente.
+Azure ML se crea por IaC en plataforma. El codigo runtime operativo vive en el repo `pricing-mlops` y se ejecuta como command job. Azure Functions es el orquestador operativo: recibe el trigger controlado, valida parametros y somete el job AML. GitHub Actions queda para CI/CD y pruebas controladas; no ejecuta el ML en el runner. Si la subscription vuelve a bloquear App Service/Functions por quota, GitHub Actions puede someter el job AML temporalmente como fallback.
 
 Container Apps Job + ACR queda documentado como PoC anterior en [`compute-target-comparison.md`](compute-target-comparison.md). No se borra automaticamente; cualquier limpieza de ACR/Container Apps requiere confirmacion explicita.
 

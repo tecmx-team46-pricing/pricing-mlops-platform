@@ -42,7 +42,7 @@ flowchart TD
 | `shared` | `rg-pricing-mlops-platform-shared` | Servicios comunes: Key Vault, Log Analytics, identidades. No es ambiente MLOps. | No |
 | `data-lab` | `rg-pricing-mlops-data-lab` | Landing restringido para datos sensibles y masking. | Si, restringido |
 | `sandbox-local` | `rg-pricing-mlops-sbx-local` | Sandbox personal local/admin. No se opera desde GitHub Actions. | No |
-| `staging` | `rg-pricing-mlops-staging` | MVP integrado con datos masked/curated y GitHub Actions del modelo. | No |
+| `staging` | `rg-pricing-mlops-staging` | MVP integrado con datos masked/curated, Azure ML y Azure Function orquestadora. | No |
 | `validation` | `rg-pricing-mlops-validation` | Validacion controlada no productiva futura. | No por default |
 
 `prod` no existe en IaC, parameters ni workflows.
@@ -86,7 +86,7 @@ scripts/what-if.sh sandbox-local
 scripts/deploy.sh sandbox-local
 ```
 
-GitHub Actions queda reservado para `staging` y `validation`. En el flujo MLOps objetivo, GitHub Actions despliega o dispara una operacion controlada; Azure Functions valida parametros y somete el Azure ML command job; Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de evidencia. Si Functions esta bloqueado por quota, GitHub Actions puede someter AML directamente como fallback temporal, sin ejecutar ML en el runner.
+GitHub Actions queda reservado para CI/CD y pruebas controladas en `staging` y `validation`. En el flujo MLOps objetivo, Azure Functions valida parametros y somete el Azure ML command job; Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de evidencia. `staging` mantiene Storage y Azure ML en `eastus2`, pero despliega la Function en `centralus` para evitar la quota 0 observada en App Service/Functions de `eastus2`. Si Functions vuelve a bloquearse por quota, GitHub Actions puede someter AML directamente solo como fallback temporal, sin ejecutar ML en el runner.
 
 ## Documentacion
 

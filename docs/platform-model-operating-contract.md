@@ -95,7 +95,7 @@ pricing-mlops workflow_dispatch en staging/validation
 
 El input compartido minimo es `raw-masked/samples/sample_pricing_v1.csv`. GitHub Actions no debe ser el compute principal del scoring/drift; su rol normal es CI/CD y disparo operativo controlado.
 
-Azure Functions queda como orquestador ligero para iniciar jobs AML. Si la Function no despliega por quota, GitHub Actions puede someter AML directamente como orquestador temporal, sin ejecutar el ML en el runner.
+Azure Functions queda como orquestador ligero para iniciar jobs AML. En `staging`, la Function puede desplegarse en una region distinta (`centralus`) para evitar quota 0 de App Service/Functions sin mover Storage ni Azure ML. Si la Function no despliega por quota, GitHub Actions puede someter AML directamente como orquestador temporal, sin ejecutar el ML en el runner.
 
 ## Limites
 

@@ -10,7 +10,7 @@
 | User Assigned Managed Identity + OIDC | `rg-pricing-mlops-platform-shared` | Login federado desde GitHub Actions sin client secrets. | Actual |
 | Storage / ADLS Gen2 | Workload RG o `data-lab` | Inputs masked, curated, baselines, runs, snapshots, drift logs, reports y artifacts. | Actual |
 | Azure Machine Learning Workspace | `rg-pricing-mlops-staging` | Ejecuta el flujo MLOps minimo como command job administrado. | Ruta activa |
-| Azure Functions | Workload RG | Orquestador ligero para disparar jobs AML y health checks. | Preparado; bloqueado si App Service quota = 0 |
+| Azure Functions | Workload RG | Orquestador ligero para disparar jobs AML y health checks. | Desplegado en `centralus` |
 | Azure Container Registry Basic | Workload RG | Guarda la imagen del PoC anterior de Container Apps. | Legacy/PoC |
 | Azure Container Apps Job | Workload RG | PoC anterior de compute batch. | Legacy/PoC |
 
@@ -37,7 +37,15 @@ pricing-mlops workflow_dispatch o trigger controlado
 
 GitHub Actions no es el compute ML. Cuando la Function esta disponible, GitHub la llama como orquestador. Si la quota de App Service/Functions bloquea el deploy, GitHub Actions puede someter el job AML directamente como fallback temporal; en ambos casos el ML corre en Azure ML. No requiere ADF ni SQL.
 
-El intento de habilitar la Function en `staging` con plan Consumption fallo por quota `SubscriptionIsOverQuotaForSku`: limite actual `Total VMs=0`, requerido `1`. Flex Consumption aparece disponible para `eastus2` y `centralus` segun Azure CLI, pero requiere IaC especifica de Flex (`functionAppConfig` y deployment storage) y debe evaluarse como cambio separado si no se aprueba cuota Consumption.
+El intento de habilitar la Function en `staging` con Linux Consumption en `eastus2` fallo por quota `SubscriptionIsOverQuotaForSku`: limite actual `Total VMs=0`, requerido `1`. Para no mover el ambiente completo, solo la Function se despliega en `centralus`; Storage, Azure ML y datos de `staging` permanecen en `eastus2`. El Storage interno de host de Azure Functions puede usar una connection string/runtime key administrada por Azure Functions; eso no es el Storage MLOps ni se usa para datasets u outputs.
+
+Function activa:
+
+```text
+func-pricing-mlops-staging-<suffix>
+Plan Y1 / Dynamic Consumption
+Region Central US
+```
 
 ## Servicios futuros
 

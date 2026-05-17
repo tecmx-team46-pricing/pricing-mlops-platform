@@ -62,6 +62,9 @@ param storageContainers array = [
 @description('Deploy the hello world Function App for the Pricing MLOps workload.')
 param enableHelloFunction bool = true
 
+@description('Azure region for the Function orchestrator. Empty value uses the workload location.')
+param functionLocation string = ''
+
 @description('Deploy the legacy Azure Container Apps Job PoC. Azure ML is the active compute path.')
 param enableModelContainerJob bool = false
 
@@ -134,6 +137,7 @@ var containerRegistryName = take('acrpmlops${workloadUniqueSuffix}', 24)
 var functionHostStorageAccountName = take('stfn${workloadUniqueSuffix}', 24)
 var hostingPlanName = 'asp-${projectName}-${environmentName}'
 var functionAppName = take('func-${projectName}-${replace(environmentName, 'sandbox-', 'sbx-')}-${shortSuffix}', 60)
+var effectiveFunctionLocation = empty(functionLocation) ? location : functionLocation
 var managedEnvironmentName = take('cae-${projectName}-${environmentName}', 32)
 var modelJobIdentityName = 'id-${projectName}-job-${environmentName}'
 var modelJobName = take('job-${projectName}-${environmentName}', 32)
@@ -198,7 +202,7 @@ module helloFunction 'modules/hello-function.bicep' = if (enableHelloFunction) {
   name: 'pricing-mlops-hello-function-${uniqueString(workloadResourceGroupName)}'
   scope: resourceGroup(workloadResourceGroupName)
   params: {
-    location: location
+    location: effectiveFunctionLocation
     tags: workloadTags
     environmentName: environmentName
     functionAppName: functionAppName

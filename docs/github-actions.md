@@ -5,7 +5,7 @@
 - Pull requests validan sin Azure login.
 - Deploys solo ocurren por `workflow_dispatch`.
 - El repo plataforma despliega infraestructura.
-- El repo `pricing-mlops` llama Azure Functions como orquestador cuando esta disponible; el fallback temporal somete Azure ML directo. El compute ML corre en Azure ML, no en GitHub.
+- El repo `pricing-mlops` puede llamar Azure Functions para pruebas controladas, pero GitHub Actions no es requerido para operar el flujo ML cuando la Function esta desplegada. El fallback temporal `direct-aml` solo existe para bloqueos de Function/quota. El compute ML corre en Azure ML, no en GitHub.
 - No usar account keys ni connection strings.
 - No dar `Owner` ni `Contributor` de subscription al repo modelo.
 
@@ -27,7 +27,7 @@ staging
 validation
 ```
 
-`sandbox-*` es local/admin only. GitHub Actions no despliega ni ejecuta what-if de sandboxes personales. `data-lab` se valida en CI, pero su bootstrap se recomienda local/admin hasta revisar permisos sobre datos sensibles.
+`sandbox-*` es local/admin only. GitHub Actions no despliega ni ejecuta what-if de sandboxes personales. `data-lab` se valida en CI, pero su bootstrap se recomienda local/admin hasta revisar permisos sobre datos sensibles. Para operar el flujo modelo no se requiere GitHub Actions: se llama la Function desplegada.
 
 ## Repo modelo
 
@@ -54,6 +54,12 @@ MLOPS_CONTAINER_SNAPSHOTS=snapshots
 MLOPS_CONTAINER_DRIFT_LOGS=drift-logs
 MLOPS_CONTAINER_REPORTS=reports
 MLOPS_CONTAINER_ARTIFACTS=artifacts
+```
+
+Valor actual en `staging`:
+
+```text
+AZURE_FUNCTION_APP=func-pricing-mlops-staging-<suffix>
 ```
 
 La identidad modelo necesita `AzureML Data Scientist` sobre el workspace AML y permiso de verificacion/escritura sobre Storage. Para publicar codigo de Function y llamar el endpoint protegido, tambien necesita permisos sobre la Function App. El command job serverless usa `identity: user_identity`, por lo que en GitHub el acceso a datos ocurre con la identidad que somete el job mediante Entra ID. El workspace AML mantiene `systemDatastoresAuthMode=identity`; las identidades de AML reciben `AcrPull` sobre el ACR asociado para preparar el runtime. El repo modelo no debe recibir acceso a `raw-unmasked`, `Owner` ni `Contributor` de subscription.

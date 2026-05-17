@@ -63,6 +63,10 @@ param storageContainers array = [
 #disable-next-line no-unused-params
 param enableHelloFunction bool = true
 
+@description('Azure Function region used by the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param functionLocation string = ''
+
 @description('Deploy the Azure Container Apps Job from the workload entrypoint. Kept here so parameter files can be shared.')
 #disable-next-line no-unused-params
 param enableModelContainerJob bool = false
