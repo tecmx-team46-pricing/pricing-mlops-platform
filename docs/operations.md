@@ -38,16 +38,12 @@ scripts/what-if.sh sandbox-local
 
 Los sandboxes personales se operan solo desde local/admin. Los scripts bloquean `sandbox-*` cuando `GITHUB_ACTIONS=true`.
 
-Mientras la cuota de App Service/Functions siga bloqueada, validar solo foundation y Storage:
-
-```bash
-ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-local
-```
+`staging` habilita el Container Apps Job del modelo. `sandbox-local` queda para pruebas local/admin y no se opera desde GitHub Actions.
 
 ## Deploy Minimo
 
 ```bash
-ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-local
+scripts/deploy.sh sandbox-local
 ```
 
 Ese despliegue prepara el pipeline Azure minimo:
@@ -57,39 +53,26 @@ Ese despliegue prepara el pipeline Azure minimo:
 - Storage/ADLS y containers del workload.
 - Sin identidades OIDC por default para sandboxes personales.
 
-No crea AML, ADF, SQL, ACR ni prod.
+No crea AML, ADF, SQL ni prod.
 
-## Azure Function Model Flow
+## Container Apps Model Flow
 
-La Function App es el compute minimo del flujo MLOps. La infraestructura se crea desde este repo; el codigo runtime se publica desde `pricing-mlops` por GitHub Actions. Solo intentar si hay cuota App Service/Functions disponible:
+El Container Apps Job es el compute minimo del flujo MLOps. La infraestructura se crea desde este repo; el codigo runtime se empaqueta como imagen desde `pricing-mlops` y GitHub Actions la publica en ACR antes de iniciar el job:
 
 ```bash
-scripts/deploy.sh sandbox-local
+scripts/deploy.sh staging
 ```
 
-Endpoint esperado:
+Recursos esperados en `staging`:
 
 ```text
-https://<function-app-name>.azurewebsites.net/api/health
-https://<function-app-name>.azurewebsites.net/api/model-flow
+acrpmlops...
+cae-pricing-mlops-staging
+job-pricing-mlops-staging
+id-pricing-mlops-job-staging-legacy
 ```
 
-Si Azure devuelve `SubscriptionIsOverQuotaForSku`, el bloqueo esta en la subscription. Solicitar quota `Dynamic VMs >= 1` para Consumption `Y1` o cambiar parametros `functionPlanSku*` de forma explicita.
-
-### Solicitar quota para Azure Functions
-
-Para este PoC la solicitud minima es:
-
-```text
-Provider: Microsoft.Web
-Service family: App Service / Azure Functions
-Region: eastus2
-Quota: Dynamic VMs
-Requested limit: 1
-Justification: Low-cost Azure Functions Consumption plan for Pricing MLOps staging. GitHub Actions only orchestrates; Azure Function runs the minimal masked-data model flow and writes outputs to Storage.
-```
-
-Si Azure no ofrece `Dynamic VMs` para la region, solicitar el equivalente de App Service/Functions que permita crear un plan Consumption `Y1`. No pedir GPU, Premium, Dedicated grande ni recursos productivos para este MVP.
+La identidad de GitHub del repo modelo publica la imagen y arranca el job. La identidad del job lee `raw-masked` y escribe outputs en Storage. No se usan account keys ni connection strings.
 
 ## Data-Lab
 
@@ -98,7 +81,7 @@ scripts/what-if.sh data-lab
 scripts/deploy.sh data-lab
 ```
 
-`data-lab` crea Storage/ADLS para zonas sensibles, incluyendo `raw-unmasked`. No despliega Function App y no debe entregar acceso automatico a GitHub Actions.
+`data-lab` crea Storage/ADLS para zonas sensibles, incluyendo `raw-unmasked`. No despliega compute del modelo y no debe entregar acceso automatico a GitHub Actions.
 
 ## GitHub Actions
 

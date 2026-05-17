@@ -62,6 +62,9 @@ param storageContainers array = [
 @description('Deploy the hello world Function App for the Pricing MLOps workload.')
 param enableHelloFunction bool = true
 
+@description('Deploy the Azure Container Apps Job that runs the Pricing MLOps model flow inside Azure.')
+param enableModelContainerJob bool = false
+
 @description('App Service Plan SKU name for the Function App. Y1 is Azure Functions Consumption.')
 param functionPlanSkuName string = 'Y1'
 
@@ -73,6 +76,12 @@ param functionPlanSkuSize string = 'Y1'
 
 @description('App Service Plan instance count for the hello Function App.')
 param functionPlanCapacity int = 1
+
+@description('Container CPU cores for the low-cost model job.')
+param modelJobCpu string = '0.25'
+
+@description('Container memory for the low-cost model job.')
+param modelJobMemory string = '0.5Gi'
 
 @description('GitHub repository in org/repo format. Empty value skips workload role assignments.')
 param githubRepository string = ''
@@ -115,9 +124,13 @@ var workloadUniqueSuffix = uniqueString(subscription().id, workloadResourceGroup
 var shortSuffix = take(workloadUniqueSuffix, 6)
 
 var storageAccountName = take('stpmlops${workloadUniqueSuffix}', 24)
+var containerRegistryName = take('acrpmlops${workloadUniqueSuffix}', 24)
 var functionHostStorageAccountName = take('stfn${workloadUniqueSuffix}', 24)
 var hostingPlanName = 'asp-${projectName}-${environmentName}'
 var functionAppName = take('func-${projectName}-${replace(environmentName, 'sandbox-', 'sbx-')}-${shortSuffix}', 60)
+var managedEnvironmentName = take('cae-${projectName}-${environmentName}', 32)
+var modelJobIdentityName = 'id-${projectName}-job-${environmentName}'
+var modelJobName = take('job-${projectName}-${environmentName}', 32)
 var githubActionsIdentityName = 'id-gha-${projectName}-${environmentName}'
 var modelGithubActionsIdentityName = 'id-gha-${projectName}-model-${environmentName}'
 var dataRoot = 'https://${storageAccountName}.dfs.${environment().suffixes.storage}'
@@ -191,6 +204,26 @@ module helloFunction 'modules/hello-function.bicep' = if (enableHelloFunction) {
   }
 }
 
+module modelContainerJob 'modules/model-container-job.bicep' = if (enableModelContainerJob) {
+  name: 'pricing-mlops-model-job-${uniqueString(workloadResourceGroupName)}'
+  scope: resourceGroup(workloadResourceGroupName)
+  params: {
+    location: location
+    tags: workloadTags
+    containerRegistryName: containerRegistryName
+    managedEnvironmentName: managedEnvironmentName
+    modelJobIdentityName: modelJobIdentityName
+    modelJobName: modelJobName
+    logAnalyticsResourceGroupName: sharedResourceGroupName
+    logAnalyticsWorkspaceName: 'log-${projectName}-shared'
+    storageAccountName: storage.outputs.storageAccountName
+    modelJobCpu: modelJobCpu
+    modelJobMemory: modelJobMemory
+    modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
+    enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
+  }
+}
+
 output workloadResourceGroupName string = workloadResourceGroupName
 output storageAccountName string = storage.outputs.storageAccountName
 output dataRoot string = dataRoot
@@ -200,3 +233,8 @@ output modelGithubActionsClientId string = enableModelGithubActionsIdentity ? mo
 output functionAppName string = enableHelloFunction ? helloFunction!.outputs.functionAppName : ''
 output functionHealthEndpoint string = enableHelloFunction ? 'https://${helloFunction!.outputs.functionAppName}.azurewebsites.net/api/health' : ''
 output functionHostStorageAccountName string = enableHelloFunction ? helloFunction!.outputs.functionHostStorageAccountName : ''
+output containerRegistryName string = enableModelContainerJob ? modelContainerJob!.outputs.containerRegistryName : ''
+output containerRegistryLoginServer string = enableModelContainerJob ? modelContainerJob!.outputs.containerRegistryLoginServer : ''
+output modelContainerJobName string = enableModelContainerJob ? modelContainerJob!.outputs.modelJobName : ''
+output modelContainerJobIdentityName string = enableModelContainerJob ? modelContainerJob!.outputs.modelJobIdentityName : ''
+output modelContainerJobIdentityClientId string = enableModelContainerJob ? modelContainerJob!.outputs.modelJobIdentityClientId : ''

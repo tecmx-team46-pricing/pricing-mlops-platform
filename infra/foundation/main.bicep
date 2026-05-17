@@ -63,6 +63,18 @@ param storageContainers array = [
 #disable-next-line no-unused-params
 param enableHelloFunction bool = true
 
+@description('Deploy the Azure Container Apps Job from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param enableModelContainerJob bool = false
+
+@description('Container CPU cores for the low-cost model job. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param modelJobCpu string = '0.25'
+
+@description('Container memory for the low-cost model job. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param modelJobMemory string = '0.5Gi'
+
 @description('GitHub repository in org/repo format. Empty value skips federated credential creation.')
 param githubRepository string = ''
 

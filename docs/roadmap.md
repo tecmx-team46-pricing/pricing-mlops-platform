@@ -22,10 +22,11 @@ Estado: preparado para PoC.
 
 Siguiente paso recomendado.
 
-- Mantener `sandbox-local` para pruebas local/admin con `ENABLE_HELLO_FUNCTION=false` si la quota de Function/App Service bloquea.
+- Mantener `sandbox-local` para pruebas local/admin.
 - Desplegar `staging` como ambiente compartido para GitHub Actions.
 - Crear identidad OIDC para `pricing-mlops` en `staging`.
-- Dar `Storage Blob Data Contributor` solo al Storage Account de `staging`.
+- Dar `AcrPush` y `Container Apps Jobs Operator` a la identidad GitHub del modelo.
+- Dar `AcrPull` y `Storage Blob Data Contributor` a la identidad del Container Apps Job.
 - Ejecutar workflow manual en `pricing-mlops`.
 - Subir `model_run_log`, snapshots, drift logs, reports y artifacts a Storage.
 

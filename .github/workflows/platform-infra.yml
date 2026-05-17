@@ -79,5 +79,5 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      - name: Deploy platform hello world
+      - name: Deploy platform infrastructure
         run: scripts/deploy.sh "${{ inputs.environment }}"

@@ -18,7 +18,7 @@ No contiene el codigo operativo del modelo. Ese codigo vive en el repo funcional
 flowchart TD
   GHAPlatform["GitHub Actions<br/>platform workflow"] --> ARM["Azure Resource Manager<br/>Bicep"]
   ARM --> Shared["Shared RG<br/>Key Vault<br/>Log Analytics<br/>OIDC identities"]
-  ARM --> Workload["Workload RG<br/>Storage / ADLS<br/>Azure Function"]
+  ARM --> Workload["Workload RG<br/>Storage / ADLS<br/>ACR<br/>Container Apps Job"]
   ARM --> DataLab["Data-lab RG<br/>Storage / ADLS restringido"]
 
   DataLab --> RawUnmasked["raw-unmasked<br/>solo data-lab"]
@@ -26,11 +26,11 @@ flowchart TD
   Masking --> RawMasked["raw-masked"]
   RawMasked --> Workload
 
-  GHAModel["GitHub Actions<br/>pricing-mlops<br/>orquestacion"] --> ModelIdentity["OIDC model identity<br/>Function publish/invoke"]
+  GHAModel["GitHub Actions<br/>pricing-mlops<br/>orquestacion"] --> ModelIdentity["OIDC model identity<br/>ACR push / job start"]
   ModelIdentity --> Workload
-  Workload --> AzureFunction["Azure Function<br/>compute ML minimo"]
-  AzureFunction --> RawMasked
-  AzureFunction --> Runs["curated / runs / snapshots<br/>drift-logs / reports / artifacts"]
+  Workload --> ModelJob["Container Apps Job<br/>compute ML minimo"]
+  ModelJob --> RawMasked
+  ModelJob --> Runs["curated / runs / snapshots<br/>drift-logs / reports / artifacts"]
 ```
 
 ## Ambientes
@@ -75,16 +75,16 @@ az bicep build --file infra/workloads/pricing-mlops/main.bicep
 az bicep build-params --file infra/parameters/sandbox-local.bicepparam
 ```
 
-What-if/deploy local/admin de sandbox sin Function App:
+What-if/deploy local/admin de sandbox:
 
 ```bash
 az login
 az account set --subscription "<azure-subscription-name>"
-ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-local
-ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-local
+scripts/what-if.sh sandbox-local
+scripts/deploy.sh sandbox-local
 ```
 
-GitHub Actions queda reservado para `staging` y `validation`. En el flujo MLOps real, GitHub Actions publica e invoca Azure Function; el compute ML corre dentro de Azure. La Function App depende de cuota App Service disponible.
+GitHub Actions queda reservado para `staging` y `validation`. En el flujo MLOps real, GitHub Actions construye la imagen del repo `pricing-mlops`, la publica en Azure Container Registry e inicia un Azure Container Apps Job. El compute ML corre dentro de Azure, no en el runner de GitHub.
 
 ## Documentacion
 
@@ -108,6 +108,6 @@ Los planes largos anteriores fueron retirados de la ruta activa; `docs/archive/R
 ## Fuera De Alcance
 
 - Produccion real.
-- Azure ML, Data Factory, SQL, ACR, Hub-Spoke y Private Endpoints.
+- Azure ML, Data Factory, SQL, Hub-Spoke y Private Endpoints.
 - Datos `raw-unmasked` en `sandbox-local`, `staging` o `validation`.
 - Account keys, connection strings o secretos versionados.

@@ -43,7 +43,7 @@ Agregar otro ambiente requiere:
 
 `platform-infra.yml` compila el parameter file de `data-lab` en pull requests, pero no lo expone todavia como opcion de `workflow_dispatch`.
 
-`data-lab` es un ambiente habilitado de forma controlada. Su parameter file debe mantener `environment=data-lab`, `owner=team46`, `lifecycle=controlled` y `purpose=secure-data-lab`; no debe habilitar Function App ni acceso GitHub Actions a `raw-unmasked` por defecto.
+`data-lab` es un ambiente habilitado de forma controlada. Su parameter file debe mantener `environment=data-lab`, `owner=team46`, `lifecycle=controlled` y `purpose=secure-data-lab`; no debe habilitar compute del modelo ni acceso GitHub Actions a `raw-unmasked` por defecto.
 
 ## Pull requests
 
