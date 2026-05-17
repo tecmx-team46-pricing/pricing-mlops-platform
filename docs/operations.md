@@ -77,7 +77,20 @@ La identidad de GitHub del repo modelo somete el job AML. La identidad administr
 
 Azure Functions queda como orquestador ligero: health check, validacion de parametros e inicio del job AML. La Function no entrena, no hace scoring pesado y no reemplaza Azure ML.
 
-Si App Service/Functions sigue bloqueado por quota, GitHub Actions puede someter AML directamente como alternativa temporal de orquestacion. Ese caso debe documentarse con el error exacto.
+La Function esperada expone:
+
+```text
+GET /api/health
+POST /api/model-flow
+```
+
+`POST /api/model-flow` recibe `environment`, `run_owner` e `input_blob_path`, genera o acepta un `run_id`, somete el Azure ML command job y devuelve el `azure_ml_job_name` junto con el prefijo esperado de outputs. Si App Service/Functions sigue bloqueado por quota, GitHub Actions puede someter AML directamente como alternativa temporal de orquestacion. Ese caso debe documentarse con el error exacto.
+
+Estado observado en `staging`: el deploy de la Function Consumption fallo con `SubscriptionIsOverQuotaForSku`. La subscription tiene `Current Limit (Total VMs): 0`, `Current Usage: 0` y requiere `Amount required: 1`. Hasta pedir cuota o cambiar a un plan/region viable, `infra/parameters/staging.bicepparam` mantiene `enableHelloFunction=false` para no romper despliegues normales. Se puede reintentar localmente con:
+
+```bash
+ENABLE_HELLO_FUNCTION=true scripts/deploy.sh staging
+```
 
 ## Compute Legacy
 

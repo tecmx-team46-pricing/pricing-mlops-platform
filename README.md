@@ -86,7 +86,7 @@ scripts/what-if.sh sandbox-local
 scripts/deploy.sh sandbox-local
 ```
 
-GitHub Actions queda reservado para `staging` y `validation`. En el flujo MLOps objetivo, GitHub Actions solo autentica con OIDC y somete un Azure ML command job; Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de evidencia. Azure Functions queda como orquestador ligero para disparar ese job cuando la quota de App Service/Functions lo permita.
+GitHub Actions queda reservado para `staging` y `validation`. En el flujo MLOps objetivo, GitHub Actions despliega o dispara una operacion controlada; Azure Functions valida parametros y somete el Azure ML command job; Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de evidencia. Si Functions esta bloqueado por quota, GitHub Actions puede someter AML directamente como fallback temporal, sin ejecutar ML en el runner.
 
 ## Documentacion
 

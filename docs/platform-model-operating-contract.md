@@ -87,15 +87,15 @@ Meta operativa actual:
 
 ```text
 pricing-mlops workflow_dispatch en staging/validation
--> azure/login con OIDC
--> someter Azure ML command job
+-> llamar Azure Function /api/model-flow
+-> Function valida parametros y somete Azure ML command job
 -> ejecutar flow ML dentro de Azure ML
 -> subir outputs a Storage/ADLS con compute=azure-ml
 ```
 
-El input compartido minimo es `raw-masked/samples/sample_pricing_v1.csv`. GitHub Actions orquesta; no debe ser el compute principal del scoring/drift.
+El input compartido minimo es `raw-masked/samples/sample_pricing_v1.csv`. GitHub Actions no debe ser el compute principal del scoring/drift; su rol normal es CI/CD y disparo operativo controlado.
 
-Azure Functions queda como orquestador ligero para iniciar jobs AML cuando la quota de App Service/Functions lo permita. Si la Function no despliega, GitHub Actions puede someter AML directamente como orquestador temporal, sin ejecutar el ML en el runner.
+Azure Functions queda como orquestador ligero para iniciar jobs AML. Si la Function no despliega por quota, GitHub Actions puede someter AML directamente como orquestador temporal, sin ejecutar el ML en el runner.
 
 ## Limites
 

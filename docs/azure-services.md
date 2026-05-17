@@ -27,17 +27,17 @@ GitHub Actions + OIDC + Azure ML command job + Storage/ADLS
 Flujo:
 
 ```text
-pricing-mlops workflow_dispatch
--> azure/login con OIDC
--> someter Azure ML command job
+pricing-mlops workflow_dispatch o trigger controlado
+-> Azure Function /api/model-flow
+-> validar parametros y someter Azure ML command job
 -> Azure ML ejecuta flow ML
 -> Azure ML sube outputs a Storage containers
--> GitHub Actions verifica outputs
+-> caller verifica outputs por run_id
 ```
 
-GitHub Actions no es el compute ML. Solo somete el job AML, espera estado y verifica outputs. No requiere ADF ni SQL.
+GitHub Actions no es el compute ML. Cuando la Function esta disponible, GitHub la llama como orquestador. Si la quota de App Service/Functions bloquea el deploy, GitHub Actions puede someter el job AML directamente como fallback temporal; en ambos casos el ML corre en Azure ML. No requiere ADF ni SQL.
 
-Azure Functions debe convertirse en el trigger/orquestador cuando la quota lo permita: recibe parametros controlados, inicia el job AML y retorna el id de job. No debe ejecutar scoring pesado.
+El intento de habilitar la Function en `staging` con plan Consumption fallo por quota `SubscriptionIsOverQuotaForSku`: limite actual `Total VMs=0`, requerido `1`. Flex Consumption aparece disponible para `eastus2` y `centralus` segun Azure CLI, pero requiere IaC especifica de Flex (`functionAppConfig` y deployment storage) y debe evaluarse como cambio separado si no se aprueba cuota Consumption.
 
 ## Servicios futuros
 

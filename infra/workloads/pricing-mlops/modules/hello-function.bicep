@@ -23,6 +23,12 @@ param functionHostStorageAccountName string
 @description('Workload Storage Account used by the Pricing MLOps flow.')
 param workloadStorageAccountName string
 
+@description('Azure ML workspace name used by the Function orchestrator.')
+param azureMlWorkspaceName string
+
+@description('Resource group that contains the Azure ML workspace.')
+param azureMlWorkspaceResourceGroupName string
+
 @description('Principal id of the functional model repo GitHub Actions managed identity.')
 param modelGithubActionsPrincipalId string = ''
 
@@ -43,9 +49,14 @@ param functionPlanCapacity int = 1
 
 var storageBlobDataContributorRoleDefinitionId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 var websiteContributorRoleDefinitionId = 'de139f84-1756-47ae-9be6-808fbbe84772'
+var azureMlDataScientistRoleDefinitionId = 'f6c7c914-8db3-469d-8ca1-694a8f32e121'
 
 resource workloadStorage 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
   name: workloadStorageAccountName
+}
+
+resource azureMlWorkspace 'Microsoft.MachineLearningServices/workspaces@2024-04-01' existing = {
+  name: azureMlWorkspaceName
 }
 
 resource functionStorage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
@@ -111,12 +122,32 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           value: 'python'
         }
         {
+          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
+          value: 'true'
+        }
+        {
+          name: 'ENABLE_ORYX_BUILD'
+          value: 'true'
+        }
+        {
           name: 'PRICING_MLOPS_ENVIRONMENT'
           value: environmentName
         }
         {
           name: 'PRICING_MLOPS_HELLO_MESSAGE'
           value: 'hello world'
+        }
+        {
+          name: 'AZURE_SUBSCRIPTION_ID'
+          value: subscription().subscriptionId
+        }
+        {
+          name: 'AZURE_RESOURCE_GROUP'
+          value: azureMlWorkspaceResourceGroupName
+        }
+        {
+          name: 'AZURE_ML_WORKSPACE'
+          value: azureMlWorkspaceName
         }
         {
           name: 'AZURE_STORAGE_ACCOUNT'
@@ -152,7 +183,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'MLOPS_COMPUTE_TARGET'
-          value: 'functions'
+          value: 'azure-ml'
         }
       ]
     }
@@ -164,6 +195,16 @@ resource functionStorageContributor 'Microsoft.Authorization/roleAssignments@202
   name: guid(workloadStorage.id, functionApp.name, storageBlobDataContributorRoleDefinitionId)
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource functionAzureMlDataScientist 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: azureMlWorkspace
+  name: guid(azureMlWorkspace.id, functionApp.name, azureMlDataScientistRoleDefinitionId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', azureMlDataScientistRoleDefinitionId)
     principalId: functionApp.identity.principalId
     principalType: 'ServicePrincipal'
   }

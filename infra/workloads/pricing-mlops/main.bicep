@@ -205,6 +205,8 @@ module helloFunction 'modules/hello-function.bicep' = if (enableHelloFunction) {
     hostingPlanName: hostingPlanName
     functionHostStorageAccountName: functionHostStorageAccountName
     workloadStorageAccountName: storage.outputs.storageAccountName
+    azureMlWorkspaceName: azureMlWorkspaceName
+    azureMlWorkspaceResourceGroupName: workloadResourceGroupName
     modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
     enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
     functionPlanSkuName: functionPlanSkuName
