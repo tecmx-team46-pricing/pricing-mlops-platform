@@ -13,6 +13,7 @@ Esta es la ruta recomendada para entender y operar el repo sin leer todos los pl
 | Ver servicios Azure por fase | [`azure-services.md`](azure-services.md) |
 | Operar localmente y desde GitHub Actions | [`operations.md`](operations.md) |
 | Configurar workflows y OIDC | [`github-actions.md`](github-actions.md) |
+| Comparar compute targets | [`compute-target-comparison.md`](compute-target-comparison.md) |
 | Entender contrato plataforma-modelo | [`platform-model-operating-contract.md`](platform-model-operating-contract.md) |
 | Entender gobierno de datos | [`data-governance-plan.md`](data-governance-plan.md) |
 | Ver roadmap de avance | [`roadmap.md`](roadmap.md) |

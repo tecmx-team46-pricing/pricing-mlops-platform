@@ -19,6 +19,7 @@ Valores no sensibles por ambiente:
 |---|---|
 | `MLOPS_ENVIRONMENT` | Ambiente logico compartido: `staging` o `validation` para GitHub Actions. Sandboxes personales son local/admin. |
 | `MLOPS_RUN_OWNER` | Owner logico de la corrida, por ejemplo `team46` o usuario. |
+| `MLOPS_COMPUTE_TARGET` | Target que ejecuto el flujo: `functions` o `container-job`. |
 | `AZURE_CLIENT_ID` | Client ID OIDC del repo `pricing-mlops`; para GitHub Actions debe venir del ambiente compartido, normalmente `staging`. |
 | `AZURE_TENANT_ID` | Tenant Azure. |
 | `AZURE_SUBSCRIPTION_ID` | Subscription Azure. |
@@ -42,6 +43,12 @@ Cada corrida escribe bajo:
 
 ```text
 environment=<environment>/owner=<owner>/run_date=<yyyy-mm-dd>/run_id=<run_id>/
+```
+
+Para pruebas comparativas de compute, el layout debe incluir el target:
+
+```text
+environment=<environment>/compute=<compute-target>/owner=<owner>/run_date=<yyyy-mm-dd>/run_id=<run_id>/
 ```
 
 | Output | Container | Formato PoC | Obligatorio |
@@ -76,16 +83,17 @@ environment=<environment>/owner=<owner>/run_date=<yyyy-mm-dd>/run_id=<run_id>/
 
 ## Pipeline Minimo Azure
 
-Primera meta operativa:
+Meta operativa actual:
 
 ```text
 pricing-mlops workflow_dispatch en staging/validation
 -> azure/login con OIDC
--> ejecutar flow ML
--> subir outputs a Storage/ADLS
+-> construir/publicar imagen o invocar compute target
+-> ejecutar flow ML dentro de Azure
+-> subir outputs a Storage/ADLS con compute=<target>
 ```
 
-Puede usar sample local masked como input inicial y subir solo outputs a Storage. Lectura directa desde `raw-masked`/`curated` es el siguiente incremento.
+El input compartido minimo es `raw-masked/samples/sample_pricing_v1.csv`. GitHub Actions orquesta; no debe ser el compute principal del scoring/drift.
 
 ## Limites
 

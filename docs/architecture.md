@@ -52,6 +52,8 @@ No se despliega prod en el MVP. `shared` no es ambiente operativo de MLOps; es u
 
 El Container Apps Job se crea por IaC en plataforma. El codigo runtime operativo se empaqueta como imagen desde el repo `pricing-mlops`; GitHub Actions solo publica la imagen en ACR, inicia el job y verifica outputs. El prototipo usa ACR Basic y un job manual de baja capacidad (`0.25` CPU, `0.5Gi`) para mantener costo bajo.
 
+La comparacion Functions vs Container Apps Job se documenta en [`compute-target-comparison.md`](compute-target-comparison.md). Mientras `staging` sea el ambiente estable, los experimentos deben separar evidencia con `compute=functions` o `compute=container-job` en Storage y no crear sandboxes personales.
+
 ## RBAC
 
 | Actor | Permisos iniciales |

@@ -150,6 +150,10 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           name: 'MLOPS_CONTAINER_ARTIFACTS'
           value: 'artifacts'
         }
+        {
+          name: 'MLOPS_COMPUTE_TARGET'
+          value: 'functions'
+        }
       ]
     }
   }

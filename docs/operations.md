@@ -74,6 +74,17 @@ id-pricing-mlops-job-staging-legacy
 
 La identidad de GitHub del repo modelo publica la imagen y arranca el job. La identidad del job lee `raw-masked` y escribe outputs en Storage. No se usan account keys ni connection strings.
 
+## Compute Comparison
+
+Para comparar Functions contra Container Apps Job, usar el mismo input y separar outputs con `MLOPS_COMPUTE_TARGET`:
+
+```text
+raw-masked/samples/sample_pricing_v1.csv
+environment=staging/compute=<functions|container-job>/owner=team46/run_date=<yyyymmdd>/run_id=<run_id>/
+```
+
+No promover un target nuevo a `staging` estable hasta que produzca los mismos artefactos y quede documentado en [`compute-target-comparison.md`](compute-target-comparison.md).
+
 ## Data-Lab
 
 ```bash

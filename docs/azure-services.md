@@ -11,6 +11,7 @@
 | Storage / ADLS Gen2 | Workload RG o `data-lab` | Inputs masked, curated, baselines, runs, snapshots, drift logs, reports y artifacts. | Actual |
 | Azure Container Registry Basic | Workload RG | Guarda la imagen del flujo `pricing-mlops`. | Actual |
 | Azure Container Apps Job | Workload RG | Ejecuta el flujo MLOps minimo dentro de Azure bajo demanda. | Actual |
+| Azure Functions | Workload RG o compute PoC | Target experimental comparable para ejecutar el mismo core Python. | Bloqueado si App Service quota = 0 |
 
 El job usa capacidad minima (`0.25` CPU, `0.5Gi`) y se ejecuta solo cuando GitHub Actions lo inicia. ACR queda en SKU Basic. Esta ruta evita la cuota App Service/Functions que bloqueo el intento anterior.
 
@@ -35,6 +36,8 @@ pricing-mlops workflow_dispatch
 ```
 
 GitHub Actions no es el compute ML. Solo publica imagen, inicia el job y verifica. No requiere Azure ML, ADF ni SQL.
+
+La prueba comparativa contra Functions debe conservar el mismo input y el mismo contrato de outputs. Si App Service/Functions sigue sin cuota, el resultado valido de la comparacion es "Functions no viable en esta subscription sin aumento de cuota".
 
 ## Servicios futuros
 
