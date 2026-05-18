@@ -67,10 +67,6 @@ param enableHelloFunction bool = true
 #disable-next-line no-unused-params
 param functionLocation string = ''
 
-@description('Deploy the Azure Container Apps Job from the workload entrypoint. Kept here so parameter files can be shared.')
-#disable-next-line no-unused-params
-param enableModelContainerJob bool = false
-
 @description('Deploy the Azure Machine Learning workspace from the workload entrypoint. Kept here so parameter files can be shared.')
 #disable-next-line no-unused-params
 param enableAzureMl bool = false
@@ -78,14 +74,6 @@ param enableAzureMl bool = false
 @description('Existing Azure ML associated Container Registry name. Kept here so parameter files can be shared.')
 #disable-next-line no-unused-params
 param azureMlContainerRegistryName string = ''
-
-@description('Container CPU cores for the low-cost model job. Kept here so parameter files can be shared.')
-#disable-next-line no-unused-params
-param modelJobCpu string = '0.25'
-
-@description('Container memory for the low-cost model job. Kept here so parameter files can be shared.')
-#disable-next-line no-unused-params
-param modelJobMemory string = '0.5Gi'
 
 @description('GitHub repository in org/repo format. Empty value skips federated credential creation.')
 param githubRepository string = ''

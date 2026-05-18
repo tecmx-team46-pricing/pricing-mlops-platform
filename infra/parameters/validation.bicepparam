@@ -21,7 +21,6 @@ param modelGithubRepository = 'tecmx-team46-pricing/pricing-mlops'
 param modelGithubEnvironment = 'validation'
 param enableModelGithubActionsIdentity = false
 param enableHelloFunction = false
-param enableModelContainerJob = false
 
 // Validation is non-production. Keep budget creation explicit.
 param monthlyBudgetAmount = 0

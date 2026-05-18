@@ -73,9 +73,22 @@ Pendiente: migrar el endpoint a Entra ID/Easy Auth o API Management si el equipo
 
 ## Limpieza De Recursos Legacy
 
-Existen recursos de un PoC anterior de Container Apps/ACR en `rg-pricing-mlops-staging`. No son ruta activa. No borrarlos sin una tarea explicita de cleanup con:
+La ruta Container Apps/ACR del PoC anterior no forma parte del IaC activo. En `staging`, los recursos legacy ya fueron eliminados:
 
-1. Inventario de recursos.
-2. Estimacion de costo.
-3. Confirmacion de que Azure ML no depende del ACR legacy.
-4. Aprobacion explicita antes de delete.
+- `job-pricing-mlops-staging`
+- `cae-pricing-mlops-staging`
+- `acr-pricing-mlops-legacy-<suffix>`
+- `id-pricing-mlops-job-staging-legacy`
+
+Si reaparecen en otro ambiente, borrarlos solo despues de confirmar que Function + AML + Storage siguen operando.
+
+Orden seguro:
+
+```bash
+az containerapp job delete --resource-group rg-pricing-mlops-staging --name job-pricing-mlops-staging --yes
+az containerapp env delete --resource-group rg-pricing-mlops-staging --name cae-pricing-mlops-staging --yes
+az acr delete --resource-group rg-pricing-mlops-staging --name acr-pricing-mlops-legacy-<suffix> --yes
+az identity delete --resource-group rg-pricing-mlops-staging --name id-pricing-mlops-job-staging-legacy
+```
+
+No borrar ``; es el ACR asociado al runtime de Azure ML.

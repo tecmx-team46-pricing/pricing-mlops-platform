@@ -6,14 +6,14 @@
 - Workload `staging`: Storage/ADLS, Azure ML Workspace y Azure Function.
 - Flujo E2E: Function -> Azure ML -> Storage con dataset masked compartido.
 - Seguridad base: sin account keys para datos MLOps, sin `raw-unmasked` en `staging`, sin prod.
+- Cleanup legacy: recursos Container Apps/ACR del PoC anterior eliminados de IaC y Azure `staging`.
 
 ## Siguiente Iteracion Recomendada
 
 1. Migrar Function key a Entra ID/Easy Auth o API Management.
 2. Agregar reglas reales de calidad inspiradas en el PDF original.
 3. Mejorar drift con PSI/KS/Z-test y umbrales aprobados por negocio.
-4. Definir cleanup de Container Apps/ACR legacy con aprobacion explicita.
-5. Preparar `validation` cuando `staging` sea estable.
+4. Preparar `validation` cuando `staging` sea estable.
 
 ## Futuro Conceptual
 

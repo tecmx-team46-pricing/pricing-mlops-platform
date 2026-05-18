@@ -45,19 +45,19 @@ No existe `prod` en IaC, parameter files ni workflows.
 
 Storage y Azure ML de `staging` viven en `eastus2`. La Function vive en `centralus` porque `eastus2` presento quota 0 para App Service/Functions en esta subscription.
 
-## Drift Azure vs Repo
+## Cleanup Legacy
 
-La ruta activa en repo y documentacion es Function + Azure ML. En Azure todavia existen recursos legacy del PoC Container Apps/ACR:
+La ruta activa en repo y documentacion es Function + Azure ML. La infraestructura de Container Apps del PoC anterior fue retirada del IaC activo y los recursos legacy de `staging` fueron eliminados:
 
 | Recurso Azure | Estado |
 |---|---|
-| `cae-pricing-mlops-staging` | Legacy PoC, no ruta activa. |
-| `job-pricing-mlops-staging` | Legacy PoC, no ruta activa. |
-| `acr-pricing-mlops-legacy-<suffix>` | Legacy PoC de Container Apps. |
-| `id-pricing-mlops-job-staging-legacy` | Legacy PoC de Container Apps. |
+| `cae-pricing-mlops-staging` | Eliminado. |
+| `job-pricing-mlops-staging` | Eliminado. |
+| `acr-pricing-mlops-legacy-<suffix>` | Eliminado. |
+| `id-pricing-mlops-job-staging-legacy` | Eliminado. |
 | `` | ACR asociado a Azure ML runtime; sigue siendo necesario para AML. |
 
-No borrar recursos legacy sin confirmacion explicita. La limpieza futura debe ejecutar `what-if`, estimar costo y confirmar que no afecta Azure ML.
+No borrar ``: Azure ML lo usa como runtime interno.
 
 ## RBAC
 

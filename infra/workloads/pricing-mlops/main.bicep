@@ -65,9 +65,6 @@ param enableHelloFunction bool = true
 @description('Azure region for the Function orchestrator. Empty value uses the workload location.')
 param functionLocation string = ''
 
-@description('Deploy the legacy Azure Container Apps Job PoC. Azure ML is the active compute path.')
-param enableModelContainerJob bool = false
-
 @description('Deploy Azure Machine Learning as the primary ML compute control plane.')
 param enableAzureMl bool = false
 
@@ -85,12 +82,6 @@ param functionPlanSkuSize string = 'Y1'
 
 @description('App Service Plan instance count for the hello Function App.')
 param functionPlanCapacity int = 1
-
-@description('Container CPU cores for the low-cost model job.')
-param modelJobCpu string = '0.25'
-
-@description('Container memory for the low-cost model job.')
-param modelJobMemory string = '0.5Gi'
 
 @description('GitHub repository in org/repo format. Empty value skips workload role assignments.')
 param githubRepository string = ''
@@ -133,14 +124,10 @@ var workloadUniqueSuffix = uniqueString(subscription().id, workloadResourceGroup
 var shortSuffix = take(workloadUniqueSuffix, 6)
 
 var storageAccountName = take('stpmlops${workloadUniqueSuffix}', 24)
-var containerRegistryName = take('acrpmlops${workloadUniqueSuffix}', 24)
 var functionHostStorageAccountName = take('stfn${workloadUniqueSuffix}', 24)
 var hostingPlanName = 'asp-${projectName}-${environmentName}'
 var functionAppName = take('func-${projectName}-${replace(environmentName, 'sandbox-', 'sbx-')}-${shortSuffix}', 60)
 var effectiveFunctionLocation = empty(functionLocation) ? location : functionLocation
-var managedEnvironmentName = take('cae-${projectName}-${environmentName}', 32)
-var modelJobIdentityName = 'id-${projectName}-job-${environmentName}'
-var modelJobName = take('job-${projectName}-${environmentName}', 32)
 var azureMlWorkspaceName = take('mlw-${projectName}-${environmentName}-${shortSuffix}', 33)
 var azureMlApplicationInsightsName = take('appi-${projectName}-${environmentName}-${shortSuffix}', 255)
 var azureMlJobIdentityName = 'id-${projectName}-aml-${environmentName}'
@@ -220,26 +207,6 @@ module helloFunction 'modules/hello-function.bicep' = if (enableHelloFunction) {
   }
 }
 
-module modelContainerJob 'modules/model-container-job.bicep' = if (enableModelContainerJob) {
-  name: 'pricing-mlops-model-job-${uniqueString(workloadResourceGroupName)}'
-  scope: resourceGroup(workloadResourceGroupName)
-  params: {
-    location: location
-    tags: workloadTags
-    containerRegistryName: containerRegistryName
-    managedEnvironmentName: managedEnvironmentName
-    modelJobIdentityName: modelJobIdentityName
-    modelJobName: modelJobName
-    logAnalyticsResourceGroupName: sharedResourceGroupName
-    logAnalyticsWorkspaceName: 'log-${projectName}-shared'
-    storageAccountName: storage.outputs.storageAccountName
-    modelJobCpu: modelJobCpu
-    modelJobMemory: modelJobMemory
-    modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
-    enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
-  }
-}
-
 module azureMlJobIdentity 'modules/managed-identity.bicep' = if (enableAzureMl) {
   name: 'pricing-mlops-aml-identity-${uniqueString(workloadResourceGroupName)}'
   scope: resourceGroup(workloadResourceGroupName)
@@ -300,11 +267,6 @@ output modelGithubActionsClientId string = enableModelGithubActionsIdentity ? mo
 output functionAppName string = enableHelloFunction ? helloFunction!.outputs.functionAppName : ''
 output functionHealthEndpoint string = enableHelloFunction ? 'https://${helloFunction!.outputs.functionAppName}.azurewebsites.net/api/health' : ''
 output functionHostStorageAccountName string = enableHelloFunction ? helloFunction!.outputs.functionHostStorageAccountName : ''
-output containerRegistryName string = enableModelContainerJob ? modelContainerJob!.outputs.containerRegistryName : ''
-output containerRegistryLoginServer string = enableModelContainerJob ? modelContainerJob!.outputs.containerRegistryLoginServer : ''
-output modelContainerJobName string = enableModelContainerJob ? modelContainerJob!.outputs.modelJobName : ''
-output modelContainerJobIdentityName string = enableModelContainerJob ? modelContainerJob!.outputs.modelJobIdentityName : ''
-output modelContainerJobIdentityClientId string = enableModelContainerJob ? modelContainerJob!.outputs.modelJobIdentityClientId : ''
 output azureMlWorkspaceName string = enableAzureMl ? azureMl!.outputs.azureMlWorkspaceName : ''
 output azureMlWorkspaceId string = enableAzureMl ? azureMl!.outputs.azureMlWorkspaceId : ''
 output azureMlApplicationInsightsName string = enableAzureMl ? azureMl!.outputs.applicationInsightsName : ''
