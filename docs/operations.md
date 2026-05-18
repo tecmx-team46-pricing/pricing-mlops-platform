@@ -115,6 +115,37 @@ AZURE_FUNCTION_APP=func-pricing-mlops-staging-<suffix> scripts/publish_orchestra
 
 La Function usa una key de Function para el prototipo. El siguiente hardening debe reemplazar o complementar esto con autenticacion gestionada aprobada por el equipo.
 
+Hardening aplicado:
+
+- `httpsOnly=true`.
+- TLS minimo `1.2`.
+- FTPS deshabilitado.
+- Remote debugging y detailed error logging deshabilitados por IaC.
+- `POST /api/model-flow` usa Function key.
+- Payload JSON limitado y validado en la Function.
+- Errores 500 devuelven mensaje sanitizado con `correlation_id`, no stack trace.
+- No se imprime Function key ni dataset.
+
+Operar el flujo sin GitHub Actions desde `pricing-mlops`:
+
+```bash
+AZURE_FUNCTION_APP=func-pricing-mlops-staging-<suffix> \
+AZURE_RESOURCE_GROUP=rg-pricing-mlops-staging \
+AZURE_ML_WORKSPACE=mlw-pricing-mlops-staging-<suffix> \
+scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
+```
+
+El script llama la Function, espera el job AML via ARM/REST y verifica metadata de los seis outputs en Storage. No depende de la extension `az ml`.
+
+Ver en Azure Portal:
+
+- Function: Function App `func-pricing-mlops-staging-<suffix>` > Functions > `model-flow` o Log stream.
+- AML: Machine Learning workspace `mlw-pricing-mlops-staging-<suffix>` > Jobs.
+- Storage: Storage account `<mlops-storage-account>` > Containers.
+- Costos: Cost Management > Cost analysis, filtrando Resource Group `rg-pricing-mlops-staging`.
+
+Pendiente de seguridad: mover el endpoint de Function key a Entra ID/Easy Auth o API Management cuando el equipo decida el modelo de identidad de callers.
+
 ## Compute Legacy
 
 Container Apps Job + ACR fue un PoC anterior. Si se consulta evidencia historica, separar outputs con `MLOPS_COMPUTE_TARGET`:

@@ -18,16 +18,16 @@ Azure ML debe usarse sin compute persistente al inicio. El primer intento prefer
 
 ## Pipeline minimo en Azure
 
-El primer pipeline real usa:
+El primer pipeline real operativo usa:
 
 ```text
-GitHub Actions + OIDC + Azure ML command job + Storage/ADLS
+Azure Function + Azure ML command job + Storage/ADLS
 ```
 
 Flujo:
 
 ```text
-pricing-mlops workflow_dispatch o trigger controlado
+Operador/script local o prueba controlada
 -> Azure Function /api/model-flow
 -> validar parametros y someter Azure ML command job
 -> Azure ML ejecuta flow ML
@@ -35,7 +35,7 @@ pricing-mlops workflow_dispatch o trigger controlado
 -> caller verifica outputs por run_id
 ```
 
-GitHub Actions no es el compute ML. Cuando la Function esta disponible, GitHub la llama como orquestador. Si la quota de App Service/Functions bloquea el deploy, GitHub Actions puede someter el job AML directamente como fallback temporal; en ambos casos el ML corre en Azure ML. No requiere ADF ni SQL.
+GitHub Actions no es el compute ML ni el orquestador operativo principal. Cuando se usa en `workflow_dispatch`, solo debe llamar la Function como prueba controlada; `direct-aml` queda como fallback de emergencia. No requiere ADF ni SQL.
 
 El intento de habilitar la Function en `staging` con Linux Consumption en `eastus2` fallo por quota `SubscriptionIsOverQuotaForSku`: limite actual `Total VMs=0`, requerido `1`. Para no mover el ambiente completo, solo la Function se despliega en `centralus`; Storage, Azure ML y datos de `staging` permanecen en `eastus2`. El Storage interno de host de Azure Functions puede usar una connection string/runtime key administrada por Azure Functions; eso no es el Storage MLOps ni se usa para datasets u outputs.
 
@@ -46,6 +46,8 @@ func-pricing-mlops-staging-<suffix>
 Plan Y1 / Dynamic Consumption
 Region Central US
 ```
+
+Seguridad actual: el endpoint usa Function key como control temporal, HTTPS-only, TLS minimo 1.2 y FTPS deshabilitado. Siguiente hardening recomendado: Entra ID/Easy Auth o API Management.
 
 ## Servicios futuros
 

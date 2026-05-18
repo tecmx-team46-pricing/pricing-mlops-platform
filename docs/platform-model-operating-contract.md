@@ -86,16 +86,16 @@ environment=<environment>/compute=<compute-target>/owner=<owner>/run_date=<yyyy-
 Meta operativa actual:
 
 ```text
-pricing-mlops workflow_dispatch en staging/validation
+script operativo o prueba controlada
 -> llamar Azure Function /api/model-flow
 -> Function valida parametros y somete Azure ML command job
 -> ejecutar flow ML dentro de Azure ML
 -> subir outputs a Storage/ADLS con compute=azure-ml
 ```
 
-El input compartido minimo es `raw-masked/samples/sample_pricing_v1.csv`. GitHub Actions no debe ser el compute principal del scoring/drift; su rol normal es CI/CD y disparo operativo controlado.
+El input compartido minimo es `raw-masked/samples/sample_pricing_v1.csv`. GitHub Actions no debe ser el compute principal ni el orquestador operativo; su rol normal es CI/CD, publicacion y pruebas controladas.
 
-Azure Functions queda como orquestador ligero para iniciar jobs AML. En `staging`, la Function puede desplegarse en una region distinta (`centralus`) para evitar quota 0 de App Service/Functions sin mover Storage ni Azure ML. Si la Function no despliega por quota, GitHub Actions puede someter AML directamente como orquestador temporal, sin ejecutar el ML en el runner.
+Azure Functions queda como orquestador ligero para iniciar jobs AML. En `staging`, la Function puede desplegarse en una region distinta (`centralus`) para evitar quota 0 de App Service/Functions sin mover Storage ni Azure ML. El endpoint usa Function key como control temporal; la siguiente iteracion debe evaluar Entra ID/Easy Auth o API Management. Si la Function no despliega por quota, GitHub Actions puede someter AML directamente como fallback de emergencia, sin ejecutar el ML en el runner.
 
 ## Limites
 

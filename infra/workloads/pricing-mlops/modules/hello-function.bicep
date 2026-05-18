@@ -106,7 +106,11 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
     httpsOnly: true
     siteConfig: {
       minTlsVersion: '1.2'
+      scmMinTlsVersion: '1.2'
       ftpsState: 'Disabled'
+      http20Enabled: true
+      remoteDebuggingEnabled: false
+      detailedErrorLoggingEnabled: false
       linuxFxVersion: 'Python|3.11'
       appSettings: [
         {

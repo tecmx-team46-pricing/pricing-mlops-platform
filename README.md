@@ -26,8 +26,8 @@ flowchart TD
   Masking --> RawMasked["raw-masked"]
   RawMasked --> Workload
 
-  GHAModel["GitHub Actions<br/>pricing-mlops<br/>orquestacion"] --> ModelIdentity["OIDC model identity<br/>Azure ML job submit"]
-  ModelIdentity --> Workload
+  Operator["Operador / script local<br/>run_model_flow_function.sh"] --> Function
+  GHAModel["GitHub Actions<br/>pricing-mlops<br/>CI/CD y pruebas"] --> Function
   Function["Azure Function<br/>orquestador ligero"] --> AML["Azure ML Job<br/>compute ML principal"]
   Workload --> Function
   Workload --> AML
@@ -86,7 +86,7 @@ scripts/what-if.sh sandbox-local
 scripts/deploy.sh sandbox-local
 ```
 
-GitHub Actions queda reservado para CI/CD y pruebas controladas en `staging` y `validation`. En el flujo MLOps objetivo, Azure Functions valida parametros y somete el Azure ML command job; Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de evidencia. `staging` mantiene Storage y Azure ML en `eastus2`, pero despliega la Function en `centralus` para evitar la quota 0 observada en App Service/Functions de `eastus2`. Si Functions vuelve a bloquearse por quota, GitHub Actions puede someter AML directamente solo como fallback temporal, sin ejecutar ML en el runner.
+GitHub Actions queda reservado para CI/CD y pruebas controladas en `staging` y `validation`. En el flujo MLOps operativo, Azure Functions valida parametros y somete el Azure ML command job; Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de evidencia. `staging` mantiene Storage y Azure ML en `eastus2`, pero despliega la Function en `centralus` para evitar la quota 0 observada en App Service/Functions de `eastus2`. El endpoint se protege con Function key como control temporal; la siguiente iteracion de seguridad debe migrar a Entra ID/Easy Auth o API Management si el equipo lo aprueba.
 
 ## Documentacion
 
