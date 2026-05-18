@@ -1,84 +1,77 @@
 # Architecture
 
-## Decision principal
+## Decision Actual
 
-Este repo es la plataforma del MVP: infraestructura Azure, contratos MLOps, scripts operativos, workflows de despliegue y documentacion.
+El MVP operativo usa:
 
-La infraestructura se separa en dos capas:
+```text
+Azure Function -> Azure ML command job -> Storage/ADLS
+```
+
+Azure Functions orquesta y valida el request. Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de outputs. Storage/ADLS conserva inputs masked y evidencia versionada.
+
+GitHub Actions queda para CI/CD, validacion y despliegue controlado. No es compute ML ni orquestador operativo.
+
+## Capas
 
 | Capa | Ruta | Responsabilidad |
 |---|---|---|
-| Foundation | `infra/foundation/` | Base reusable de plataforma: Resource Groups, Key Vault, Log Analytics, identidades OIDC, RBAC base y budget. |
-| Workload Pricing MLOps | `infra/workloads/pricing-mlops/` | Recursos especificos del flujo Pricing MLOps: Storage/ADLS, Azure ML Workspace y Azure Functions como orquestador ligero. |
+| Foundation | `infra/foundation/` | Resource Groups, Key Vault, Log Analytics, OIDC/RBAC base y budget opcional. |
+| Workload | `infra/workloads/pricing-mlops/` | Storage/ADLS, Azure ML Workspace y Azure Function orquestadora. |
+| Contratos MLOps | `mlops/` | Schemas, thresholds, storage layout y documentacion del flujo. No contiene IaC. |
 
-`mlops/` no contiene IaC. Contiene contratos, schemas, thresholds, reglas y documentacion del flujo del modelo.
+## Ambientes
 
-## Subscription
-
-El proyecto usa una sola subscription: `<azure-subscription-name>`.
-
-Esta subscription aprovecha el credito incluido de 200 USD. No se crean subscriptions por ambiente porque eso agregaria gobierno, permisos y costos de operacion que el equipo no necesita todavia.
-
-## Resource Groups
-
-| Resource Group | Capa | Proposito | Lifecycle |
+| Scope | Resource Group | Proposito | Datos unmasked |
 |---|---|---|---|
-| `rg-pricing-mlops-platform-shared` | Foundation | Key Vault, Log Analytics, identidades OIDC | Permanente |
-| `rg-pricing-mlops-data-lab` | Data lab | CSVs unmasked/masked, curated inicial y artefactos controlados sin compute MLOps/ADF/AML/SQL | Controlado |
-| `rg-pricing-mlops-staging` | Workload | Storage, Azure ML Workspace y Function orquestadora del MVP. Storage/AML quedan en `eastus2`; la Function puede vivir en `centralus` por quota. | Permanente |
-| `rg-pricing-mlops-sbx-local` | Workload | Sandbox personal temporal de un owner local | Temporal |
-| `rg-pricing-mlops-validation` | Workload | Validacion controlada no productiva | Controlado |
+| `shared` | `rg-pricing-mlops-platform-shared` | Servicios comunes; no es ambiente MLOps. | No |
+| `data-lab` | `rg-pricing-mlops-data-lab` | Landing restringido para unmasked/masking. | Si, restringido |
+| `sandbox-local` | `rg-pricing-mlops-sbx-local` | Pruebas local/admin temporales. | No |
+| `staging` | `rg-pricing-mlops-staging` | MVP operativo compartido. | No |
+| `validation` | `rg-pricing-mlops-validation` | No-prod controlado futuro. | No |
 
-No se despliega prod en el MVP. `shared` no es ambiente operativo de MLOps; es un scope comun para servicios reutilizables.
+No existe `prod` en IaC, parameter files ni workflows.
 
-## Servicios compartidos
+## Servicios Activos
 
-| Servicio | Capa | Justificacion |
-|---|---|---|
-| Key Vault | Foundation | Evitar secretos en GitHub o configs |
-| Log Analytics | Foundation | Observabilidad tecnica minima |
-| User Assigned Identities | Foundation | OIDC para GitHub Actions de plataforma y repo modelo |
-| Budget | Foundation | Control de gasto de la subscription |
+| Servicio | Resource Group | Estado | Notas |
+|---|---|---|---|
+| Key Vault | `rg-pricing-mlops-platform-shared` | Activo | Secrets/salts futuros, sin secretos en Git. |
+| Log Analytics | `rg-pricing-mlops-platform-shared` | Activo | Observabilidad base. |
+| User Assigned Identities | `rg-pricing-mlops-platform-shared` | Activo | OIDC para repos. |
+| Storage / ADLS Gen2 | `rg-pricing-mlops-staging` | Activo | `raw-masked`, `curated`, `runs`, `snapshots`, `drift-logs`, `reports`, `artifacts`. |
+| Azure ML Workspace | `rg-pricing-mlops-staging` | Activo | Command jobs serverless/administrados, sin GPU ni endpoint online. |
+| Azure Function | `rg-pricing-mlops-staging` | Activo | `func-pricing-mlops-staging-<suffix>` en `centralus`, plan Y1/Dynamic. |
 
-## Workload Pricing MLOps
+Storage y Azure ML de `staging` viven en `eastus2`. La Function vive en `centralus` porque `eastus2` presento quota 0 para App Service/Functions en esta subscription.
 
-| Servicio | Justificacion |
+## Drift Azure vs Repo
+
+La ruta activa en repo y documentacion es Function + Azure ML. En Azure todavia existen recursos legacy del PoC Container Apps/ACR:
+
+| Recurso Azure | Estado |
 |---|---|
-| Storage Account | Evidencia barata y simple para inputs, baselines, runs, snapshots, drift logs, reportes y artefactos |
-| Azure Machine Learning Workspace | Compute ML principal para command jobs de validacion, curated/features, scoring minimo, drift/semaforo y escritura de artefactos |
-| Azure Functions | Orquestador ligero para disparar jobs AML y exponer health/trigger controlado; no ejecuta scoring pesado |
+| `cae-pricing-mlops-staging` | Legacy PoC, no ruta activa. |
+| `job-pricing-mlops-staging` | Legacy PoC, no ruta activa. |
+| `acr-pricing-mlops-legacy-<suffix>` | Legacy PoC de Container Apps. |
+| `id-pricing-mlops-job-staging-legacy` | Legacy PoC de Container Apps. |
+| `` | ACR asociado a Azure ML runtime; sigue siendo necesario para AML. |
 
-`data-lab` usa solo Storage/ADLS minimo para `raw-unmasked`, `raw-masked`, `curated` y artefactos MLOps. No despliega compute del modelo y mantiene `raw-unmasked` separado de `staging`.
-
-Azure ML se crea por IaC en plataforma. El codigo runtime operativo vive en el repo `pricing-mlops` y se ejecuta como command job. Azure Functions es el orquestador operativo: recibe el trigger controlado, valida parametros y somete el job AML. GitHub Actions queda para CI/CD y pruebas controladas; no ejecuta el ML en el runner. Si la subscription vuelve a bloquear App Service/Functions por quota, GitHub Actions puede someter el job AML temporalmente como fallback.
-
-Container Apps Job + ACR queda documentado como PoC anterior en [`compute-target-comparison.md`](compute-target-comparison.md). No se borra automaticamente; cualquier limpieza de ACR/Container Apps requiere confirmacion explicita.
+No borrar recursos legacy sin confirmacion explicita. La limpieza futura debe ejecutar `what-if`, estimar costo y confirmar que no afecta Azure ML.
 
 ## RBAC
 
-| Actor | Permisos iniciales |
+| Actor | Permisos |
 |---|---|
-| Admin cloud | Owner temporal para bootstrap local |
-| Equipo tecnico | Contributor en ambientes de trabajo, Reader en shared |
-| GitHub Actions plataforma | User Assigned Identity con OIDC y permisos suficientes para deployments subscription-scope |
-| GitHub Actions `pricing-mlops` | User Assigned Identity separada con permiso `AzureML Data Scientist` sobre el workspace y permiso de verificacion sobre Storage |
-| Azure ML Workspace/Job | Workspace con `systemDatastoresAuthMode=identity`; identidades AML con `AcrPull` sobre el ACR asociado para runtime |
-| Azure Function | Managed Identity con permiso minimo para iniciar jobs AML y consultar Storage cuando la quota permita desplegarla |
-| Negocio | Sin acceso directo a Azure en MVP |
+| GitHub Actions plataforma | OIDC para deployments controlados de infraestructura. |
+| GitHub Actions `pricing-mlops` | OIDC para publicar Function o pruebas controladas; no Owner/Contributor de subscription. |
+| Azure Function | Managed Identity con permiso para iniciar jobs AML y verificar Storage. |
+| Azure ML job | Acceso a Storage por identidad; sin account keys. |
 
-El repo modelo no recibe `Owner`, no recibe `Contributor` sobre la subscription y no recibe acceso a `raw-unmasked`.
+El repo modelo no recibe acceso a `raw-unmasked`.
 
-## Anti-patterns evitados
+## Fuera De Alcance Actual
 
-- Kubernetes.
-- Azure Data Factory.
-- Azure SQL.
-- Hub-and-Spoke.
-- Private Endpoints.
-- Terraform y Ansible encima de Bicep.
-- Repos por componente.
-- Ambientes `dev`, `qa`, `uat`, `prod` sin uso real.
-- Subscriptions separadas por ambiente.
-- Retraining automatico.
-- Endpoints online de Azure ML.
-- Dashboards avanzados antes de tener logs confiables.
+- ADF, Azure SQL, Private Endpoints, Hub-Spoke.
+- Endpoints online AML, GPU, clusters persistentes.
+- Produccion real.

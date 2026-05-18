@@ -1,54 +1,20 @@
 # Roadmap
 
-## Fase 0: Foundation
+## Cubierto
 
-Estado: implementado parcialmente.
+- Foundation: Resource Groups, Key Vault, Log Analytics, identidades OIDC y tags.
+- Workload `staging`: Storage/ADLS, Azure ML Workspace y Azure Function.
+- Flujo E2E: Function -> Azure ML -> Storage con dataset masked compartido.
+- Seguridad base: sin account keys para datos MLOps, sin `raw-unmasked` en `staging`, sin prod.
 
-- Resource Groups.
-- Key Vault.
-- Log Analytics.
-- Managed identities/OIDC.
-- Tags y budget opcional.
+## Siguiente Iteracion Recomendada
 
-## Fase 1: Storage y data-lab
+1. Migrar Function key a Entra ID/Easy Auth o API Management.
+2. Agregar reglas reales de calidad inspiradas en el PDF original.
+3. Mejorar drift con PSI/KS/Z-test y umbrales aprobados por negocio.
+4. Definir cleanup de Container Apps/ACR legacy con aprobacion explicita.
+5. Preparar `validation` cuando `staging` sea estable.
 
-Estado: preparado para PoC.
+## Futuro Conceptual
 
-- Storage/ADLS con zonas `raw-unmasked`, `raw-masked`, `curated`, `baseline`, `runs`, `snapshots`, `drift-logs`, `reports`, `artifacts`.
-- `raw-unmasked` solo en `data-lab`/`secure-sandbox`.
-- No GitHub Actions con acceso automatico a unmasked.
-
-## Fase 2: Pipeline minimo Azure
-
-Siguiente paso recomendado.
-
-- Mantener `sandbox-local` para pruebas local/admin.
-- Desplegar `staging` como ambiente compartido para GitHub Actions.
-- Crear identidad OIDC para `pricing-mlops` en `staging`.
-- Dar `AzureML Data Scientist` a la identidad GitHub del modelo sobre el workspace AML.
-- Dar `Storage Blob Data Contributor` a la identidad de Azure ML sobre Storage.
-- Ejecutar workflow manual en `pricing-mlops`.
-- Subir `model_run_log`, snapshots, drift logs, reports y artifacts a Storage.
-
-## Fase 3: Staging MVP
-
-Cuando el pipeline minimo funcione:
-
-- Promover el flujo a `staging`.
-- Usar datos masked/curated aprobados.
-- Mantener evidence por `run_id`.
-- Revisar semaforo `green/yellow/red`.
-
-## Fase 4: Validation controlada
-
-Cuando staging sea estable:
-
-- Ejecutar validaciones controladas antes de promocion formal.
-- Considerar SQL Serverless si Storage ya no basta para auditoria.
-- Considerar registro formal de modelos en Azure ML si aparece flujo campeon/retador.
-
-## Fase 5: Prod conceptual
-
-No se implementa ahora.
-
-Prod requiere decision explicita, IaC dedicado, revision de seguridad/costos, runbooks, owner operativo y controles de red si aplica.
+ADF, Azure SQL, Private Endpoints, Hub-Spoke, registro formal de modelos y prod requieren decision explicita de seguridad/costo. No son parte del MVP actual.

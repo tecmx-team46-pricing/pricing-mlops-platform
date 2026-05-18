@@ -1,72 +1,48 @@
 # pricing-mlops-platform
 
-Plataforma Azure para el MVP de Pricing MLOps. Este repo gobierna infraestructura, ambientes, despliegues, contratos operativos y documentacion de plataforma.
+Plataforma Azure para el MVP de Pricing MLOps. Este repo gobierna infraestructura, ambientes, RBAC/OIDC, Storage/ADLS, Azure ML, Azure Functions y runbooks de operacion.
 
-No contiene el codigo operativo del modelo. Ese codigo vive en el repo funcional objetivo `pricing-mlops`.
+El codigo funcional del flujo vive en `pricing-mlops`. La referencia historica/EDA vive en `pricing-mlops-eda`.
 
-## Responsabilidades
+## Estado Actual
 
-| Repo | Responsabilidad |
-|---|---|
-| `pricing-mlops-platform` | Azure, Bicep, foundation, workload infra, OIDC/RBAC, Storage/ADLS, Key Vault, Log Analytics y runbooks. |
-| `pricing-mlops` | Validacion, curated/features, scoring, drift, reportes y artefactos de corrida. |
-| `pricing-mlops-eda` | Referencia historica/documental y EDA inicial. No es el repo operativo objetivo. |
+```text
+Operador o prueba controlada
+-> Azure Function /api/model-flow
+-> Azure ML command job
+-> Storage/ADLS outputs versionados
+```
+
+GitHub Actions no es el orquestador operativo del flujo ML. En este repo solo valida o despliega infraestructura por `workflow_dispatch`.
 
 ## Arquitectura
 
 ```mermaid
 flowchart TD
-  GHAPlatform["GitHub Actions<br/>platform workflow"] --> ARM["Azure Resource Manager<br/>Bicep"]
-  ARM --> Shared["Shared RG<br/>Key Vault<br/>Log Analytics<br/>OIDC identities"]
-  ARM --> Workload["Workload RG<br/>Storage / ADLS<br/>Azure ML Workspace<br/>Function orchestrator"]
-  ARM --> DataLab["Data-lab RG<br/>Storage / ADLS restringido"]
+  Platform["pricing-mlops-platform<br/>Bicep / RBAC / Runbooks"] --> ARM["Azure Resource Manager"]
+  ARM --> Shared["rg-pricing-mlops-platform-shared<br/>Key Vault / Log Analytics / OIDC"]
+  ARM --> Staging["rg-pricing-mlops-staging<br/>Storage / Azure ML / Function"]
+  ARM --> DataLab["rg-pricing-mlops-data-lab<br/>raw-unmasked restringido"]
 
-  DataLab --> RawUnmasked["raw-unmasked<br/>solo data-lab"]
-  RawUnmasked --> Masking["masking<br/>usa Key Vault"]
-  Masking --> RawMasked["raw-masked"]
-  RawMasked --> Workload
-
-  Operator["Operador / script local<br/>run_model_flow_function.sh"] --> Function
-  GHAModel["GitHub Actions<br/>pricing-mlops<br/>CI/CD y pruebas"] --> Function
-  Function["Azure Function<br/>orquestador ligero"] --> AML["Azure ML Job<br/>compute ML principal"]
-  Workload --> Function
-  Workload --> AML
-  AML --> RawMasked
-  AML --> Runs["curated / runs / snapshots<br/>drift-logs / reports / artifacts"]
+  Operator["Script operativo local"] --> Function["Azure Function<br/>orquestador"]
+  Function --> AML["Azure ML Job<br/>compute ML"]
+  AML --> Storage["Storage/ADLS<br/>raw-masked / curated / runs / snapshots / drift-logs / reports / artifacts"]
+  ModelRepo["pricing-mlops<br/>codigo funcional"] --> AML
 ```
 
 ## Ambientes
 
-| Ambiente | Resource Group | Uso | Unmasked |
+| Scope | Resource Group | Uso | Estado |
 |---|---|---|---|
-| `shared` | `rg-pricing-mlops-platform-shared` | Servicios comunes: Key Vault, Log Analytics, identidades. No es ambiente MLOps. | No |
-| `data-lab` | `rg-pricing-mlops-data-lab` | Landing restringido para datos sensibles y masking. | Si, restringido |
-| `sandbox-local` | `rg-pricing-mlops-sbx-local` | Sandbox personal local/admin. No se opera desde GitHub Actions. | No |
-| `staging` | `rg-pricing-mlops-staging` | MVP integrado con datos masked/curated, Azure ML y Azure Function orquestadora. | No |
-| `validation` | `rg-pricing-mlops-validation` | Validacion controlada no productiva futura. | No por default |
+| `shared` | `rg-pricing-mlops-platform-shared` | Key Vault, Log Analytics, identidades OIDC. No es ambiente MLOps. | Activo |
+| `data-lab` | `rg-pricing-mlops-data-lab` | Landing restringido para unmasked y masking. | Preparado |
+| `sandbox-local` | `rg-pricing-mlops-sbx-local` | Sandbox local/admin, no GitHub Actions. | Preparado |
+| `staging` | `rg-pricing-mlops-staging` | MVP operativo con Storage, Azure ML y Function. | Activo |
+| `validation` | `rg-pricing-mlops-validation` | No-prod controlado futuro. | Preparado |
 
 `prod` no existe en IaC, parameters ni workflows.
 
-## Layout
-
-```text
-infra/
-  foundation/
-  workloads/pricing-mlops/
-  parameters/
-
-mlops/
-  configs/
-  docs/
-  schemas/
-
-scripts/
-docs/
-```
-
-`mlops/` contiene contratos y reglas; no contiene IaC.
-
-## Uso Rapido
+## Comandos
 
 Validar:
 
@@ -74,42 +50,39 @@ Validar:
 scripts/validate-mlops-contracts.py
 az bicep build --file infra/foundation/main.bicep
 az bicep build --file infra/workloads/pricing-mlops/main.bicep
+az bicep build-params --file infra/parameters/staging.bicepparam
+az bicep build-params --file infra/parameters/validation.bicepparam
+az bicep build-params --file infra/parameters/data-lab.bicepparam
 az bicep build-params --file infra/parameters/sandbox-local.bicepparam
 ```
 
-What-if/deploy local/admin de sandbox:
+What-if/deploy:
 
 ```bash
 az login
 az account set --subscription "<azure-subscription-name>"
-scripts/what-if.sh sandbox-local
-scripts/deploy.sh sandbox-local
+scripts/what-if.sh staging
+scripts/deploy.sh staging
 ```
 
-GitHub Actions queda reservado para CI/CD y pruebas controladas en `staging` y `validation`. En el flujo MLOps operativo, Azure Functions valida parametros y somete el Azure ML command job; Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de evidencia. `staging` mantiene Storage y Azure ML en `eastus2`, pero despliega la Function en `centralus` para evitar la quota 0 observada en App Service/Functions de `eastus2`. El endpoint se protege con Function key como control temporal; la siguiente iteracion de seguridad debe migrar a Entra ID/Easy Auth o API Management si el equipo lo aprueba.
+Operar el flujo ML se hace desde `pricing-mlops` con `scripts/run_model_flow_function.sh`.
 
 ## Documentacion
 
 Leer en este orden:
 
-| Documento | Uso |
-|---|---|
-| [`docs/index.md`](docs/index.md) | Mapa de documentacion. |
-| [`docs/quickstart.md`](docs/quickstart.md) | Comandos minimos. |
-| [`docs/architecture.md`](docs/architecture.md) | Arquitectura actual. |
-| [`docs/environments.md`](docs/environments.md) | Ambientes y Resource Groups. |
-| [`docs/azure-services.md`](docs/azure-services.md) | Servicios Azure actuales y futuros. |
-| [`docs/operations.md`](docs/operations.md) | Runbook operativo. |
-| [`docs/github-actions.md`](docs/github-actions.md) | Workflows, OIDC y variables. |
-| [`docs/platform-model-operating-contract.md`](docs/platform-model-operating-contract.md) | Contrato plataforma-modelo. |
-| [`docs/data-governance-plan.md`](docs/data-governance-plan.md) | Gobierno de datos. |
-| [`docs/roadmap.md`](docs/roadmap.md) | Fases recomendadas. |
-
-Los planes largos anteriores fueron retirados de la ruta activa; `docs/archive/README.md` indica como consultar el historial si hace falta.
+1. [`docs/index.md`](docs/index.md)
+2. [`docs/architecture.md`](docs/architecture.md)
+3. [`docs/operations.md`](docs/operations.md)
+4. [`docs/github-actions.md`](docs/github-actions.md)
+5. [`docs/platform-model-operating-contract.md`](docs/platform-model-operating-contract.md)
+6. [`docs/data-governance-plan.md`](docs/data-governance-plan.md)
+7. [`docs/roadmap.md`](docs/roadmap.md)
+8. [`docs/original/technical-design-original.md`](docs/original/technical-design-original.md)
 
 ## Fuera De Alcance
 
 - Produccion real.
-- Data Factory, SQL, Hub-Spoke, Private Endpoints y endpoints online de Azure ML.
+- ADF, SQL, Private Endpoints, Hub-Spoke y endpoints online de Azure ML.
 - Datos `raw-unmasked` en `sandbox-local`, `staging` o `validation`.
 - Account keys, connection strings o secretos versionados.

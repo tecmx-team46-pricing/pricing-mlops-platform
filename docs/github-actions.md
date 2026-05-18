@@ -1,93 +1,53 @@
 # GitHub Actions
 
-## Reglas
+## Regla Principal
 
-- Pull requests validan sin Azure login.
-- Deploys solo ocurren por `workflow_dispatch`.
-- El repo plataforma despliega infraestructura.
-- El repo `pricing-mlops` puede llamar Azure Functions para pruebas controladas, pero GitHub Actions no es requerido para operar el flujo ML cuando la Function esta desplegada. El fallback temporal `direct-aml` solo existe para bloqueos de Function/quota. El compute ML corre en Azure ML, no en GitHub.
-- No usar account keys ni connection strings.
-- No dar `Owner` ni `Contributor` de subscription al repo modelo.
+GitHub Actions no opera el flujo ML. La ruta operativa es Azure Function -> Azure ML -> Storage.
 
-## Repo plataforma
+GitHub Actions se usa para:
 
-Workflow actual: `.github/workflows/platform-infra.yml`.
+- validar PRs sin Azure login;
+- ejecutar `what-if` o deploy manual controlado de infraestructura;
+- publicar o probar integraciones cuando se solicite.
 
-| Trigger | Que hace | Azure login |
+## Workflow Activo En Este Repo
+
+`.github/workflows/platform-infra.yml`
+
+| Trigger | Accion | Azure login |
 |---|---|---|
 | `pull_request` | Compila Bicep y parameter files. | No |
-| `workflow_dispatch`, `operation=validate` | Ejecuta validacion. | No |
+| `workflow_dispatch`, `operation=validate` | Solo valida. | No |
 | `workflow_dispatch`, `operation=what-if` | Ejecuta `scripts/what-if.sh`. | Si |
-| `workflow_dispatch`, `operation=deploy` | Ejecuta what-if y luego `scripts/deploy.sh`. | Si |
+| `workflow_dispatch`, `operation=deploy` | Ejecuta what-if y deploy. | Si |
 
-GitHub environments soportados para operacion:
+Opciones manuales permitidas:
 
 ```text
 staging
 validation
 ```
 
-`sandbox-*` es local/admin only. GitHub Actions no despliega ni ejecuta what-if de sandboxes personales. `data-lab` se valida en CI, pero su bootstrap se recomienda local/admin hasta revisar permisos sobre datos sensibles. Para operar el flujo modelo no se requiere GitHub Actions: se llama la Function desplegada.
+`sandbox-local` y `data-lab` se operan local/admin hasta que el equipo apruebe otra politica.
 
-## Repo modelo
+## Variables Del Environment GitHub
 
-Repo objetivo: `tecmx-team46-pricing/pricing-mlops`.
-
-El environment recomendado para GitHub Actions del modelo es `staging`. Debe usar:
+Para plataforma:
 
 ```text
-AZURE_CLIENT_ID=<modelGithubActionsClientId>
-AZURE_TENANT_ID=<tenant id>
-AZURE_SUBSCRIPTION_ID=<subscription id>
-AZURE_STORAGE_ACCOUNT=<storageAccountName>
-AZURE_STORAGE_DFS_ENDPOINT=<storageDfsEndpoint>
-AZURE_RESOURCE_GROUP=rg-pricing-mlops-staging
-AZURE_ML_WORKSPACE=<azureMlWorkspaceName>
-AZURE_FUNCTION_APP=<functionAppName>
-MLOPS_ENVIRONMENT=staging
-MLOPS_RUN_OWNER=team46
-MLOPS_CONTAINER_RAW_MASKED=raw-masked
-MLOPS_CONTAINER_CURATED=curated
-MLOPS_CONTAINER_BASELINE=baseline
-MLOPS_CONTAINER_RUNS=runs
-MLOPS_CONTAINER_SNAPSHOTS=snapshots
-MLOPS_CONTAINER_DRIFT_LOGS=drift-logs
-MLOPS_CONTAINER_REPORTS=reports
-MLOPS_CONTAINER_ARTIFACTS=artifacts
+AZURE_CLIENT_ID
+AZURE_TENANT_ID
+AZURE_SUBSCRIPTION_ID
 ```
 
-Valor actual en `staging`:
+Para el repo `pricing-mlops`, ver su `README.md`. La identidad del repo modelo no debe recibir `Owner` ni `Contributor` de subscription.
 
-```text
-AZURE_FUNCTION_APP=func-pricing-mlops-staging-<suffix>
-```
+## PR Seguro
 
-La identidad modelo necesita `AzureML Data Scientist` sobre el workspace AML y permiso de verificacion/escritura sobre Storage. Para publicar codigo de Function y llamar el endpoint protegido, tambien necesita permisos sobre la Function App. El command job serverless usa `identity: user_identity`, por lo que en GitHub el acceso a datos ocurre con la identidad que somete el job mediante Entra ID. El workspace AML mantiene `systemDatastoresAuthMode=identity`; las identidades de AML reciben `AcrPull` sobre el ACR asociado para preparar el runtime. El repo modelo no debe recibir acceso a `raw-unmasked`, `Owner` ni `Contributor` de subscription.
+En pull request:
 
-`sandbox-local` puede tener identidades OIDC heredadas de pruebas previas. Quedan consideradas legacy/deprecated para GitHub Actions y no deben usarse como patron de equipo.
-
-## Outputs de plataforma
-
-Despues del deploy, la plataforma debe publicar valores no sensibles:
-
-```json
-{
-  "environment": "staging",
-  "storageAccount": "stpmlops...",
-  "storageDfsEndpoint": "https://stpmlops....dfs.core.windows.net",
-  "modelGithubActionsClientId": "<client-id>",
-  "azureMlWorkspaceName": "mlw-pricing-mlops-staging-...",
-  "functionAppName": "func-pricing-mlops-staging-...",
-  "containers": {
-    "input": "input",
-    "rawMasked": "raw-masked",
-    "curated": "curated",
-    "baseline": "baseline",
-    "runs": "runs",
-    "snapshots": "snapshots",
-    "driftLogs": "drift-logs",
-    "reports": "reports",
-    "artifacts": "artifacts"
-  }
-}
-```
+- no usar `azure/login`;
+- no ejecutar `az deployment`;
+- no desplegar recursos;
+- no correr Azure ML jobs;
+- no tocar sandboxes.
