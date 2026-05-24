@@ -31,6 +31,7 @@ jobs:
         --output-dir outputs/prepared_data
         --prepared-container artifacts
         --prepared-prefix component-state/${{inputs.run_id}}/prepared
+        --flow-token ${{outputs.flow_token}}
       environment:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml
@@ -41,10 +42,16 @@ jobs:
           type: string
         run_id:
           type: string
+      outputs:
+        flow_token:
+          type: uri_file
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       input_blob_path: ${{parent.inputs.input_blob_path}}
       run_id: ${{parent.inputs.run_id}}
+    outputs:
+      flow_token:
+        type: uri_file
     identity:
       type: user_identity
   score_evaluate:
@@ -61,9 +68,11 @@ jobs:
         python -m pip install -e . &&
         python scripts/components/score_evaluate.py
         --storage-account ${{inputs.storage_account}}
+        --validation-token ${{inputs.validation_token}}
         --prepared-container artifacts
         --prepared-prefix component-state/${{inputs.run_id}}/prepared
         --output-dir outputs/run_artifacts
+        --flow-token ${{outputs.flow_token}}
         --run-artifacts-container artifacts
         --run-artifacts-prefix component-state/${{inputs.run_id}}/run_artifacts
         --environment ${{inputs.environment}}
@@ -80,6 +89,8 @@ jobs:
       inputs:
         storage_account:
           type: string
+        validation_token:
+          type: uri_file
         environment:
           type: string
         run_owner:
@@ -96,8 +107,12 @@ jobs:
           type: string
         model_commit_sha:
           type: string
+      outputs:
+        flow_token:
+          type: uri_file
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
+      validation_token: ${{parent.jobs.validate_prepare.outputs.flow_token}}
       environment: ${{parent.inputs.environment}}
       run_owner: ${{parent.inputs.run_owner}}
       run_id: ${{parent.inputs.run_id}}
@@ -106,6 +121,9 @@ jobs:
       model_repo: ${{parent.inputs.model_repo}}
       model_ref: ${{parent.inputs.model_ref}}
       model_commit_sha: ${{parent.inputs.model_commit_sha}}
+    outputs:
+      flow_token:
+        type: uri_file
     identity:
       type: user_identity
   publish_outputs:
@@ -121,6 +139,7 @@ jobs:
       command: >-
         python -m pip install -e . &&
         python scripts/components/publish_outputs.py
+        --score-token ${{inputs.score_token}}
         --storage-account ${{inputs.storage_account}}
         --run-artifacts-container artifacts
         --run-artifacts-prefix component-state/${{inputs.run_id}}/run_artifacts
@@ -132,6 +151,8 @@ jobs:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml
       inputs:
+        score_token:
+          type: uri_file
         storage_account:
           type: string
         run_id:
@@ -143,6 +164,7 @@ jobs:
         trigger_type:
           type: string
     inputs:
+      score_token: ${{parent.jobs.score_evaluate.outputs.flow_token}}
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
       environment: ${{parent.inputs.environment}}
