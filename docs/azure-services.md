@@ -4,9 +4,10 @@
 
 | Servicio | Recurso | Rol |
 |---|---|---|
-| Azure ML Workspace | `mlw-pricing-mlops-staging-<suffix>` | Ejecuta command jobs serverless/administrados. |
+| Azure ML Workspace activo | `mlw-pricing-mlops-stg-v2-<suffix>` | Ejecuta command jobs serverless/administrados. Usa `stamlpmlopsstg<suffix>` como storage asociado. |
+| Azure ML Workspace legacy | `mlw-pricing-mlops-staging-<suffix>` | Workspace anterior. Conserva datastores internos en `<mlops-storage-account>`; no borrar sin aprobacion. |
 | Storage MLOps | `<mlops-storage-account>` | Data lake funcional: inputs masked y outputs MLOps. |
-| Storage runtime Azure ML | `stamlpmlopsstg<suffix>` | Infraestructura operativa interna AML para workspaces nuevos. |
+| Storage runtime Azure ML | `stamlpmlopsstg<suffix>` | Infraestructura operativa interna AML para el workspace v2 activo. |
 | Storage host Function | `stfn<generated-suffix>` | Estado runtime de Azure Functions. |
 | Function App | `func-pricing-mlops-staging-<suffix>` | Orquesta requests hacia Azure ML. |
 | ACR AML | `` | Registry asociado a Azure ML runtime. |
@@ -52,9 +53,9 @@ Uso previsto:
 - logs internos de Azure ML
 - environments
 - job artifacts internos
-- blobstore/default datastore de Azure ML en un workspace nuevo
+- blobstore/default datastore de Azure ML en el workspace v2 activo
 
-El workspace actual fue creado con `<mlops-storage-account>` como storage asociado. No cambiar ni recrear ese workspace sin decision explicita; la separacion completa requiere crear un workspace nuevo con el Storage runtime como `storageAccount`.
+El workspace v2 activo usa este Storage runtime como `storageAccount`. El workspace legacy fue creado con `<mlops-storage-account>` como storage asociado; no cambiar, recrear ni borrar ese workspace sin decision explicita.
 
 ## Function Host Storage
 
@@ -64,7 +65,8 @@ El workspace actual fue creado con `<mlops-storage-account>` como storage asocia
 
 | Principal | Permiso |
 |---|---|
-| Azure ML workspace managed identity | Blob/File contributor en Storage runtime AML; permisos legacy en storage asociado actual mientras exista. |
+| Azure ML workspace v2 managed identity | Blob/File contributor en Storage runtime AML. |
+| Azure ML workspace legacy managed identity | Permisos legacy en el storage asociado anterior mientras exista. |
 | Azure ML job identity | Blob contributor en Storage MLOps para leer `raw-masked` y escribir outputs funcionales; Blob contributor en Storage runtime AML para operacion futura. |
 | Function managed identity | AzureML Data Scientist en workspace y Blob contributor en Storage MLOps. |
 

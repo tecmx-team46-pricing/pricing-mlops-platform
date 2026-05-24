@@ -68,6 +68,12 @@ param functionLocation string = ''
 @description('Deploy Azure Machine Learning as the primary ML compute control plane.')
 param enableAzureMl bool = false
 
+@description('Use the v2 Azure ML workspace for staging cutover while preserving the original workspace as legacy.')
+param useAzureMlWorkspaceV2 bool = false
+
+@description('Explicit Azure ML workspace v2 name. Empty value uses the environment-aware default.')
+param azureMlWorkspaceV2Name string = ''
+
 @description('Existing Azure ML associated Container Registry name. Set after Azure ML creates one automatically, or leave empty for first create.')
 param azureMlContainerRegistryName string = ''
 
@@ -130,7 +136,9 @@ var functionHostStorageAccountName = take('stfn${workloadUniqueSuffix}', 24)
 var hostingPlanName = 'asp-${projectName}-${environmentName}'
 var functionAppName = take('func-${projectName}-${replace(environmentName, 'sandbox-', 'sbx-')}-${shortSuffix}', 60)
 var effectiveFunctionLocation = empty(functionLocation) ? location : functionLocation
-var azureMlWorkspaceName = take('mlw-${projectName}-${environmentName}-${shortSuffix}', 33)
+var azureMlLegacyWorkspaceName = take('mlw-${projectName}-${environmentName}-${shortSuffix}', 33)
+var defaultAzureMlWorkspaceV2Name = take('mlw-${projectName}-${azureMlRuntimeEnvironmentToken}-v2-${shortSuffix}', 33)
+var activeAzureMlWorkspaceName = useAzureMlWorkspaceV2 ? (empty(azureMlWorkspaceV2Name) ? defaultAzureMlWorkspaceV2Name : azureMlWorkspaceV2Name) : azureMlLegacyWorkspaceName
 var azureMlApplicationInsightsName = take('appi-${projectName}-${environmentName}-${shortSuffix}', 255)
 var azureMlJobIdentityName = 'id-${projectName}-aml-${environmentName}'
 var githubActionsIdentityName = 'id-gha-${projectName}-${environmentName}'
@@ -190,6 +198,9 @@ module storage 'modules/storage.bicep' = {
 module functionOrchestrator 'modules/function-orchestrator.bicep' = if (enableFunctionOrchestrator) {
   name: 'pricing-mlops-function-orchestrator-${uniqueString(workloadResourceGroupName)}'
   scope: resourceGroup(workloadResourceGroupName)
+  dependsOn: [
+    azureMl
+  ]
   params: {
     location: effectiveFunctionLocation
     tags: workloadTags
@@ -198,7 +209,7 @@ module functionOrchestrator 'modules/function-orchestrator.bicep' = if (enableFu
     hostingPlanName: hostingPlanName
     functionHostStorageAccountName: functionHostStorageAccountName
     workloadStorageAccountName: storage.outputs.storageAccountName
-    azureMlWorkspaceName: azureMlWorkspaceName
+    azureMlWorkspaceName: activeAzureMlWorkspaceName
     azureMlWorkspaceResourceGroupName: workloadResourceGroupName
     modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
     enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
@@ -253,7 +264,7 @@ module azureMl 'modules/azure-ml.bicep' = if (enableAzureMl) {
       purpose: 'ml-compute'
       compute_target: 'azure-ml'
     })
-    azureMlWorkspaceName: azureMlWorkspaceName
+    azureMlWorkspaceName: activeAzureMlWorkspaceName
     applicationInsightsName: azureMlApplicationInsightsName
     azureMlJobIdentityId: azureMlJobIdentity!.outputs.identityId
     azureMlJobIdentityName: azureMlJobIdentity!.outputs.identityName
@@ -281,6 +292,8 @@ output modelGithubActionsClientId string = enableModelGithubActionsIdentity ? mo
 output functionAppName string = enableFunctionOrchestrator ? functionOrchestrator!.outputs.functionAppName : ''
 output functionHealthEndpoint string = enableFunctionOrchestrator ? 'https://${functionOrchestrator!.outputs.functionAppName}.azurewebsites.net/api/health' : ''
 output functionHostStorageAccountName string = enableFunctionOrchestrator ? functionOrchestrator!.outputs.functionHostStorageAccountName : ''
+output azureMlLegacyWorkspaceName string = azureMlLegacyWorkspaceName
+output azureMlWorkspaceV2Name string = useAzureMlWorkspaceV2 ? activeAzureMlWorkspaceName : ''
 output azureMlWorkspaceName string = enableAzureMl ? azureMl!.outputs.azureMlWorkspaceName : ''
 output azureMlWorkspaceId string = enableAzureMl ? azureMl!.outputs.azureMlWorkspaceId : ''
 output azureMlApplicationInsightsName string = enableAzureMl ? azureMl!.outputs.applicationInsightsName : ''

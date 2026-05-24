@@ -71,6 +71,14 @@ param functionLocation string = ''
 #disable-next-line no-unused-params
 param enableAzureMl bool = false
 
+@description('Use the v2 Azure ML workspace from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param useAzureMlWorkspaceV2 bool = false
+
+@description('Explicit Azure ML workspace v2 name from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param azureMlWorkspaceV2Name string = ''
+
 @description('Existing Azure ML associated Container Registry name. Kept here so parameter files can be shared.')
 #disable-next-line no-unused-params
 param azureMlContainerRegistryName string = ''

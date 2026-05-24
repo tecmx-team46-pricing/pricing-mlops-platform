@@ -18,7 +18,7 @@ La arquitectura distingue tres cuentas de Storage:
 | Storage runtime Azure ML `stamlpmlopsstg<suffix>` | Infraestructura operativa interna de Azure ML. | Snapshots de codigo, logs internos AML, environments y artifacts runtime. Tag `purpose=azure-ml-runtime`. |
 | Storage host Function `stfn<generated-suffix>` | Estado runtime de Azure Functions. | `AzureWebJobsStorage`; no es data lake ni artifact store AML. |
 
-El workspace actual de `staging` fue creado con `<mlops-storage-account>` como storage asociado. La separacion completa de `workspaceblobstore`, `workspaceartifactstore`, `workspacefilestore` y `workspaceworkingdirectory` requiere crear un workspace nuevo apuntando al Storage runtime Azure ML. No se debe recrear ni borrar el workspace actual sin decision explicita.
+El workspace activo de `staging` es `mlw-pricing-mlops-stg-v2-<suffix>` y usa `stamlpmlopsstg<suffix>` como storage asociado. El workspace original `mlw-pricing-mlops-staging-<suffix>` fue creado con `<mlops-storage-account>` como storage asociado y queda como legacy para rollback o auditoria; no se debe recrear ni borrar sin decision explicita.
 
 GitHub Actions queda para CI/CD, validacion y despliegue controlado. No es compute ML ni orquestador operativo.
 
@@ -50,8 +50,9 @@ No existe `prod` en IaC, parameter files ni workflows.
 | Log Analytics | `rg-pricing-mlops-platform-shared` | Activo | Observabilidad base. |
 | User Assigned Identities | `rg-pricing-mlops-platform-shared` | Activo | OIDC para repos. |
 | Storage / ADLS Gen2 | `rg-pricing-mlops-staging` | Activo | Data lake MLOps: `raw-masked`, `curated`, `runs`, `snapshots`, `drift-logs`, `reports`, `artifacts`. |
-| Storage runtime Azure ML | `rg-pricing-mlops-staging` | Activo via IaC | Operacional: snapshots, logs, environments y artifacts internos AML. El workspace actual solo lo puede usar como default al crear un workspace nuevo. |
-| Azure ML Workspace | `rg-pricing-mlops-staging` | Activo | Command jobs serverless/administrados, sin GPU ni endpoint online. El workspace actual conserva su storage asociado legacy. |
+| Storage runtime Azure ML | `rg-pricing-mlops-staging` | Activo via IaC | Operacional: snapshots, logs, environments y artifacts internos AML para el workspace v2 activo. |
+| Azure ML Workspace v2 | `rg-pricing-mlops-staging` | Activo | `mlw-pricing-mlops-stg-v2-<suffix>`; command jobs serverless/administrados, sin GPU ni endpoint online. Usa Storage runtime Azure ML como storage asociado. |
+| Azure ML Workspace legacy | `rg-pricing-mlops-staging` | Legacy | `mlw-pricing-mlops-staging-<suffix>`; conserva datastores internos en el Storage MLOps principal. No borrar sin aprobacion. |
 | Azure Function | `rg-pricing-mlops-staging` | Activo | `func-pricing-mlops-staging-<suffix>` en `centralus`, plan Y1/Dynamic. |
 
 Storage y Azure ML de `staging` viven en `eastus2`. La Function vive en `centralus` porque `eastus2` presento quota 0 para App Service/Functions en esta subscription.
@@ -83,15 +84,15 @@ El Storage MLOps principal mantiene `allowSharedKeyAccess=false`. El Storage run
 
 ## Separacion Azure ML Runtime
 
-Microsoft documenta que el storage asociado del workspace se proporciona durante la creacion del workspace. Tambien documenta que ese storage guarda logs de jobs, notebooks, snapshots y otros artifacts internos de Azure ML. Por eso, para limpiar completamente `<mlops-storage-account>`, la opcion recomendada es:
+Microsoft documenta que el storage asociado del workspace se proporciona durante la creacion del workspace. Tambien documenta que ese storage guarda logs de jobs, notebooks, snapshots y otros artifacts internos de Azure ML. Por eso, `staging` usa un workspace v2 asociado al Storage runtime Azure ML:
 
-1. Crear un workspace nuevo de staging, por ejemplo `mlw-pricing-mlops-staging-v2-<suffix>`, con `stamlpmlopsstg<suffix>` como `storageAccount`.
-2. Registrar el Storage MLOps principal como datastore funcional externo para `raw-masked` y outputs.
-3. Cambiar la Function al nuevo workspace.
+1. Crear `mlw-pricing-mlops-stg-v2-<suffix>` con `stamlpmlopsstg<suffix>` como `storageAccount`.
+2. Mantener `<mlops-storage-account>` como Storage MLOps funcional externo para `raw-masked` y outputs.
+3. Cambiar la Function al workspace v2 mediante `AZURE_ML_WORKSPACE`.
 4. Ejecutar E2E.
 5. Clasificar containers legacy en `<mlops-storage-account>` y borrar solo con aprobacion explicita.
 
-La opcion conservadora es mantener el workspace actual y usar lifecycle policy para artifacts internos legacy, sabiendo que AML seguira escribiendo runtime artifacts en el storage asociado actual.
+Rollback conservador: volver `AZURE_ML_WORKSPACE` a `mlw-pricing-mlops-staging-<suffix>` y ejecutar E2E antes de cualquier limpieza.
 
 El repo modelo no recibe acceso a `raw-unmasked`.
 

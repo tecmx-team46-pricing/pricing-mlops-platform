@@ -127,7 +127,7 @@ def validate_azure_ml_runtime_storage_contract() -> None:
     required_doc_terms = {
         "Storage runtime Azure ML",
         "azure-ml-runtime",
-        "workspace nuevo",
+        "workspace v2",
     }
     missing_doc_terms = {term for term in required_doc_terms if term not in architecture_doc}
     if missing_doc_terms:

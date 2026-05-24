@@ -45,7 +45,7 @@ La operacion diaria del flujo vive en el repo `pricing-mlops`:
 ```bash
 AZURE_FUNCTION_APP=func-pricing-mlops-staging-<suffix> \
 AZURE_RESOURCE_GROUP=rg-pricing-mlops-staging \
-AZURE_ML_WORKSPACE=mlw-pricing-mlops-staging-<suffix> \
+AZURE_ML_WORKSPACE=mlw-pricing-mlops-stg-v2-<suffix> \
 scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
 ```
 
@@ -56,9 +56,9 @@ Ese script llama la Function, espera el job AML por ARM/REST y verifica metadata
 | Necesidad | Ruta |
 |---|---|
 | Function | Function App `func-pricing-mlops-staging-<suffix>` > Functions / Log stream |
-| Azure ML jobs | Machine Learning workspace `mlw-pricing-mlops-staging-<suffix>` > Jobs |
+| Azure ML jobs | Machine Learning workspace `mlw-pricing-mlops-stg-v2-<suffix>` > Jobs |
 | Outputs funcionales | Storage MLOps `<mlops-storage-account>` > Containers |
-| Artifacts runtime AML | Storage runtime Azure ML `stamlpmlopsstg<suffix>` para workspaces nuevos; el workspace actual conserva artifacts legacy en `<mlops-storage-account>` |
+| Artifacts runtime AML | Storage runtime Azure ML `stamlpmlopsstg<suffix>` para el workspace v2 activo; el workspace legacy conserva artifacts anteriores en `<mlops-storage-account>` |
 | Function host state | Storage `stfn<generated-suffix>` |
 | Costos | Cost Management > Cost analysis > filtrar `rg-pricing-mlops-staging` |
 | RBAC | Resource > Access control (IAM) |
@@ -107,4 +107,61 @@ No borrar containers internos actuales de Azure ML automaticamente. Primero clas
 | AML runtime artifacts | `azureml`, `azureml-environments`, `azureml-blobstore-*`, `snapshotzips`, `revisions`, `aml-environment-image-build` | Conservar X dias despues de confirmar que ningun job activo depende de ellos. |
 | Logs diagnosticos | `insights-logs-*`, `insights-metrics-*` | Conservar X dias para troubleshooting y costo bajo. |
 
-Despues de migrar a un workspace nuevo con Storage runtime separado, documentar los containers legacy que quedaron en `<mlops-storage-account>` y pedir aprobacion explicita antes de borrarlos.
+Despues del cutover a workspace v2, los containers AML internos que quedaron en `<mlops-storage-account>` son candidatos a limpieza futura solo con aprobacion explicita. Mantenerlos mientras el workspace legacy exista o pueda usarse para rollback.
+
+## Clasificacion Actual De Containers
+
+En `<mlops-storage-account>`, conservar como funcionales MLOps:
+
+```text
+raw-masked
+curated
+baseline
+runs
+snapshots
+drift-logs
+reports
+artifacts
+```
+
+`input` queda como container reservado/historico de IaC; revisarlo antes de cualquier borrado.
+
+En `<mlops-storage-account>`, no borrar mientras exista el workspace legacy:
+
+```text
+<legacy-workspace-guid>-*
+aml-environment-image-build
+azureml
+azureml-blobstore-<legacy-workspace-guid>
+azureml-environments
+revisions
+snapshotzips
+```
+
+Logs diagnosticos en `<mlops-storage-account>`, candidatos a lifecycle despues de acordar retencion:
+
+```text
+insights-logs-auditevent
+insights-metrics-pt1m
+```
+
+En `stamlpmlopsstg<suffix>`, los containers AML runtime esperados para el workspace v2 activo incluyen:
+
+```text
+azureml
+azureml-blobstore-<active-workspace-guid>
+<active-workspace-guid>-*
+revisions
+snapshots
+snapshotzips
+```
+
+Propuesta de lifecycle pendiente de aprobacion:
+
+| Clase | Accion propuesta |
+|---|---|
+| `raw-masked` | Conservar explicitamente por dataset aprobado. |
+| Outputs funcionales | Conservar ultimos N runs o X dias, segun necesidad academica/operativa. |
+| AML runtime artifacts en `stamlpmlopsstg<suffix>` | Retener X dias despues de confirmar que ningun job activo depende de ellos. |
+| AML legacy en `<mlops-storage-account>` | Retener hasta retirar workspace legacy y pedir aprobacion explicita de borrado. |
+| Logs diagnosticos | Retener X dias para troubleshooting de bajo costo. |

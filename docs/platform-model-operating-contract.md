@@ -36,6 +36,8 @@ No se publican account keys, connection strings ni secretos.
 
 `AZURE_STORAGE_ACCOUNT` apunta al Storage MLOps principal, no al Storage runtime interno de Azure ML ni al Storage host de Function.
 
+En `staging`, `AZURE_ML_WORKSPACE` apunta al workspace activo `mlw-pricing-mlops-stg-v2-<suffix>`. El workspace legacy `mlw-pricing-mlops-staging-<suffix>` no es la ruta operativa normal.
+
 ## Input Compartido
 
 ```text

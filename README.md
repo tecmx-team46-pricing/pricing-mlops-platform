@@ -21,11 +21,11 @@ GitHub Actions no es el orquestador operativo del flujo ML. En este repo solo va
 flowchart TD
   Platform["pricing-mlops-platform<br/>Bicep / RBAC / Runbooks"] --> ARM["Azure Resource Manager"]
   ARM --> Shared["rg-pricing-mlops-platform-shared<br/>Key Vault / Log Analytics / OIDC"]
-  ARM --> Staging["rg-pricing-mlops-staging<br/>Storage / Azure ML / Function"]
+  ARM --> Staging["rg-pricing-mlops-staging<br/>Storage / Azure ML v2 / Function"]
   ARM --> DataLab["rg-pricing-mlops-data-lab<br/>raw-unmasked restringido"]
 
   Operator["Script operativo local"] --> Function["Azure Function<br/>orquestador"]
-  Function --> AML["Azure ML Job<br/>compute ML"]
+  Function --> AML["Azure ML v2 Job<br/>compute ML"]
   AML --> Storage["Storage MLOps<br/>raw-masked / curated / runs / snapshots / drift-logs / reports / artifacts"]
   AML -. runtime interno .-> AMLRuntime["Storage runtime Azure ML<br/>snapshots / logs / environments"]
   Function -. host state .-> FunctionStorage["Storage host Function"]
@@ -73,7 +73,7 @@ Operar el flujo ML se hace desde `pricing-mlops` con `scripts/run_model_flow_fun
 
 `<mlops-storage-account>` es el data lake MLOps de `staging`. Su contrato funcional se limita a datos masked y outputs en `raw-masked`, `curated`, `baseline`, `runs`, `snapshots`, `drift-logs`, `reports` y `artifacts`; mantiene `allowSharedKeyAccess=false`.
 
-Azure ML tiene un Storage runtime separado en IaC (`stamlpmlopsstg<suffix>`, `purpose=azure-ml-runtime`) para snapshots de codigo, logs, environments y artifacts internos de AML. El workspace actual fue creado antes de esta separacion y conserva su storage asociado legacy; usar el runtime storage como default completo requiere crear un workspace nuevo y mover la Function despues de validar E2E.
+Azure ML usa un workspace v2 activo (`mlw-pricing-mlops-stg-v2-<suffix>`) asociado al Storage runtime `stamlpmlopsstg<suffix>` para snapshots de codigo, logs, environments y artifacts internos de AML. El workspace original `mlw-pricing-mlops-staging-<suffix>` queda como legacy sin borrar; sus containers internos en `<mlops-storage-account>` no se deben eliminar sin aprobacion explicita.
 
 La Function App usa otro Storage (`stfn<generated-suffix>`) para `AzureWebJobsStorage`. Ese storage puede usar connection string de host runtime, pero no es data lake MLOps.
 

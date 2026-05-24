@@ -25,10 +25,10 @@ param azureMlJobIdentityClientId string
 @description('Existing Azure ML associated Container Registry name. Empty value leaves the property unset for first workspace creation.')
 param azureMlContainerRegistryName string = ''
 
-@description('Existing workload Storage Account name.')
+@description('Existing workload Storage Account name used as the functional MLOps data lake.')
 param storageAccountName string
 
-@description('Azure ML runtime Storage Account name. Existing workspaces keep their original associated storage unless explicitly recreated.')
+@description('Azure ML runtime Storage Account name used as the workspace associated storage for new Azure ML workspaces.')
 param azureMlRuntimeStorageAccountName string
 
 @description('Shared platform Key Vault resource group name.')
@@ -107,7 +107,7 @@ resource workspace 'Microsoft.MachineLearningServices/workspaces@2024-04-01' = {
   }
   properties: union({
     friendlyName: azureMlWorkspaceName
-    storageAccount: workloadStorage.id
+    storageAccount: azureMlRuntimeStorage.id
     keyVault: keyVault.id
     applicationInsights: appInsights.id
     primaryUserAssignedIdentity: azureMlJobIdentityId

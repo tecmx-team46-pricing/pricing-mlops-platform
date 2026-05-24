@@ -24,6 +24,8 @@ param enableModelGithubActionsIdentity = true
 param enableFunctionOrchestrator = true
 param functionLocation = 'centralus'
 param enableAzureMl = true
+param useAzureMlWorkspaceV2 = true
+param azureMlWorkspaceV2Name = 'mlw-pricing-mlops-stg-v2-<suffix>'
 param azureMlContainerRegistryName = ''
 
 // Staging uses the included 200 USD Azure credit in "<azure-subscription-name>".

@@ -88,7 +88,7 @@ Los recursos activos principales se encuentran en el ambiente `staging`.
 | Resource Group | `rg-pricing-mlops-staging` | Contenedor logico del MVP operativo. |
 | Azure Storage | `<mlops-storage-account>` | Data lake operativo para inputs masked y outputs. |
 | Azure ML runtime storage | `stamlpmlopsstg<suffix>` | Storage operativo separado para artifacts internos de Azure ML en una migracion de workspace futura. |
-| Azure Machine Learning | `mlw-pricing-mlops-staging-<suffix>` | Workspace donde se ejecutan los command jobs. |
+| Azure Machine Learning | `mlw-pricing-mlops-stg-v2-<suffix>` | Workspace activo donde se ejecutan los command jobs. |
 | Azure Function App | `func-pricing-mlops-staging-<suffix>` | Orquestador ligero del flujo. |
 | App Service Plan | `asp-pricing-mlops-staging` | Plan Consumption para la Function. |
 | Function host storage | `stfn<generated-suffix>` | Storage tecnico requerido por Azure Functions. |
@@ -98,7 +98,7 @@ Los recursos activos principales se encuentran en el ambiente `staging`.
 
 Tambien se eliminaron recursos legacy del PoC anterior con Container Apps y ACR dedicado, porque ya no formaban parte de la ruta activa del diseno.
 
-El Storage MLOps principal se documento como data lake funcional. El Storage runtime de Azure ML ya existe por IaC, pero el workspace actual conserva su storage asociado original; una separacion completa de artifacts internos requiere crear un workspace nuevo apuntando al runtime storage y validar el flujo antes de limpiar containers legacy.
+El Storage MLOps principal se documento como data lake funcional. El Storage runtime de Azure ML ya existe por IaC y el workspace activo v2 lo usa como storage asociado; el workspace anterior conserva artifacts legacy en el Storage MLOps principal hasta que se apruebe su limpieza.
 
 ## 6. Estructura De Repositorios
 
