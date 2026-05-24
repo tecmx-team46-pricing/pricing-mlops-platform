@@ -239,7 +239,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'MLOPS_USE_MANAGED_JOB_IDENTITY'
-          value: 'true'
+          value: 'false'
         }
         {
           name: 'MODEL_REPO_GITHUB'
