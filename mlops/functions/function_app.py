@@ -291,6 +291,7 @@ def submit_azure_ml_job(request: dict[str, str]) -> dict[str, str | bool]:
         "model_ref": request["model_ref"],
         "model_commit_sha": request["model_commit_sha"],
     })
+    _apply_job_identity(job)
     created = client.jobs.create_or_update(job)
     result = {
         "accepted": True,
@@ -315,6 +316,19 @@ def _apply_job_inputs(job, values: dict[str, str]) -> None:
             node_input._meta["default"] = value
         if getattr(job, "component", None) is not None and key in job.component.inputs:
             job.component.inputs[key]["default"] = value
+
+
+def _apply_job_identity(job) -> None:
+    job_identity_client_id = os.getenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "").strip()
+    if not job_identity_client_id or not hasattr(job, "jobs"):
+        return
+
+    from azure.ai.ml.entities import ManagedIdentityConfiguration
+
+    managed_identity = ManagedIdentityConfiguration(client_id=job_identity_client_id)
+    for node in job.jobs.values():
+        if hasattr(node, "identity"):
+            node.identity = managed_identity
 
 
 def _record_run_metadata(request: dict[str, str], status: str) -> None:

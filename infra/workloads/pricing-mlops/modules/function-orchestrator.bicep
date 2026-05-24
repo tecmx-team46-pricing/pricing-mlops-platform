@@ -29,6 +29,9 @@ param azureMlWorkspaceName string
 @description('Resource group that contains the Azure ML workspace.')
 param azureMlWorkspaceResourceGroupName string
 
+@description('Client id of the user-assigned managed identity used by Azure ML pipeline component jobs.')
+param azureMlJobIdentityClientId string = ''
+
 @description('Principal id of the functional model repo GitHub Actions managed identity.')
 param modelGithubActionsPrincipalId string = ''
 
@@ -173,6 +176,10 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'AZURE_ML_WORKSPACE'
           value: azureMlWorkspaceName
+        }
+        {
+          name: 'AZURE_ML_JOB_IDENTITY_CLIENT_ID'
+          value: azureMlJobIdentityClientId
         }
         {
           name: 'AZURE_STORAGE_ACCOUNT'
