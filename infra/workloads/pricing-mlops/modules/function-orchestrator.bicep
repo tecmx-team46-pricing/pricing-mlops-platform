@@ -130,10 +130,6 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           value: 'true'
         }
         {
-          name: 'ENABLE_ORYX_BUILD'
-          value: 'true'
-        }
-        {
           name: 'PRICING_MLOPS_ENVIRONMENT'
           value: environmentName
         }
