@@ -2,7 +2,7 @@
 
 ## Decision Actual
 
-El MVP operativo usa:
+La base operativa actual usa:
 
 ```text
 Azure Function -> Azure ML command job -> Storage/ADLS
@@ -37,7 +37,7 @@ GitHub Actions queda para CI/CD, validacion y despliegue controlado. No es compu
 | `shared` | `rg-pricing-mlops-platform-shared` | Servicios comunes; no es ambiente MLOps. | No |
 | `data-lab` | `rg-pricing-mlops-data-lab` | Landing restringido para unmasked/masking. | Si, restringido |
 | `sandbox-local` | `rg-pricing-mlops-sbx-local` | Pruebas local/admin temporales. | No |
-| `staging` | `rg-pricing-mlops-staging` | MVP operativo compartido. | No |
+| `staging` | `rg-pricing-mlops-staging` | Staging operativo compartido. | No |
 | `validation` | `rg-pricing-mlops-validation` | No-prod controlado futuro. | No |
 
 No existe `prod` en IaC, parameter files ni workflows.

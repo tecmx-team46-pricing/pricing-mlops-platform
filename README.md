@@ -1,6 +1,6 @@
 # pricing-mlops-platform
 
-Plataforma Azure para el MVP de Pricing MLOps. Este repo gobierna infraestructura, ambientes, RBAC/OIDC, Storage/ADLS, Azure ML, Azure Functions y runbooks de operacion.
+Plataforma Azure para la base operativa de Pricing MLOps. Este repo gobierna infraestructura, ambientes, RBAC/OIDC, Storage/ADLS, Azure ML, Azure Functions y runbooks de operacion.
 
 El codigo funcional del flujo vive en `pricing-mlops`. La referencia historica/EDA vive en `pricing-mlops-eda`.
 
@@ -39,7 +39,7 @@ flowchart TD
 | `shared` | `rg-pricing-mlops-platform-shared` | Key Vault, Log Analytics, identidades OIDC. No es ambiente MLOps. | Activo |
 | `data-lab` | `rg-pricing-mlops-data-lab` | Landing restringido para unmasked y masking. | Preparado |
 | `sandbox-local` | `rg-pricing-mlops-sbx-local` | Sandbox local/admin, no GitHub Actions. | Preparado |
-| `staging` | `rg-pricing-mlops-staging` | MVP operativo con Storage, Azure ML y Function. | Activo |
+| `staging` | `rg-pricing-mlops-staging` | Staging operativo con Storage, Azure ML y Function. | Activo |
 | `validation` | `rg-pricing-mlops-validation` | No-prod controlado futuro. | Preparado |
 
 `prod` no existe en IaC, parameters ni workflows.

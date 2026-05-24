@@ -26,7 +26,7 @@ Snapshot de recomendaciones generadas para una corrida.
 
 Schema: `mlops/schemas/model_output_snapshot.schema.json`
 
-El MVP lo puede guardar como JSONL o Parquet. JSONL es suficiente para evidencia pequena.
+La base operativa lo puede guardar como JSONL o Parquet. JSONL es suficiente para evidencia pequena.
 
 ## model_drift_log
 

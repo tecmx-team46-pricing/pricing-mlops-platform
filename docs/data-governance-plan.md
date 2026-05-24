@@ -22,7 +22,7 @@
 | `reports` | Resumen humano. | Ambientes MLOps. |
 | `artifacts` | Evidencia auxiliar. | Ambientes MLOps. |
 
-## Retencion PoC
+## Retencion Operativa
 
 | Zona | Retencion sugerida |
 |---|---:|

@@ -1,6 +1,6 @@
 # Retraining Decision
 
-El MVP no reentrena automaticamente. Solo clasifica el estado y recomienda una accion.
+La base operativa no reentrena automaticamente. Solo clasifica el estado y recomienda una accion.
 
 ## Semaforo
 
