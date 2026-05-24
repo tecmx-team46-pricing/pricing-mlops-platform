@@ -11,6 +11,7 @@ Ruta corta para entender el repo sin leer planes historicos.
 | [`platform-model-operating-contract.md`](platform-model-operating-contract.md) | Contrato entre plataforma y repo funcional. |
 | [`data-governance-plan.md`](data-governance-plan.md) | Zonas de datos, acceso y retencion. |
 | [`roadmap.md`](roadmap.md) | Siguientes pasos y fases. |
+| [`reporte-avance-proyecto-integrador.md`](reporte-avance-proyecto-integrador.md) | Reporte academico de avance del MVP para entrega. |
 | [`original/technical-design-original.md`](original/technical-design-original.md) | Diseno tecnico original del PDF, preservado como referencia historica. |
 
 ## Repos
