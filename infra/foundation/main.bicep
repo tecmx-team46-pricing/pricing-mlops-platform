@@ -59,9 +59,9 @@ param storageContainers array = [
   'artifacts'
 ]
 
-@description('Deploy the hello world Function App from the workload entrypoint. Kept here so parameter files can be shared.')
+@description('Deploy the Function orchestrator from the workload entrypoint. Kept here so parameter files can be shared.')
 #disable-next-line no-unused-params
-param enableHelloFunction bool = true
+param enableFunctionOrchestrator bool = true
 
 @description('Azure Function region used by the workload entrypoint. Kept here so parameter files can be shared.')
 #disable-next-line no-unused-params

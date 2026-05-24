@@ -12,7 +12,7 @@ param environmentName string
 @description('Function App name.')
 param functionAppName string
 
-@description('Basic App Service hosting plan name for the prototype Function App.')
+@description('App Service hosting plan name for the Function orchestrator.')
 param hostingPlanName string
 
 @description('Storage account used by the Function host runtime.')
@@ -136,10 +136,6 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'PRICING_MLOPS_ENVIRONMENT'
           value: environmentName
-        }
-        {
-          name: 'PRICING_MLOPS_HELLO_MESSAGE'
-          value: 'hello world'
         }
         {
           name: 'AZURE_SUBSCRIPTION_ID'

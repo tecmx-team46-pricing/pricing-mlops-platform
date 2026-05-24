@@ -21,8 +21,11 @@ if [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
   EXTRA_PARAMETERS+=(enableGithubActionsIdentity=false)
 fi
 
-if [[ -n "${ENABLE_HELLO_FUNCTION:-}" && "${ENVIRONMENT}" != "data-lab" ]]; then
-  EXTRA_PARAMETERS+=(enableHelloFunction="${ENABLE_HELLO_FUNCTION}")
+if [[ -n "${ENABLE_FUNCTION_ORCHESTRATOR:-}" && "${ENVIRONMENT}" != "data-lab" ]]; then
+  EXTRA_PARAMETERS+=(enableFunctionOrchestrator="${ENABLE_FUNCTION_ORCHESTRATOR}")
+elif [[ -n "${ENABLE_HELLO_FUNCTION:-}" && "${ENVIRONMENT}" != "data-lab" ]]; then
+  echo "ENABLE_HELLO_FUNCTION is deprecated; use ENABLE_FUNCTION_ORCHESTRATOR." >&2
+  EXTRA_PARAMETERS+=(enableFunctionOrchestrator="${ENABLE_HELLO_FUNCTION}")
 fi
 
 case "${ENVIRONMENT}" in
@@ -35,7 +38,7 @@ case "${ENVIRONMENT}" in
 esac
 
 if [[ "${ENVIRONMENT}" == "data-lab" ]]; then
-  EXTRA_PARAMETERS+=(enableHelloFunction=false)
+  EXTRA_PARAMETERS+=(enableFunctionOrchestrator=false)
 fi
 
 if [[ ! -f "${PARAMETER_FILE}" ]]; then

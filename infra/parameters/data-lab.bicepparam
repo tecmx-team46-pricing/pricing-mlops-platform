@@ -16,7 +16,7 @@ param sharedOwner = 'team46'
 param githubRepository = ''
 param githubEnvironment = 'data-lab'
 param enableGithubActionsIdentity = false
-param enableHelloFunction = false
+param enableFunctionOrchestrator = false
 
 param storageContainers = [
   'raw-unmasked'

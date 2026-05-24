@@ -18,7 +18,7 @@ param enableGithubActionsIdentity = false
 param modelGithubRepository = ''
 param modelGithubEnvironment = 'sandbox-local'
 param enableModelGithubActionsIdentity = false
-param enableHelloFunction = false
+param enableFunctionOrchestrator = false
 
 param storageContainers = [
   'input'
@@ -38,7 +38,7 @@ param budgetContactEmails = []
 
 param extraTags = {
   data_classification: 'masked-or-synthetic'
-  maturity: 'prototype'
+  maturity: 'personal-sandbox'
   subscription_strategy: 'single-subscription'
   subscription_name: '<azure-subscription-name>'
   credit_limit_usd: '200'

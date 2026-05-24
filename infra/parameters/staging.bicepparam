@@ -21,19 +21,19 @@ param enableGithubSubscriptionContributor = false
 param modelGithubRepository = 'tecmx-team46-pricing/pricing-mlops'
 param modelGithubEnvironment = 'staging'
 param enableModelGithubActionsIdentity = true
-param enableHelloFunction = true
+param enableFunctionOrchestrator = true
 param functionLocation = 'centralus'
 param enableAzureMl = true
 param azureMlContainerRegistryName = ''
 
-// The MVP uses the included 200 USD Azure credit in "<azure-subscription-name>".
+// Staging uses the included 200 USD Azure credit in "<azure-subscription-name>".
 // Keep the budget below the full credit to leave operating margin.
 param monthlyBudgetAmount = 180
 param budgetContactEmails = []
 
 param extraTags = {
   data_classification: 'masked-or-synthetic'
-  maturity: 'mvp'
+  maturity: 'operational-baseline'
   subscription_strategy: 'single-subscription'
   subscription_name: '<azure-subscription-name>'
   credit_limit_usd: '200'

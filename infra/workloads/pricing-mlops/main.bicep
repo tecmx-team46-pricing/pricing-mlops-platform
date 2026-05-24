@@ -59,8 +59,8 @@ param storageContainers array = [
   'artifacts'
 ]
 
-@description('Deploy the hello world Function App for the Pricing MLOps workload.')
-param enableHelloFunction bool = true
+@description('Deploy the Function orchestrator for the Pricing MLOps workload.')
+param enableFunctionOrchestrator bool = true
 
 @description('Azure region for the Function orchestrator. Empty value uses the workload location.')
 param functionLocation string = ''
@@ -74,13 +74,13 @@ param azureMlContainerRegistryName string = ''
 @description('App Service Plan SKU name for the Function App. Y1 is Azure Functions Consumption.')
 param functionPlanSkuName string = 'Y1'
 
-@description('App Service Plan SKU tier for the hello Function App.')
+@description('App Service Plan SKU tier for the Function orchestrator.')
 param functionPlanSkuTier string = 'Dynamic'
 
-@description('App Service Plan SKU size for the hello Function App.')
+@description('App Service Plan SKU size for the Function orchestrator.')
 param functionPlanSkuSize string = 'Y1'
 
-@description('App Service Plan instance count for the hello Function App.')
+@description('App Service Plan instance count for the Function orchestrator.')
 param functionPlanCapacity int = 1
 
 @description('GitHub repository in org/repo format. Empty value skips workload role assignments.')
@@ -187,8 +187,8 @@ module storage 'modules/storage.bicep' = {
   }
 }
 
-module helloFunction 'modules/hello-function.bicep' = if (enableHelloFunction) {
-  name: 'pricing-mlops-hello-function-${uniqueString(workloadResourceGroupName)}'
+module functionOrchestrator 'modules/function-orchestrator.bicep' = if (enableFunctionOrchestrator) {
+  name: 'pricing-mlops-function-orchestrator-${uniqueString(workloadResourceGroupName)}'
   scope: resourceGroup(workloadResourceGroupName)
   params: {
     location: effectiveFunctionLocation
@@ -278,9 +278,9 @@ output dataRoot string = dataRoot
 output storageDfsEndpoint string = dataRoot
 output containerNames object = containerNames
 output modelGithubActionsClientId string = enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.clientId : ''
-output functionAppName string = enableHelloFunction ? helloFunction!.outputs.functionAppName : ''
-output functionHealthEndpoint string = enableHelloFunction ? 'https://${helloFunction!.outputs.functionAppName}.azurewebsites.net/api/health' : ''
-output functionHostStorageAccountName string = enableHelloFunction ? helloFunction!.outputs.functionHostStorageAccountName : ''
+output functionAppName string = enableFunctionOrchestrator ? functionOrchestrator!.outputs.functionAppName : ''
+output functionHealthEndpoint string = enableFunctionOrchestrator ? 'https://${functionOrchestrator!.outputs.functionAppName}.azurewebsites.net/api/health' : ''
+output functionHostStorageAccountName string = enableFunctionOrchestrator ? functionOrchestrator!.outputs.functionHostStorageAccountName : ''
 output azureMlWorkspaceName string = enableAzureMl ? azureMl!.outputs.azureMlWorkspaceName : ''
 output azureMlWorkspaceId string = enableAzureMl ? azureMl!.outputs.azureMlWorkspaceId : ''
 output azureMlApplicationInsightsName string = enableAzureMl ? azureMl!.outputs.applicationInsightsName : ''
