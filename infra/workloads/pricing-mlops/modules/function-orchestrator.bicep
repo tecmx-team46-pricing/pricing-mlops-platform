@@ -238,6 +238,10 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           value: 'true'
         }
         {
+          name: 'MLOPS_USE_MANAGED_JOB_IDENTITY'
+          value: 'true'
+        }
+        {
           name: 'MODEL_REPO_GITHUB'
           value: modelRepoGithub
         }
