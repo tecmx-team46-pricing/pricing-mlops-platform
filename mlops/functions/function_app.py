@@ -319,6 +319,9 @@ def _apply_job_inputs(job, values: dict[str, str]) -> None:
 
 
 def _apply_job_identity(job) -> None:
+    if os.getenv("MLOPS_USE_MANAGED_JOB_IDENTITY", "false").lower() != "true":
+        return
+
     job_identity_client_id = os.getenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "").strip()
     if not job_identity_client_id or not hasattr(job, "jobs"):
         return

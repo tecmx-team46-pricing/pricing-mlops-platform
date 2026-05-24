@@ -244,6 +244,7 @@ def test_apply_job_identity_sets_managed_identity_on_pipeline_nodes(tmp_path, mo
     shutil.copy(ROOT / "mlops" / "azureml" / "environment.yml", azureml_dir / "environment.yml")
     job = load_job(source=azureml_dir / "pricing-mlops-pipeline.yml")
     monkeypatch.setenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "managed-client-id")
+    monkeypatch.setenv("MLOPS_USE_MANAGED_JOB_IDENTITY", "true")
 
     function_app._apply_job_identity(job)
 
@@ -252,6 +253,25 @@ def test_apply_job_identity_sets_managed_identity_on_pipeline_nodes(tmp_path, mo
             "type": "managed_identity",
             "client_id": "managed-client-id",
         }
+
+
+def test_apply_job_identity_keeps_user_identity_by_default(tmp_path, monkeypatch):
+    function_app = _load_function_app()
+    package_root = tmp_path / "package"
+    azureml_dir = package_root / "azureml"
+    source_dir = package_root / "pricing-mlops-source"
+    azureml_dir.mkdir(parents=True)
+    source_dir.mkdir()
+    shutil.copy(PIPELINE_JOB_FILE, azureml_dir / "pricing-mlops-pipeline.yml")
+    shutil.copy(ROOT / "mlops" / "azureml" / "environment.yml", azureml_dir / "environment.yml")
+    job = load_job(source=azureml_dir / "pricing-mlops-pipeline.yml")
+    monkeypatch.setenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "managed-client-id")
+    monkeypatch.delenv("MLOPS_USE_MANAGED_JOB_IDENTITY", raising=False)
+
+    function_app._apply_job_identity(job)
+
+    for node in job._to_dict()["jobs"].values():
+        assert node["identity"] == {"type": "user_identity"}
 
 
 def _copy_job_package(tmp_path):
