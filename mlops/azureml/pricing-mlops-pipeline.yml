@@ -44,14 +44,15 @@ jobs:
           type: string
       outputs:
         flow_token:
-          type: uri_file
+          type: uri_folder
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       input_blob_path: ${{parent.inputs.input_blob_path}}
       run_id: ${{parent.inputs.run_id}}
     outputs:
       flow_token:
-        type: uri_file
+        type: uri_folder
+        mode: rw_mount
     identity:
       type: user_identity
   score_evaluate:
@@ -90,7 +91,7 @@ jobs:
         storage_account:
           type: string
         validation_token:
-          type: uri_file
+          type: uri_folder
         environment:
           type: string
         run_owner:
@@ -109,7 +110,7 @@ jobs:
           type: string
       outputs:
         flow_token:
-          type: uri_file
+          type: uri_folder
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       validation_token: ${{parent.jobs.validate_prepare.outputs.flow_token}}
@@ -123,7 +124,8 @@ jobs:
       model_commit_sha: ${{parent.inputs.model_commit_sha}}
     outputs:
       flow_token:
-        type: uri_file
+        type: uri_folder
+        mode: rw_mount
     identity:
       type: user_identity
   publish_outputs:
@@ -152,7 +154,7 @@ jobs:
         conda_file: environment.yml
       inputs:
         score_token:
-          type: uri_file
+          type: uri_folder
         storage_account:
           type: string
         run_id:
