@@ -9,6 +9,7 @@ Ruta corta para entender el repo sin leer planes historicos.
 | [`operations.md`](operations.md) | Runbook de validacion, deploy, portal, costos y operacion diaria. |
 | [`github-actions.md`](github-actions.md) | Workflows vigentes, OIDC y reglas de PR/deploy. |
 | [`platform-model-operating-contract.md`](platform-model-operating-contract.md) | Contrato entre plataforma y repo funcional. |
+| [`legacy-resource-inventory.md`](legacy-resource-inventory.md) | Inventario de recursos activos, legacy conservados y legacy eliminados. |
 | [`../mlops/docs/function-orchestrator.md`](../mlops/docs/function-orchestrator.md) | Runtime Azure Function y empaquetado. |
 | [`../mlops/docs/azure-ml-job-contract.md`](../mlops/docs/azure-ml-job-contract.md) | Contrato del command job Azure ML. |
 | [`data-governance-plan.md`](data-governance-plan.md) | Zonas de datos, acceso y retencion. |

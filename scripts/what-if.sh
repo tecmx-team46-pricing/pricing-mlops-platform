@@ -21,9 +21,6 @@ fi
 
 if [[ -n "${ENABLE_FUNCTION_ORCHESTRATOR:-}" && "${ENVIRONMENT}" != "data-lab" ]]; then
   EXTRA_PARAMETERS+=(enableFunctionOrchestrator="${ENABLE_FUNCTION_ORCHESTRATOR}")
-elif [[ -n "${ENABLE_HELLO_FUNCTION:-}" && "${ENVIRONMENT}" != "data-lab" ]]; then
-  echo "ENABLE_HELLO_FUNCTION is deprecated; use ENABLE_FUNCTION_ORCHESTRATOR." >&2
-  EXTRA_PARAMETERS+=(enableFunctionOrchestrator="${ENABLE_HELLO_FUNCTION}")
 fi
 
 case "${ENVIRONMENT}" in
