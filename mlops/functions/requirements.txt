@@ -1,0 +1,4 @@
+azure-functions>=1.21.0
+azure-ai-ml>=1.32.0
+azure-identity>=1.17.0
+azure-storage-blob>=12.20.0

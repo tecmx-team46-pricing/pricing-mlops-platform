@@ -8,7 +8,7 @@ La base operativa actual usa:
 Azure Function -> Azure ML command job -> Storage/ADLS
 ```
 
-Azure Functions orquesta y valida el request. Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de outputs. Storage/ADLS conserva inputs masked y evidencia versionada.
+Azure Functions orquesta y valida el request. Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de outputs desde el snapshot del repo `pricing-mlops`. Storage/ADLS conserva inputs masked y evidencia versionada.
 
 La arquitectura distingue tres cuentas de Storage:
 
@@ -27,8 +27,11 @@ GitHub Actions queda para CI/CD, validacion y despliegue controlado. No es compu
 | Capa | Ruta | Responsabilidad |
 |---|---|---|
 | Foundation | `infra/foundation/` | Resource Groups, Key Vault, Log Analytics, OIDC/RBAC base y budget opcional. |
-| Workload | `infra/workloads/pricing-mlops/` | Storage/ADLS, Azure ML Workspace y Azure Function orquestadora. |
-| Contratos MLOps | `mlops/` | Schemas, thresholds, storage layout y documentacion del flujo. No contiene IaC. |
+| Workload | `infra/workloads/pricing-mlops/` | Storage/ADLS, Azure ML Workspace y Azure Function App. |
+| Runtime MLOps | `mlops/functions/`, `mlops/azureml/`, `mlops/scripts/` | Codigo de Azure Function, definicion del command job AML, publicacion y operacion del flujo remoto. |
+| Contratos MLOps | `mlops/configs/`, `mlops/schemas/`, `mlops/docs/` | Schemas, thresholds, storage layout y documentacion del flujo. No contiene IaC. |
+
+`pricing-mlops` queda como repo funcional/data science alineado con Cookiecutter Data Science. El script de publicacion de plataforma empaqueta un snapshot de ese repo en `pricing-mlops-source/`; el job `mlops/azureml/pricing-mlops-job.yml` usa `code: ../pricing-mlops-source` y ejecuta `python scripts/run_azure_ml_flow.py`.
 
 ## Ambientes
 
@@ -75,8 +78,8 @@ No borrar ``: Azure ML lo usa como runtime interno.
 
 | Actor | Permisos |
 |---|---|
-| GitHub Actions plataforma | OIDC para deployments controlados de infraestructura. |
-| GitHub Actions `pricing-mlops` | OIDC para publicar Function o pruebas controladas; no Owner/Contributor de subscription. |
+| GitHub Actions plataforma | OIDC para deployments controlados de infraestructura y, si se habilita, runtime MLOps. |
+| GitHub Actions `pricing-mlops` | CI del codigo funcional/data science; no Owner/Contributor de subscription. |
 | Azure Function | Managed Identity con permiso para iniciar jobs AML y verificar Storage. |
 | Azure ML job | Acceso a Storage por identidad; sin account keys. |
 

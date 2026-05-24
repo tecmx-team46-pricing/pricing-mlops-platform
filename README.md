@@ -1,8 +1,8 @@
 # pricing-mlops-platform
 
-Plataforma Azure para la base operativa de Pricing MLOps. Este repo gobierna infraestructura, ambientes, RBAC/OIDC, Storage/ADLS, Azure ML, Azure Functions y runbooks de operacion.
+Plataforma Azure para la base operativa de Pricing MLOps. Este repo gobierna infraestructura, ambientes, RBAC/OIDC, Storage/ADLS, Azure ML, Azure Functions, runtime MLOps y runbooks de operacion.
 
-El codigo funcional del flujo vive en `pricing-mlops`. La referencia historica/EDA vive en `pricing-mlops-eda`.
+El codigo funcional/data science del flujo vive en `pricing-mlops` siguiendo Cookiecutter Data Science. La orquestacion MLOps vive aqui en `mlops/`. La referencia historica/EDA vive en `pricing-mlops-eda`.
 
 ## Estado Actual
 
@@ -29,7 +29,10 @@ flowchart TD
   AML --> Storage["Storage MLOps<br/>raw-masked / curated / runs / snapshots / drift-logs / reports / artifacts"]
   AML -. runtime interno .-> AMLRuntime["Storage runtime Azure ML<br/>snapshots / logs / environments"]
   Function -. host state .-> FunctionStorage["Storage host Function"]
-  ModelRepo["pricing-mlops<br/>codigo funcional"] --> AML
+  Platform --> Runtime["mlops/<br/>Function code / AML job YAML"]
+  Runtime --> Function
+  Runtime --> AML
+  ModelRepo["pricing-mlops<br/>codigo funcional CCDS"] --> AML
 ```
 
 ## Ambientes
@@ -67,7 +70,16 @@ scripts/what-if.sh staging
 scripts/deploy.sh staging
 ```
 
-Operar el flujo ML se hace desde `pricing-mlops` con `scripts/run_model_flow_function.sh`.
+Publicar la Function y operar el endpoint se hace desde plataforma:
+
+```bash
+PRICING_MLOPS_REPO=../pricing-mlops \
+mlops/scripts/publish_orchestrator_function.sh staging
+
+mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
+```
+
+El publish prepara un paquete temporal con el entrypoint de Azure Functions, `mlops/azureml/pricing-mlops-job.yml` y un snapshot del repo `pricing-mlops` bajo `pricing-mlops-source/`. El job YAML usa `code: ../pricing-mlops-source` para que Azure ML ejecute el codigo CCDS empaquetado.
 
 ## Storage
 

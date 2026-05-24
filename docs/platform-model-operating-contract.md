@@ -4,10 +4,10 @@
 
 | Repo | Responsabilidad |
 |---|---|
-| `pricing-mlops-platform` | Infraestructura, identidades, RBAC, Storage, Azure ML, Function y runbooks. |
-| `pricing-mlops` | Validacion, curated/features, scoring, drift, reportes y artefactos. |
+| `pricing-mlops-platform` | Infraestructura, identidades, RBAC, Storage, Azure ML, Function App, runtime MLOps, job YAML y runbooks. |
+| `pricing-mlops` | Repo funcional/data science: validacion, curated/features, scoring, drift, reportes y artefactos. |
 
-`pricing-mlops` no crea infraestructura.
+`pricing-mlops` no crea infraestructura ni contiene el runtime de Azure Functions. Plataforma empaqueta un snapshot de `pricing-mlops` como codigo del command job AML.
 
 ## Variables Publicadas Por Plataforma
 
@@ -49,9 +49,10 @@ raw-masked/samples/sample_pricing_v1.csv
 ## Orquestacion
 
 ```text
-scripts/run_model_flow_function.sh
+mlops/scripts/run_model_flow_function.sh
 -> POST /api/model-flow
 -> Azure ML command job
+-> snapshot `pricing-mlops-source`
 -> Storage outputs
 ```
 

@@ -16,8 +16,8 @@ GitHub Actions se usa para:
 
 | Trigger | Accion | Azure login |
 |---|---|---|
-| `pull_request` | Compila Bicep y parameter files. | No |
-| `workflow_dispatch`, `operation=validate` | Solo valida. | No |
+| `pull_request` | Compila Bicep, parameter files y tests del runtime MLOps. | No |
+| `workflow_dispatch`, `operation=validate` | Valida IaC y runtime MLOps. | No |
 | `workflow_dispatch`, `operation=what-if` | Ejecuta `scripts/what-if.sh`. | Si |
 | `workflow_dispatch`, `operation=deploy` | Ejecuta what-if y deploy. | Si |
 

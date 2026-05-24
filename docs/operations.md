@@ -40,16 +40,35 @@ sandbox-local
 
 ## Operacion Del Flujo ML
 
-La operacion diaria del flujo vive en el repo `pricing-mlops`:
+La operacion diaria del flujo vive en este repo bajo `mlops/scripts/`. El repo `pricing-mlops` contiene el codigo data science y se empaqueta como snapshot para Azure ML.
+
+Publicar o actualizar el codigo de la Function:
+
+```bash
+PRICING_MLOPS_REPO=../pricing-mlops \
+mlops/scripts/publish_orchestrator_function.sh staging
+```
+
+Dry-run sin desplegar a Azure:
+
+```bash
+DRY_RUN=true KEEP_PACKAGE=true \
+PRICING_MLOPS_REPO=../pricing-mlops \
+mlops/scripts/publish_orchestrator_function.sh staging
+```
+
+Ejecutar el flujo remoto:
 
 ```bash
 AZURE_FUNCTION_APP=func-pricing-mlops-staging-<suffix> \
 AZURE_RESOURCE_GROUP=rg-pricing-mlops-staging \
 AZURE_ML_WORKSPACE=mlw-pricing-mlops-stg-v2-<suffix> \
-scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
+mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
 ```
 
 Ese script llama la Function, espera el job AML por ARM/REST y verifica metadata de los seis outputs. No usa GitHub Actions ni `az ml`.
+
+Los wrappers historicos en `pricing-mlops/scripts/` delegan a estos scripts si el repo plataforma esta disponible como hermano local.
 
 ## Portal
 
