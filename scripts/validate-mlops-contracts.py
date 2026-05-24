@@ -104,12 +104,46 @@ def validate_storage_layout() -> None:
         raise SystemExit(f"storage_layout.json missing containers: {sorted(missing)}")
 
 
+def validate_azure_ml_runtime_storage_contract() -> None:
+    workload_main = (ROOT / "infra" / "workloads" / "pricing-mlops" / "main.bicep").read_text(
+        encoding="utf-8"
+    )
+    architecture_doc = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
+
+    required_workload_terms = {
+        "azureMlRuntimeStorageAccountName",
+        "azureMlRuntimeStorage",
+        "azureMlRuntimeStorageAccountName string",
+    }
+    missing_workload_terms = {
+        term for term in required_workload_terms if term not in workload_main
+    }
+    if missing_workload_terms:
+        raise SystemExit(
+            "main.bicep missing Azure ML runtime storage contract terms: "
+            f"{sorted(missing_workload_terms)}"
+        )
+
+    required_doc_terms = {
+        "Storage runtime Azure ML",
+        "azure-ml-runtime",
+        "workspace nuevo",
+    }
+    missing_doc_terms = {term for term in required_doc_terms if term not in architecture_doc}
+    if missing_doc_terms:
+        raise SystemExit(
+            "docs/architecture.md missing Azure ML runtime storage documentation: "
+            f"{sorted(missing_doc_terms)}"
+        )
+
+
 def main() -> None:
     for schema_name, expected_required in SCHEMAS.items():
         validate_schema(schema_name, expected_required)
 
     validate_thresholds()
     validate_storage_layout()
+    validate_azure_ml_runtime_storage_contract()
     print("MLOps contracts OK")
 
 

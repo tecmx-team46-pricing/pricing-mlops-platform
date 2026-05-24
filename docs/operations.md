@@ -57,13 +57,16 @@ Ese script llama la Function, espera el job AML por ARM/REST y verifica metadata
 |---|---|
 | Function | Function App `func-pricing-mlops-staging-<suffix>` > Functions / Log stream |
 | Azure ML jobs | Machine Learning workspace `mlw-pricing-mlops-staging-<suffix>` > Jobs |
-| Outputs | Storage `<mlops-storage-account>` > Containers |
+| Outputs funcionales | Storage MLOps `<mlops-storage-account>` > Containers |
+| Artifacts runtime AML | Storage runtime Azure ML `stamlpmlopsstg<suffix>` para workspaces nuevos; el workspace actual conserva artifacts legacy en `<mlops-storage-account>` |
+| Function host state | Storage `stfn<generated-suffix>` |
 | Costos | Cost Management > Cost analysis > filtrar `rg-pricing-mlops-staging` |
 | RBAC | Resource > Access control (IAM) |
 
 ## Seguridad Actual
 
 - Storage MLOps principal tiene account keys deshabilitadas.
+- Storage runtime Azure ML prefiere identity-based access; si Azure ML exige shared keys en una recreacion futura, esa excepcion debe quedar limitada al Storage runtime, nunca al Storage MLOps principal.
 - Function usa Function key como control temporal.
 - Function App usa HTTPS-only, TLS minimo 1.2, FTPS disabled, remote debugging off y detailed errors off.
 - No se versionan secrets, account keys ni connection strings.
@@ -92,3 +95,16 @@ az identity delete --resource-group rg-pricing-mlops-staging --name id-pricing-m
 ```
 
 No borrar ``; es el ACR asociado al runtime de Azure ML.
+
+## Retencion Recomendada
+
+No borrar containers internos actuales de Azure ML automaticamente. Primero clasificar:
+
+| Clase | Ejemplos | Retencion recomendada |
+|---|---|---|
+| Inputs masked | `raw-masked` | Conservacion explicita por dataset aprobado. |
+| Outputs funcionales | `runs`, `snapshots`, `drift-logs`, `reports`, `artifacts`, `curated` | Conservar ultimos N runs o ultimos X dias segun necesidad academica/operativa. |
+| AML runtime artifacts | `azureml`, `azureml-environments`, `azureml-blobstore-*`, `snapshotzips`, `revisions`, `aml-environment-image-build` | Conservar X dias despues de confirmar que ningun job activo depende de ellos. |
+| Logs diagnosticos | `insights-logs-*`, `insights-metrics-*` | Conservar X dias para troubleshooting y costo bajo. |
+
+Despues de migrar a un workspace nuevo con Storage runtime separado, documentar los containers legacy que quedaron en `<mlops-storage-account>` y pedir aprobacion explicita antes de borrarlos.

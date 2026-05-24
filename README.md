@@ -26,7 +26,9 @@ flowchart TD
 
   Operator["Script operativo local"] --> Function["Azure Function<br/>orquestador"]
   Function --> AML["Azure ML Job<br/>compute ML"]
-  AML --> Storage["Storage/ADLS<br/>raw-masked / curated / runs / snapshots / drift-logs / reports / artifacts"]
+  AML --> Storage["Storage MLOps<br/>raw-masked / curated / runs / snapshots / drift-logs / reports / artifacts"]
+  AML -. runtime interno .-> AMLRuntime["Storage runtime Azure ML<br/>snapshots / logs / environments"]
+  Function -. host state .-> FunctionStorage["Storage host Function"]
   ModelRepo["pricing-mlops<br/>codigo funcional"] --> AML
 ```
 
@@ -67,6 +69,14 @@ scripts/deploy.sh staging
 
 Operar el flujo ML se hace desde `pricing-mlops` con `scripts/run_model_flow_function.sh`.
 
+## Storage
+
+`<mlops-storage-account>` es el data lake MLOps de `staging`. Su contrato funcional se limita a datos masked y outputs en `raw-masked`, `curated`, `baseline`, `runs`, `snapshots`, `drift-logs`, `reports` y `artifacts`; mantiene `allowSharedKeyAccess=false`.
+
+Azure ML tiene un Storage runtime separado en IaC (`stamlpmlopsstg<suffix>`, `purpose=azure-ml-runtime`) para snapshots de codigo, logs, environments y artifacts internos de AML. El workspace actual fue creado antes de esta separacion y conserva su storage asociado legacy; usar el runtime storage como default completo requiere crear un workspace nuevo y mover la Function despues de validar E2E.
+
+La Function App usa otro Storage (`stfn<generated-suffix>`) para `AzureWebJobsStorage`. Ese storage puede usar connection string de host runtime, pero no es data lake MLOps.
+
 ## Documentacion
 
 Leer en este orden:
@@ -74,11 +84,12 @@ Leer en este orden:
 1. [`docs/index.md`](docs/index.md)
 2. [`docs/architecture.md`](docs/architecture.md)
 3. [`docs/operations.md`](docs/operations.md)
-4. [`docs/github-actions.md`](docs/github-actions.md)
-5. [`docs/platform-model-operating-contract.md`](docs/platform-model-operating-contract.md)
-6. [`docs/data-governance-plan.md`](docs/data-governance-plan.md)
-7. [`docs/roadmap.md`](docs/roadmap.md)
-8. [`docs/original/technical-design-original.md`](docs/original/technical-design-original.md)
+4. [`docs/azure-services.md`](docs/azure-services.md)
+5. [`docs/github-actions.md`](docs/github-actions.md)
+6. [`docs/platform-model-operating-contract.md`](docs/platform-model-operating-contract.md)
+7. [`docs/data-governance-plan.md`](docs/data-governance-plan.md)
+8. [`docs/roadmap.md`](docs/roadmap.md)
+9. [`docs/original/technical-design-original.md`](docs/original/technical-design-original.md)
 
 ## Fuera De Alcance
 

@@ -28,6 +28,9 @@ param azureMlContainerRegistryName string = ''
 @description('Existing workload Storage Account name.')
 param storageAccountName string
 
+@description('Azure ML runtime Storage Account name. Existing workspaces keep their original associated storage unless explicitly recreated.')
+param azureMlRuntimeStorageAccountName string
+
 @description('Shared platform Key Vault resource group name.')
 param keyVaultResourceGroupName string
 
@@ -48,11 +51,16 @@ param enableModelGithubActionsIdentity bool = false
 
 var azureMlDataScientistRoleDefinitionId = 'f6c7c914-8db3-469d-8ca1-694a8f32e121'
 var storageBlobDataContributorRoleDefinitionId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
+var storageFileDataPrivilegedContributorRoleDefinitionId = '69566ab7-960f-475b-8e7c-b3118f30c6bd'
 var managedIdentityOperatorRoleDefinitionId = 'f1a07417-d97a-45cb-824c-7a7467783830'
 var acrPullRoleDefinitionId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
 
 resource workloadStorage 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
   name: storageAccountName
+}
+
+resource azureMlRuntimeStorage 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
+  name: azureMlRuntimeStorageAccountName
 }
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
@@ -116,6 +124,36 @@ resource azureMlJobStorageContributor 'Microsoft.Authorization/roleAssignments@2
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
     principalId: azureMlJobIdentityPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource azureMlJobRuntimeStorageContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(azureMlRuntimeStorage.id, azureMlJobIdentityId, storageBlobDataContributorRoleDefinitionId)
+  scope: azureMlRuntimeStorage
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
+    principalId: azureMlJobIdentityPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource azureMlWorkspaceRuntimeBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(azureMlRuntimeStorage.id, workspace.id, storageBlobDataContributorRoleDefinitionId)
+  scope: azureMlRuntimeStorage
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleDefinitionId)
+    principalId: workspace.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource azureMlWorkspaceRuntimeFileContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(azureMlRuntimeStorage.id, workspace.id, storageFileDataPrivilegedContributorRoleDefinitionId)
+  scope: azureMlRuntimeStorage
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageFileDataPrivilegedContributorRoleDefinitionId)
+    principalId: workspace.identity.principalId
     principalType: 'ServicePrincipal'
   }
 }

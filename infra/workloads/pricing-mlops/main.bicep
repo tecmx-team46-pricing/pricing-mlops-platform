@@ -124,6 +124,8 @@ var workloadUniqueSuffix = uniqueString(subscription().id, workloadResourceGroup
 var shortSuffix = take(workloadUniqueSuffix, 6)
 
 var storageAccountName = take('stpmlops${workloadUniqueSuffix}', 24)
+var azureMlRuntimeEnvironmentToken = environmentName == 'staging' ? 'stg' : environmentName == 'validation' ? 'val' : environmentName == 'data-lab' ? 'dlab' : 'sbx'
+var azureMlRuntimeStorageAccountName = take('stamlpmlops${azureMlRuntimeEnvironmentToken}${shortSuffix}', 24)
 var functionHostStorageAccountName = take('stfn${workloadUniqueSuffix}', 24)
 var hostingPlanName = 'asp-${projectName}-${environmentName}'
 var functionAppName = take('func-${projectName}-${replace(environmentName, 'sandbox-', 'sbx-')}-${shortSuffix}', 60)
@@ -220,6 +222,16 @@ module azureMlJobIdentity 'modules/managed-identity.bicep' = if (enableAzureMl) 
   }
 }
 
+module azureMlRuntimeStorage 'modules/azure-ml-runtime-storage.bicep' = if (enableAzureMl) {
+  name: 'pricing-mlops-aml-runtime-storage-${uniqueString(workloadResourceGroupName)}'
+  scope: resourceGroup(workloadResourceGroupName)
+  params: {
+    location: location
+    tags: workloadTags
+    storageAccountName: azureMlRuntimeStorageAccountName
+  }
+}
+
 module azureMlKeyVaultAccess 'modules/key-vault-identity-access.bicep' = if (enableAzureMl) {
   name: 'pricing-mlops-aml-keyvault-access-${uniqueString(workloadResourceGroupName)}'
   scope: resourceGroup(sharedResourceGroupName)
@@ -249,6 +261,7 @@ module azureMl 'modules/azure-ml.bicep' = if (enableAzureMl) {
     azureMlJobIdentityClientId: azureMlJobIdentity!.outputs.clientId
     azureMlContainerRegistryName: azureMlContainerRegistryName
     storageAccountName: storage.outputs.storageAccountName
+    azureMlRuntimeStorageAccountName: azureMlRuntimeStorage!.outputs.storageAccountName
     keyVaultResourceGroupName: sharedResourceGroupName
     keyVaultName: keyVaultName
     logAnalyticsResourceGroupName: sharedResourceGroupName
@@ -260,6 +273,7 @@ module azureMl 'modules/azure-ml.bicep' = if (enableAzureMl) {
 
 output workloadResourceGroupName string = workloadResourceGroupName
 output storageAccountName string = storage.outputs.storageAccountName
+output azureMlRuntimeStorageAccountName string = enableAzureMl ? azureMlRuntimeStorage!.outputs.storageAccountName : ''
 output dataRoot string = dataRoot
 output storageDfsEndpoint string = dataRoot
 output containerNames object = containerNames

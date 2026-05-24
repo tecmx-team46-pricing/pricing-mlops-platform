@@ -34,6 +34,8 @@ MLOPS_CONTAINER_ARTIFACTS=artifacts
 
 No se publican account keys, connection strings ni secretos.
 
+`AZURE_STORAGE_ACCOUNT` apunta al Storage MLOps principal, no al Storage runtime interno de Azure ML ni al Storage host de Function.
+
 ## Input Compartido
 
 ```text
@@ -70,9 +72,12 @@ Artefactos esperados:
 | `artifacts` | `curated_pricing.csv` |
 | `curated` | `curated_pricing.csv` |
 
+Azure ML puede generar snapshots de codigo, logs, environments y artifacts runtime fuera de este layout. Esos artifacts internos no son outputs funcionales del modelo y no forman parte del contrato entre plataforma y repo modelo.
+
 ## Limites
 
 - GitHub Actions no es orquestador operativo.
 - Si la Function esta bloqueada, abrir una tarea explicita antes de reintroducir un fallback directo a AML.
 - Sandboxes personales no son ambientes de GitHub Actions.
 - `prod` no existe.
+- Los datos MLOps no usan account keys ni connection strings. Cualquier excepcion tecnica que Azure ML requiera para runtime interno debe limitarse al Storage runtime Azure ML.
