@@ -28,7 +28,9 @@ jobs:
         --storage-account ${{inputs.storage_account}}
         --input-container raw-masked
         --input-blob-path ${{inputs.input_blob_path}}
-        --output-dir ${{outputs.prepared_data}}
+        --output-dir outputs/prepared_data
+        --prepared-container artifacts
+        --prepared-prefix component-state/${{inputs.run_id}}/prepared
       environment:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml
@@ -37,20 +39,19 @@ jobs:
           type: string
         input_blob_path:
           type: string
-      outputs:
-        prepared_data:
-          type: uri_folder
+        run_id:
+          type: string
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       input_blob_path: ${{parent.inputs.input_blob_path}}
-    outputs:
-      prepared_data:
-        mode: rw_mount
+      run_id: ${{parent.inputs.run_id}}
     identity:
       type: user_identity
   score_evaluate:
     type: command
     compute: azureml:serverless
+    depends_on:
+      - validate_prepare
     component:
       type: command
       name: pricing_mlops_score_evaluate
@@ -59,8 +60,12 @@ jobs:
       command: >-
         python -m pip install -e . &&
         python scripts/components/score_evaluate.py
-        --prepared-dir ${{inputs.prepared_data}}
-        --output-dir ${{outputs.run_artifacts}}
+        --storage-account ${{inputs.storage_account}}
+        --prepared-container artifacts
+        --prepared-prefix component-state/${{inputs.run_id}}/prepared
+        --output-dir outputs/run_artifacts
+        --run-artifacts-container artifacts
+        --run-artifacts-prefix component-state/${{inputs.run_id}}/run_artifacts
         --environment ${{inputs.environment}}
         --run-owner ${{inputs.run_owner}}
         --run-id ${{inputs.run_id}}
@@ -73,8 +78,8 @@ jobs:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml
       inputs:
-        prepared_data:
-          type: uri_folder
+        storage_account:
+          type: string
         environment:
           type: string
         run_owner:
@@ -91,11 +96,8 @@ jobs:
           type: string
         model_commit_sha:
           type: string
-      outputs:
-        run_artifacts:
-          type: uri_folder
     inputs:
-      prepared_data: ${{parent.jobs.validate_prepare.outputs.prepared_data}}
+      storage_account: ${{parent.inputs.storage_account}}
       environment: ${{parent.inputs.environment}}
       run_owner: ${{parent.inputs.run_owner}}
       run_id: ${{parent.inputs.run_id}}
@@ -104,14 +106,13 @@ jobs:
       model_repo: ${{parent.inputs.model_repo}}
       model_ref: ${{parent.inputs.model_ref}}
       model_commit_sha: ${{parent.inputs.model_commit_sha}}
-    outputs:
-      run_artifacts:
-        mode: rw_mount
     identity:
       type: user_identity
   publish_outputs:
     type: command
     compute: azureml:serverless
+    depends_on:
+      - score_evaluate
     component:
       type: command
       name: pricing_mlops_publish_outputs
@@ -120,8 +121,9 @@ jobs:
       command: >-
         python -m pip install -e . &&
         python scripts/components/publish_outputs.py
-        --run-dir ${{inputs.run_artifacts}}
         --storage-account ${{inputs.storage_account}}
+        --run-artifacts-container artifacts
+        --run-artifacts-prefix component-state/${{inputs.run_id}}/run_artifacts
         --environment ${{inputs.environment}}
         --run-owner ${{inputs.run_owner}}
         --compute-target azure-ml
@@ -130,9 +132,9 @@ jobs:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml
       inputs:
-        run_artifacts:
-          type: uri_folder
         storage_account:
+          type: string
+        run_id:
           type: string
         environment:
           type: string
@@ -141,8 +143,8 @@ jobs:
         trigger_type:
           type: string
     inputs:
-      run_artifacts: ${{parent.jobs.score_evaluate.outputs.run_artifacts}}
       storage_account: ${{parent.inputs.storage_account}}
+      run_id: ${{parent.inputs.run_id}}
       environment: ${{parent.inputs.environment}}
       run_owner: ${{parent.inputs.run_owner}}
       trigger_type: ${{parent.inputs.trigger_type}}
