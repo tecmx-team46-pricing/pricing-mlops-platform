@@ -1,0 +1,81 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+type: pipeline
+display_name: pricing-mlops-pipeline
+experiment_name: pricing-mlops
+description: Pricing MLOps component pipeline over shared masked input.
+inputs:
+  storage_account: <mlops-storage-account>
+  environment: staging
+  run_owner: team46
+  run_id: manual
+  input_blob_path: samples/sample_pricing_v1.csv
+  trigger_type: manual
+  model_repo: tecmx-team46-pricing/pricing-mlops
+  model_ref: PoC/model-flow-template
+  model_commit_sha: unknown
+jobs:
+  validate_prepare_score_publish:
+    type: command
+    compute: azureml:serverless
+    component:
+      type: command
+      name: pricing_mlops_validate_prepare_score_publish
+      display_name: validate_prepare_score_publish
+      code: ../pricing-mlops-source
+      command: >-
+        python -m pip install -e . &&
+        python scripts/run_azure_ml_flow.py
+        --storage-account ${{inputs.storage_account}}
+        --environment ${{inputs.environment}}
+        --run-owner ${{inputs.run_owner}}
+        --compute-target azure-ml
+        --trigger-type ${{inputs.trigger_type}}
+        --model-repo ${{inputs.model_repo}}
+        --model-ref ${{inputs.model_ref}}
+        --model-commit-sha ${{inputs.model_commit_sha}}
+        --run-id ${{inputs.run_id}}
+        --input-blob-path ${{inputs.input_blob_path}}
+        --output-root outputs
+      environment:
+        image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+        conda_file: environment.yml
+      inputs:
+        storage_account:
+          type: string
+        environment:
+          type: string
+        run_owner:
+          type: string
+        run_id:
+          type: string
+        input_blob_path:
+          type: string
+        trigger_type:
+          type: string
+        model_repo:
+          type: string
+        model_ref:
+          type: string
+        model_commit_sha:
+          type: string
+    inputs:
+      storage_account: ${{parent.inputs.storage_account}}
+      environment: ${{parent.inputs.environment}}
+      run_owner: ${{parent.inputs.run_owner}}
+      run_id: ${{parent.inputs.run_id}}
+      input_blob_path: ${{parent.inputs.input_blob_path}}
+      trigger_type: ${{parent.inputs.trigger_type}}
+      model_repo: ${{parent.inputs.model_repo}}
+      model_ref: ${{parent.inputs.model_ref}}
+      model_commit_sha: ${{parent.inputs.model_commit_sha}}
+    identity:
+      type: user_identity
+    environment_variables:
+      MLOPS_COMPUTE_TARGET: azure-ml
+      MLOPS_CONTAINER_RAW_MASKED: raw-masked
+      MLOPS_CONTAINER_CURATED: curated
+      MLOPS_CONTAINER_RUNS: runs
+      MLOPS_CONTAINER_SNAPSHOTS: snapshots
+      MLOPS_CONTAINER_DRIFT_LOGS: drift-logs
+      MLOPS_CONTAINER_REPORTS: reports
+      MLOPS_CONTAINER_ARTIFACTS: artifacts

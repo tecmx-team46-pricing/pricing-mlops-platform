@@ -4,12 +4,14 @@
 
 | Servicio | Recurso | Rol |
 |---|---|---|
-| Azure ML Workspace activo | `mlw-pricing-mlops-stg-v2-<suffix>` | Ejecuta command jobs serverless/administrados. Usa `stamlpmlopsstg<suffix>` como storage asociado. |
+| Azure ML Workspace activo | `mlw-pricing-mlops-stg-v2-<suffix>` | Ejecuta pipeline/job serverless/administrado. Usa `stamlpmlopsstg<suffix>` como storage asociado. |
 | Azure ML Workspace legacy | `mlw-pricing-mlops-staging-<suffix>` | Workspace anterior. Conserva datastores internos en `<mlops-storage-account>`; no borrar sin aprobacion. |
 | Storage MLOps | `<mlops-storage-account>` | Data lake funcional: inputs masked y outputs MLOps. |
 | Storage runtime Azure ML | `stamlpmlopsstg<suffix>` | Infraestructura operativa interna AML para el workspace v2 activo. |
 | Storage host Function | `stfn<generated-suffix>` | Estado runtime de Azure Functions. |
 | Function App | `func-pricing-mlops-staging-<suffix>` | Orquesta requests hacia Azure ML. |
+| Event Grid subscription | `evg-func-pricing-mlops-staging-<suffix>-blob-created` | Dispara la Function para BlobCreated bajo `raw-masked/incoming/*.csv`. |
+| Table run index | `mlopsruns` | Metadata consultable de corridas, sin account keys. |
 | ACR AML | `` | Registry asociado a Azure ML runtime. |
 
 ## Storage MLOps
@@ -69,5 +71,6 @@ El workspace v2 activo usa este Storage runtime como `storageAccount`. El worksp
 | Azure ML workspace legacy managed identity | Permisos legacy en el storage asociado anterior mientras exista. |
 | Azure ML job identity | Blob contributor en Storage MLOps para leer `raw-masked` y escribir outputs funcionales; Blob contributor en Storage runtime AML para operacion futura. |
 | Function managed identity | AzureML Data Scientist en workspace y Blob contributor en Storage MLOps. |
+| Function managed identity | Table Data Contributor en Storage MLOps para `mlopsruns`. |
 
 No dar Owner ni Contributor de subscription para operar el flujo.

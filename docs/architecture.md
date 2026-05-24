@@ -5,10 +5,11 @@
 La base operativa actual usa:
 
 ```text
-Azure Function -> Azure ML command job -> Storage/ADLS
+Manual: Azure Function HTTP -> Azure ML pipeline job -> Storage/ADLS
+Automatico: BlobCreated raw-masked/incoming/*.csv -> Event Grid -> Azure Function -> Azure ML pipeline job -> Storage/ADLS
 ```
 
-Azure Functions orquesta y valida el request. Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de outputs desde el snapshot del repo `pricing-mlops`. Storage/ADLS conserva inputs masked y evidencia versionada.
+Azure Functions orquesta y valida el request o evento. Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de outputs desde el snapshot del repo `pricing-mlops`. Storage/ADLS conserva inputs masked, evidencia versionada y metadata consultable de corridas.
 
 La arquitectura distingue tres cuentas de Storage:
 
@@ -28,10 +29,10 @@ GitHub Actions queda para CI/CD, validacion y despliegue controlado. No es compu
 |---|---|---|
 | Foundation | `infra/foundation/` | Resource Groups, Key Vault, Log Analytics, OIDC/RBAC base y budget opcional. |
 | Workload | `infra/workloads/pricing-mlops/` | Storage/ADLS, Azure ML Workspace y Azure Function App. |
-| Runtime MLOps | `mlops/functions/`, `mlops/azureml/`, `mlops/scripts/` | Codigo de Azure Function, definicion del command job AML, publicacion y operacion del flujo remoto. |
+| Runtime MLOps | `mlops/functions/`, `mlops/azureml/`, `mlops/scripts/` | Codigo de Azure Function, definicion del pipeline/job AML, publicacion y operacion del flujo remoto. |
 | Contratos MLOps | `mlops/configs/`, `mlops/schemas/`, `mlops/docs/` | Schemas, thresholds, storage layout y documentacion del flujo. No contiene IaC. |
 
-`pricing-mlops` queda como repo funcional/data science alineado con Cookiecutter Data Science. El script de publicacion de plataforma empaqueta un snapshot de ese repo en `pricing-mlops-source/`; el job `mlops/azureml/pricing-mlops-job.yml` usa `code: ../pricing-mlops-source` y ejecuta `python scripts/run_azure_ml_flow.py`.
+`pricing-mlops` queda como repo funcional/data science alineado con Cookiecutter Data Science. El script de publicacion de plataforma empaqueta un snapshot de ese repo en `pricing-mlops-source/`; el pipeline `mlops/azureml/pricing-mlops-pipeline.yml` usa `code: ../pricing-mlops-source` y ejecuta `python scripts/run_azure_ml_flow.py`. El command job `mlops/azureml/pricing-mlops-job.yml` queda como fallback.
 
 ## Ambientes
 
@@ -57,6 +58,8 @@ No existe `prod` en IaC, parameter files ni workflows.
 | Azure ML Workspace v2 | `rg-pricing-mlops-staging` | Activo | `mlw-pricing-mlops-stg-v2-<suffix>`; command jobs serverless/administrados, sin GPU ni endpoint online. Usa Storage runtime Azure ML como storage asociado. |
 | Azure ML Workspace legacy | `rg-pricing-mlops-staging` | Legacy | `mlw-pricing-mlops-staging-<suffix>`; conserva datastores internos en el Storage MLOps principal. No borrar sin aprobacion. |
 | Azure Function | `rg-pricing-mlops-staging` | Activo | `func-pricing-mlops-staging-<suffix>` en `centralus`, plan Y1/Dynamic. |
+| Event Grid subscription | `rg-pricing-mlops-staging` | Activo via IaC | Filtra `Microsoft.Storage.BlobCreated` bajo `raw-masked/incoming/*.csv` y dispara la Function. |
+| Azure Table `mlopsruns` | `rg-pricing-mlops-staging` | Activo via IaC | Indice consultable de corridas; fallback JSON bajo `runs` si Table no esta disponible. |
 
 Storage y Azure ML de `staging` viven en `eastus2`. La Function vive en `centralus` porque `eastus2` presento quota 0 para App Service/Functions en esta subscription.
 
@@ -80,7 +83,7 @@ No borrar ``: Azure ML lo usa como runtime interno.
 |---|---|
 | GitHub Actions plataforma | OIDC para deployments controlados de infraestructura y, si se habilita, runtime MLOps. |
 | GitHub Actions `pricing-mlops` | CI del codigo funcional/data science; no Owner/Contributor de subscription. |
-| Azure Function | Managed Identity con permiso para iniciar jobs AML y verificar Storage. |
+| Azure Function | Managed Identity con permiso para iniciar jobs AML, leer/escribir Storage MLOps y escribir Table `mlopsruns`. |
 | Azure ML job | Acceso a Storage por identidad; sin account keys. |
 
 El Storage MLOps principal mantiene `allowSharedKeyAccess=false`. El Storage runtime Azure ML prefiere acceso por identidad; si Azure ML requiriera shared keys para un artifact store en una recreacion futura, esa excepcion se limita al Storage runtime y no aplica a datos MLOps.

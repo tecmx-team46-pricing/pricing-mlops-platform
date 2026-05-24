@@ -45,7 +45,7 @@ La operacion diaria del flujo vive en este repo bajo `mlops/scripts/`. El repo `
 Publicar o actualizar el codigo de la Function:
 
 ```bash
-PRICING_MLOPS_REPO=../pricing-mlops \
+MODEL_REPO_PATH=../pricing-mlops \
 mlops/scripts/publish_orchestrator_function.sh staging
 ```
 
@@ -53,7 +53,7 @@ Dry-run sin desplegar a Azure:
 
 ```bash
 DRY_RUN=true KEEP_PACKAGE=true \
-PRICING_MLOPS_REPO=../pricing-mlops \
+MODEL_REPO_PATH=../pricing-mlops \
 mlops/scripts/publish_orchestrator_function.sh staging
 ```
 
@@ -68,7 +68,20 @@ mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v
 
 Ese script llama la Function, espera el job AML por ARM/REST y verifica metadata de los seis outputs. No usa GitHub Actions ni `az ml`.
 
-Los wrappers historicos en `pricing-mlops/scripts/` delegan a estos scripts si el repo plataforma esta disponible como hermano local.
+El trigger automatico se habilita por Event Grid sobre `raw-masked/incoming/*.csv`. Para probarlo:
+
+```bash
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+az storage blob upload \
+  --account-name <mlops-storage-account> \
+  --container-name raw-masked \
+  --name "incoming/pricing_test_${timestamp}.csv" \
+  --file ../pricing-mlops/data/samples/masked/sample_pricing.csv \
+  --auth-mode login \
+  --overwrite true
+```
+
+La Function rechaza eventos fuera de `raw-masked/incoming/`, `samples/`, paths absolutos, `..`, extensiones distintas de `.csv` y cualquier referencia a `raw-unmasked`.
 
 ## Portal
 

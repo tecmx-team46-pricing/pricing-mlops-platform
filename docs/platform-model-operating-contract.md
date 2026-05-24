@@ -4,10 +4,10 @@
 
 | Repo | Responsabilidad |
 |---|---|
-| `pricing-mlops-platform` | Infraestructura, identidades, RBAC, Storage, Azure ML, Function App, runtime MLOps, job YAML y runbooks. |
+| `pricing-mlops-platform` | Infraestructura, identidades, RBAC, Storage, Azure ML, Function App, runtime MLOps, pipeline/job YAML y runbooks. |
 | `pricing-mlops` | Repo funcional/data science: validacion, curated/features, scoring, drift, reportes y artefactos. |
 
-`pricing-mlops` no crea infraestructura ni contiene el runtime de Azure Functions. Plataforma empaqueta un snapshot de `pricing-mlops` como codigo del command job AML.
+`pricing-mlops` no crea infraestructura ni contiene el runtime de Azure Functions/Event Grid. Plataforma empaqueta un snapshot de `pricing-mlops` como codigo del pipeline/job AML.
 
 ## Variables Publicadas Por Plataforma
 
@@ -30,6 +30,13 @@ MLOPS_CONTAINER_SNAPSHOTS=snapshots
 MLOPS_CONTAINER_DRIFT_LOGS=drift-logs
 MLOPS_CONTAINER_REPORTS=reports
 MLOPS_CONTAINER_ARTIFACTS=artifacts
+MLOPS_ALLOWED_EVENT_CONTAINER=raw-masked
+MLOPS_ALLOWED_EVENT_PREFIX=incoming/
+MLOPS_DEFAULT_OWNER=team46
+MLOPS_RUN_INDEX_TABLE=mlopsruns
+MLOPS_USE_AML_PIPELINE=true
+MODEL_REPO_GITHUB=tecmx-team46-pricing/pricing-mlops
+MODEL_REPO_REF=<branch|tag|sha>
 ```
 
 No se publican account keys, connection strings ni secretos.
@@ -51,9 +58,20 @@ raw-masked/samples/sample_pricing_v1.csv
 ```text
 mlops/scripts/run_model_flow_function.sh
 -> POST /api/model-flow
--> Azure ML command job
+-> Azure ML pipeline job
 -> snapshot `pricing-mlops-source`
 -> Storage outputs
+```
+
+El flujo automatico es:
+
+```text
+raw-masked/incoming/*.csv BlobCreated
+-> Event Grid
+-> Function trigger model-flow-blob-created
+-> Azure ML pipeline job
+-> Storage outputs
+-> Table mlopsruns o JSON fallback en runs
 ```
 
 La Function devuelve `azure_ml_job_name`, `run_id`, `correlation_id` y `expected_output_prefix`.
@@ -61,7 +79,7 @@ La Function devuelve `azure_ml_job_name`, `run_id`, `correlation_id` y `expected
 ## Layout De Outputs
 
 ```text
-<container>/environment=<env>/compute=azure-ml/owner=<owner>/run_date=<yyyymmdd>/run_id=<run_id>/<artifact>
+<container>/environment=<env>/compute=azure-ml/trigger=<manual|event-grid>/owner=<owner>/run_date=<yyyymmdd>/run_id=<run_id>/<artifact>
 ```
 
 Artefactos esperados:

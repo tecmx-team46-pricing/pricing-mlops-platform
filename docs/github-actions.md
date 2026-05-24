@@ -2,7 +2,7 @@
 
 ## Regla Principal
 
-GitHub Actions no opera el flujo ML. La ruta operativa es Azure Function -> Azure ML -> Storage.
+GitHub Actions no opera el flujo ML. La ruta operativa manual es Azure Function -> Azure ML -> Storage; la ruta automatica es BlobCreated -> Event Grid -> Azure Function -> Azure ML -> Storage.
 
 GitHub Actions se usa para:
 

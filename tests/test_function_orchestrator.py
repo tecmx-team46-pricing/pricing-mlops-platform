@@ -11,6 +11,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 FUNCTION_APP_PATH = ROOT / "mlops" / "functions" / "function_app.py"
 JOB_FILE = ROOT / "mlops" / "azureml" / "pricing-mlops-job.yml"
+PIPELINE_JOB_FILE = ROOT / "mlops" / "azureml" / "pricing-mlops-pipeline.yml"
 
 
 def _load_function_app():
@@ -29,10 +30,23 @@ def test_job_template_uses_packaged_model_source():
     assert "python scripts/run_azure_ml_flow.py" in job_definition["command"]
 
 
+def test_pipeline_template_uses_packaged_model_source():
+    job_definition = yaml.safe_load(PIPELINE_JOB_FILE.read_text(encoding="utf-8"))
+
+    command_job = job_definition["jobs"]["validate_prepare_score_publish"]
+    component = command_job["component"]
+    assert job_definition["type"] == "pipeline"
+    assert component["code"] == "../pricing-mlops-source"
+    assert "--trigger-type ${{inputs.trigger_type}}" in component["command"]
+    assert "--model-commit-sha ${{inputs.model_commit_sha}}" in component["command"]
+
+
 def test_function_app_discovers_platform_job_template():
     function_app = _load_function_app()
 
-    assert function_app.JOB_FILE == JOB_FILE
+    assert function_app.COMMAND_JOB_FILE == JOB_FILE
+    assert function_app.PIPELINE_JOB_FILE == PIPELINE_JOB_FILE
+    assert function_app.JOB_FILE == PIPELINE_JOB_FILE
 
 
 def test_orchestration_request_builds_expected_prefix(monkeypatch):
@@ -49,9 +63,10 @@ def test_orchestration_request_builds_expected_prefix(monkeypatch):
     )
 
     assert request["compute_target"] == "azure-ml"
+    assert request["trigger_type"] == "manual"
     assert request["run_id"] == "20260517T000000Z-function"
     assert request["expected_output_prefix"] == (
-        "environment=staging/compute=azure-ml/owner=team46/"
+        "environment=staging/compute=azure-ml/trigger=manual/owner=team46/"
         "run_date=20260517/run_id=20260517T000000Z-function"
     )
 
@@ -95,6 +110,65 @@ def test_model_flow_submits_aml_job(monkeypatch):
     assert submitted["run_id"] == "20260517T000000Z-function"
 
 
+def test_event_grid_request_accepts_incoming_csv(monkeypatch):
+    function_app = _load_function_app()
+    _set_required_env(monkeypatch)
+
+    request = function_app._event_orchestration_request(
+        {
+            "url": (
+                "https://<mlops-storage-account>.blob.core.windows.net/"
+                "raw-masked/incoming/pricing.csv"
+            )
+        }
+    )
+
+    assert request["environment"] == "staging"
+    assert request["run_owner"] == "team46"
+    assert request["trigger_type"] == "event-grid"
+    assert request["input_container"] == "raw-masked"
+    assert request["input_blob_path"] == "incoming/pricing.csv"
+    assert "/trigger=event-grid/" in request["expected_output_prefix"]
+
+
+def test_event_grid_request_rejects_samples(monkeypatch):
+    function_app = _load_function_app()
+    _set_required_env(monkeypatch)
+
+    try:
+        function_app._event_orchestration_request(
+            {
+                "url": (
+                    "https://<mlops-storage-account>.blob.core.windows.net/"
+                    "raw-masked/samples/sample_pricing_v1.csv"
+                )
+            }
+        )
+    except ValueError as exc:
+        assert "incoming/" in str(exc)
+    else:
+        raise AssertionError("Event Grid samples path should be rejected")
+
+
+def test_event_grid_request_rejects_raw_unmasked(monkeypatch):
+    function_app = _load_function_app()
+    _set_required_env(monkeypatch)
+
+    try:
+        function_app._event_orchestration_request(
+            {
+                "url": (
+                    "https://<mlops-storage-account>.blob.core.windows.net/"
+                    "raw-unmasked/incoming/pricing.csv"
+                )
+            }
+        )
+    except ValueError as exc:
+        assert "raw-unmasked" in str(exc)
+    else:
+        raise AssertionError("raw-unmasked should be rejected")
+
+
 def test_apply_job_inputs_updates_loaded_azure_ml_defaults(tmp_path):
     function_app = _load_function_app()
     job_file = _copy_job_package(tmp_path)
@@ -104,6 +178,31 @@ def test_apply_job_inputs_updates_loaded_azure_ml_defaults(tmp_path):
 
     assert job._to_dict()["inputs"]["run_id"] == "run-from-function"
     assert job.component.inputs["run_id"]["default"] == "run-from-function"
+
+
+def test_apply_job_inputs_updates_loaded_pipeline_defaults(tmp_path):
+    function_app = _load_function_app()
+    package_root = tmp_path / "package"
+    azureml_dir = package_root / "azureml"
+    source_dir = package_root / "pricing-mlops-source"
+    azureml_dir.mkdir(parents=True)
+    source_dir.mkdir()
+    shutil.copy(PIPELINE_JOB_FILE, azureml_dir / "pricing-mlops-pipeline.yml")
+    shutil.copy(ROOT / "mlops" / "azureml" / "environment.yml", azureml_dir / "environment.yml")
+    job = load_job(source=azureml_dir / "pricing-mlops-pipeline.yml")
+
+    function_app._apply_job_inputs(
+        job,
+        {
+            "run_id": "run-from-function",
+            "trigger_type": "event-grid",
+            "model_commit_sha": "abc123",
+        },
+    )
+
+    assert job._to_dict()["inputs"]["run_id"] == "run-from-function"
+    assert job._to_dict()["inputs"]["trigger_type"] == "event-grid"
+    assert job._to_dict()["inputs"]["model_commit_sha"] == "abc123"
 
 
 def _copy_job_package(tmp_path):

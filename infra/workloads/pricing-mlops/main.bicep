@@ -89,6 +89,12 @@ param functionPlanSkuSize string = 'Y1'
 @description('App Service Plan instance count for the Function orchestrator.')
 param functionPlanCapacity int = 1
 
+@description('Create Event Grid BlobCreated trigger for automatic model flow runs.')
+param enableBlobCreatedEventTrigger bool = true
+
+@description('Model repo ref packaged and recorded by the MLOps runtime.')
+param modelRepoRef string = 'PoC/model-flow-template'
+
 @description('GitHub repository in org/repo format. Empty value skips workload role assignments.')
 param githubRepository string = ''
 
@@ -217,6 +223,9 @@ module functionOrchestrator 'modules/function-orchestrator.bicep' = if (enableFu
     functionPlanSkuTier: functionPlanSkuTier
     functionPlanSkuSize: functionPlanSkuSize
     functionPlanCapacity: functionPlanCapacity
+    enableBlobCreatedEventTrigger: enableBlobCreatedEventTrigger
+    modelRepoGithub: empty(modelGithubRepository) ? 'tecmx-team46-pricing/pricing-mlops' : modelGithubRepository
+    modelRepoRef: modelRepoRef
   }
 }
 

@@ -9,7 +9,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MLOPS_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PLATFORM_ROOT="$(cd "${MLOPS_ROOT}/.." && pwd)"
 WORKSPACE_ROOT="$(cd "${PLATFORM_ROOT}/.." && pwd)"
-PRICING_MLOPS_REPO="${PRICING_MLOPS_REPO:-${WORKSPACE_ROOT}/pricing-mlops}"
+MODEL_REPO_GITHUB="${MODEL_REPO_GITHUB:-tecmx-team46-pricing/pricing-mlops}"
+MODEL_REPO_REF="${MODEL_REPO_REF:-PoC/model-flow-template}"
+MODEL_REPO_PATH="${MODEL_REPO_PATH:-${PRICING_MLOPS_REPO:-}}"
 DRY_RUN="${DRY_RUN:-false}"
 KEEP_PACKAGE="${KEEP_PACKAGE:-false}"
 
@@ -24,10 +26,8 @@ required_files=(
   "${MLOPS_ROOT}/functions/host.json"
   "${MLOPS_ROOT}/functions/requirements.txt"
   "${MLOPS_ROOT}/azureml/pricing-mlops-job.yml"
+  "${MLOPS_ROOT}/azureml/pricing-mlops-pipeline.yml"
   "${MLOPS_ROOT}/azureml/environment.yml"
-  "${PRICING_MLOPS_REPO}/pyproject.toml"
-  "${PRICING_MLOPS_REPO}/scripts/run_azure_ml_flow.py"
-  "${PRICING_MLOPS_REPO}/src/pricing_mlops/__init__.py"
 )
 
 for file in "${required_files[@]}"; do
@@ -67,34 +67,84 @@ fi
 PACKAGE_DIR="$(mktemp -d)"
 PACKAGE_ROOT="${PACKAGE_DIR}/package"
 PACKAGE_PATH="${PACKAGE_DIR}/pricing-mlops-function.zip"
+MODEL_SOURCE_DIR="${PACKAGE_DIR}/model-source"
 
 if [[ "${KEEP_PACKAGE}" != "true" ]]; then
   trap 'rm -rf "${PACKAGE_DIR}"' EXIT
 fi
+mkdir -p "${MODEL_SOURCE_DIR}"
+
+if [[ -n "${MODEL_REPO_PATH}" ]]; then
+  if [[ ! -d "${MODEL_REPO_PATH}" ]]; then
+    echo "MODEL_REPO_PATH does not exist: ${MODEL_REPO_PATH}" >&2
+    exit 1
+  fi
+  rsync -a \
+    --exclude '.git/' \
+    --exclude '.github/' \
+    --exclude '.venv/' \
+    --exclude 'azureml/' \
+    --exclude 'docs/' \
+    --exclude 'notebooks/' \
+    --exclude 'references/' \
+    --exclude 'reports/' \
+    --exclude 'data/samples/unmasked/' \
+    --exclude 'tests/' \
+    --exclude '__pycache__/' \
+    --exclude '.pytest_cache/' \
+    --exclude 'runs/' \
+    --exclude 'src/*.egg-info/' \
+    --exclude '*.pyc' \
+    "${MODEL_REPO_PATH}/" \
+    "${MODEL_SOURCE_DIR}/"
+  MODEL_COMMIT_SHA="$(git -C "${MODEL_REPO_PATH}" rev-parse HEAD 2>/dev/null || echo unknown)"
+else
+  git init -q "${MODEL_SOURCE_DIR}"
+  git -C "${MODEL_SOURCE_DIR}" remote add origin "https://github.com/${MODEL_REPO_GITHUB}.git"
+  git -C "${MODEL_SOURCE_DIR}" fetch -q --depth 1 origin "${MODEL_REPO_REF}"
+  git -C "${MODEL_SOURCE_DIR}" checkout -q FETCH_HEAD
+  MODEL_COMMIT_SHA="$(git -C "${MODEL_SOURCE_DIR}" rev-parse HEAD)"
+  rm -rf "${MODEL_SOURCE_DIR}/.git" "${MODEL_SOURCE_DIR}/.github"
+fi
+
+for file in \
+  "${MODEL_SOURCE_DIR}/pyproject.toml" \
+  "${MODEL_SOURCE_DIR}/scripts/run_azure_ml_flow.py" \
+  "${MODEL_SOURCE_DIR}/src/pricing_mlops/__init__.py"; do
+  if [[ ! -f "${file}" ]]; then
+    echo "Required model source file not found: ${file}" >&2
+    exit 1
+  fi
+done
 
 mkdir -p "${PACKAGE_ROOT}/azureml" "${PACKAGE_ROOT}/pricing-mlops-source"
 cp "${MLOPS_ROOT}/functions/function_app.py" "${PACKAGE_ROOT}/function_app.py"
 cp "${MLOPS_ROOT}/functions/host.json" "${PACKAGE_ROOT}/host.json"
 cp "${MLOPS_ROOT}/functions/requirements.txt" "${PACKAGE_ROOT}/requirements.txt"
 cp "${MLOPS_ROOT}/azureml/pricing-mlops-job.yml" "${PACKAGE_ROOT}/azureml/pricing-mlops-job.yml"
+cp "${MLOPS_ROOT}/azureml/pricing-mlops-pipeline.yml" "${PACKAGE_ROOT}/azureml/pricing-mlops-pipeline.yml"
 cp "${MLOPS_ROOT}/azureml/environment.yml" "${PACKAGE_ROOT}/azureml/environment.yml"
+python - <<'PY' "${PACKAGE_ROOT}/model_source.json" "${MODEL_REPO_GITHUB}" "${MODEL_REPO_REF}" "${MODEL_COMMIT_SHA}"
+import json
+import sys
+
+path, repo, ref, sha = sys.argv[1:5]
+with open(path, "w", encoding="utf-8") as handle:
+    json.dump(
+        {
+            "model_repo": repo,
+            "model_ref": ref,
+            "model_commit_sha": sha,
+        },
+        handle,
+        indent=2,
+        sort_keys=True,
+    )
+    handle.write("\n")
+PY
 
 rsync -a \
-  --exclude '.git/' \
-  --exclude '.github/' \
-  --exclude '.venv/' \
-  --exclude 'azureml/' \
-  --exclude 'docs/' \
-  --exclude 'notebooks/' \
-  --exclude 'references/' \
-  --exclude 'reports/' \
-  --exclude 'tests/' \
-  --exclude '__pycache__/' \
-  --exclude '.pytest_cache/' \
-  --exclude 'runs/' \
-  --exclude 'src/*.egg-info/' \
-  --exclude '*.pyc' \
-  "${PRICING_MLOPS_REPO}/" \
+  "${MODEL_SOURCE_DIR}/" \
   "${PACKAGE_ROOT}/pricing-mlops-source/"
 
 (cd "${PACKAGE_ROOT}" && zip -qr "${PACKAGE_PATH}" .)

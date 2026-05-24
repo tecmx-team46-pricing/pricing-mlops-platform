@@ -11,7 +11,8 @@ Ruta corta para entender el repo sin leer planes historicos.
 | [`platform-model-operating-contract.md`](platform-model-operating-contract.md) | Contrato entre plataforma y repo funcional. |
 | [`legacy-resource-inventory.md`](legacy-resource-inventory.md) | Inventario de recursos activos, legacy conservados y legacy eliminados. |
 | [`../mlops/docs/function-orchestrator.md`](../mlops/docs/function-orchestrator.md) | Runtime Azure Function y empaquetado. |
-| [`../mlops/docs/azure-ml-job-contract.md`](../mlops/docs/azure-ml-job-contract.md) | Contrato del command job Azure ML. |
+| [`../mlops/docs/azure-ml-job-contract.md`](../mlops/docs/azure-ml-job-contract.md) | Contrato del pipeline/job Azure ML. |
+| [`azure-ml-tooling-decision.md`](azure-ml-tooling-decision.md) | Decisiones sobre Pipeline, Data Assets, endpoints, monitoring y tooling AML. |
 | [`data-governance-plan.md`](data-governance-plan.md) | Zonas de datos, acceso y retencion. |
 | [`roadmap.md`](roadmap.md) | Siguientes pasos y fases. |
 | [`reporte-avance-proyecto-integrador.md`](reporte-avance-proyecto-integrador.md) | Reporte academico de avance; conserva el contexto historico de MVP. |

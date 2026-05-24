@@ -9,8 +9,15 @@ El codigo funcional/data science del flujo vive en `pricing-mlops` siguiendo Coo
 ```text
 Operador o prueba controlada
 -> Azure Function /api/model-flow
--> Azure ML command job
+-> Azure ML pipeline job
 -> Storage/ADLS outputs versionados
+
+BlobCreated raw-masked/incoming/*.csv
+-> Event Grid
+-> Azure Function EventGrid trigger
+-> Azure ML pipeline job
+-> Storage/ADLS outputs versionados
+-> Table/JSON run metadata
 ```
 
 GitHub Actions no es el orquestador operativo del flujo ML. En este repo solo valida o despliega infraestructura por `workflow_dispatch`.
@@ -25,7 +32,9 @@ flowchart TD
   ARM --> DataLab["rg-pricing-mlops-data-lab<br/>raw-unmasked restringido"]
 
   Operator["Script operativo local"] --> Function["Azure Function<br/>orquestador"]
-  Function --> AML["Azure ML v2 Job<br/>compute ML"]
+  Incoming["BlobCreated<br/>raw-masked/incoming/*.csv"] --> EventGrid["Event Grid"]
+  EventGrid --> Function
+  Function --> AML["Azure ML v2 Pipeline<br/>compute ML"]
   AML --> Storage["Storage MLOps<br/>raw-masked / curated / runs / snapshots / drift-logs / reports / artifacts"]
   AML -. runtime interno .-> AMLRuntime["Storage runtime Azure ML<br/>snapshots / logs / environments"]
   Function -. host state .-> FunctionStorage["Storage host Function"]
@@ -73,13 +82,13 @@ scripts/deploy.sh staging
 Publicar la Function y operar el endpoint se hace desde plataforma:
 
 ```bash
-PRICING_MLOPS_REPO=../pricing-mlops \
+MODEL_REPO_PATH=../pricing-mlops \
 mlops/scripts/publish_orchestrator_function.sh staging
 
 mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
 ```
 
-El publish prepara un paquete temporal con el entrypoint de Azure Functions, `mlops/azureml/pricing-mlops-job.yml` y un snapshot del repo `pricing-mlops` bajo `pricing-mlops-source/`. El job YAML usa `code: ../pricing-mlops-source` para que Azure ML ejecute el codigo CCDS empaquetado.
+El publish prepara un paquete temporal con el entrypoint de Azure Functions, `mlops/azureml/pricing-mlops-pipeline.yml`, fallback `mlops/azureml/pricing-mlops-job.yml` y un snapshot del repo `pricing-mlops` bajo `pricing-mlops-source/`. Por defecto obtiene el modelo desde `MODEL_REPO_GITHUB` + `MODEL_REPO_REF`; `MODEL_REPO_PATH` es fallback local de desarrollo. La Function no clona GitHub por evento.
 
 ## Storage
 
@@ -101,7 +110,8 @@ Leer en este orden:
 6. [`docs/platform-model-operating-contract.md`](docs/platform-model-operating-contract.md)
 7. [`docs/data-governance-plan.md`](docs/data-governance-plan.md)
 8. [`docs/roadmap.md`](docs/roadmap.md)
-9. [`docs/original/technical-design-original.md`](docs/original/technical-design-original.md)
+9. [`docs/azure-ml-tooling-decision.md`](docs/azure-ml-tooling-decision.md)
+10. [`docs/original/technical-design-original.md`](docs/original/technical-design-original.md)
 
 ## Fuera De Alcance
 
