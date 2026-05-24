@@ -2,7 +2,21 @@
 
 La ruta preferida se define en `mlops/azureml/pricing-mlops-pipeline.yml`. El fallback command job se conserva en `mlops/azureml/pricing-mlops-job.yml`.
 
-Ambos YAML usan:
+El pipeline activo tiene tres nodos visibles:
+
+| Nodo | Entrypoint | Contrato |
+|---|---|---|
+| `validate_prepare` | `scripts/components/validate_prepare.py` | Lee `raw-masked/<input_blob_path>`, valida y produce `curated_input.csv` + `validation_metadata.json`. |
+| `score_evaluate` | `scripts/components/score_evaluate.py` | Lee el intermedio, scorea, calcula drift y escribe los cinco artefactos funcionales locales. |
+| `publish_outputs` | `scripts/components/publish_outputs.py` | Publica los seis outputs funcionales al Storage MLOps. |
+
+Los componentes usan:
+
+```yaml
+code: ../pricing-mlops-source
+```
+
+El fallback command job usa:
 
 ```yaml
 code: ../pricing-mlops-source

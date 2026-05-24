@@ -66,7 +66,7 @@ AZURE_ML_WORKSPACE=mlw-pricing-mlops-stg-v2-<suffix> \
 mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
 ```
 
-Ese script llama la Function, espera el job AML por ARM/REST y verifica metadata de los seis outputs. No usa GitHub Actions ni `az ml`.
+Ese script llama la Function, espera el job AML por ARM/REST y verifica metadata de los seis outputs. No usa GitHub Actions ni `az ml`. En Azure ML > Jobs, el pipeline debe mostrar tres nodos: `validate_prepare`, `score_evaluate` y `publish_outputs`.
 
 El trigger automatico se habilita por Event Grid sobre `raw-masked/incoming/*.csv`. Para probarlo:
 

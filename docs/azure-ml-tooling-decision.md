@@ -2,13 +2,19 @@
 
 ## Decision
 
-La ruta activa adopta Azure ML Pipeline YAML con un command job interno (`validate_prepare_score_publish`) que reutiliza el codigo de `pricing-mlops`. Se conserva `pricing-mlops-job.yml` como fallback operativo para reducir riesgo mientras se valida Event Grid end-to-end.
+La ruta activa adopta Azure ML Pipeline YAML con tres command components visibles:
+
+```text
+validate_prepare -> score_evaluate -> publish_outputs
+```
+
+Se conserva `pricing-mlops-job.yml` como fallback operativo de un solo job para reducir riesgo si el pipeline multi-componente falla.
 
 ## Tooling
 
 | Herramienta | Decision | Razon |
 |---|---|---|
-| Azure ML Pipeline/component job | Adoptado | Permite representar etapas y evolucionar a componentes mas finos sin mover logica ML a la Function. |
+| Azure ML Pipeline/component job | Adoptado | Representa validacion/preparacion, scoring/evaluacion y publicacion como nodos separados sin mover logica ML a la Function. |
 | Azure ML Designer v2 | No manual | Puede visualizar pipelines, pero no sera fuente de verdad ni paso manual de operacion. |
 | Data Assets | Preparado | Utiles para baseline/input versionado, pero no bloquean el MVP event-driven. |
 | Model Monitoring | Futuro | Requiere mas historial y politicas; el MVP conserva drift logs propios. |

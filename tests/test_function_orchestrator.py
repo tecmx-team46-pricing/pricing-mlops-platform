@@ -33,12 +33,33 @@ def test_job_template_uses_packaged_model_source():
 def test_pipeline_template_uses_packaged_model_source():
     job_definition = yaml.safe_load(PIPELINE_JOB_FILE.read_text(encoding="utf-8"))
 
-    command_job = job_definition["jobs"]["validate_prepare_score_publish"]
-    component = command_job["component"]
     assert job_definition["type"] == "pipeline"
-    assert component["code"] == "../pricing-mlops-source"
-    assert "--trigger-type ${{inputs.trigger_type}}" in component["command"]
-    assert "--model-commit-sha ${{inputs.model_commit_sha}}" in component["command"]
+    assert set(job_definition["jobs"].keys()) == {
+        "validate_prepare",
+        "score_evaluate",
+        "publish_outputs",
+    }
+    for job_name in ("validate_prepare", "score_evaluate", "publish_outputs"):
+        assert job_definition["jobs"][job_name]["component"]["code"] == "../pricing-mlops-source"
+        assert job_definition["jobs"][job_name]["compute"] == "azureml:serverless"
+    assert "scripts/components/validate_prepare.py" in (
+        job_definition["jobs"]["validate_prepare"]["component"]["command"]
+    )
+    assert "--trigger-type ${{inputs.trigger_type}}" in (
+        job_definition["jobs"]["score_evaluate"]["component"]["command"]
+    )
+    assert "--model-commit-sha ${{inputs.model_commit_sha}}" in (
+        job_definition["jobs"]["score_evaluate"]["component"]["command"]
+    )
+    assert "scripts/components/publish_outputs.py" in (
+        job_definition["jobs"]["publish_outputs"]["component"]["command"]
+    )
+    assert job_definition["jobs"]["score_evaluate"]["inputs"]["prepared_data"] == (
+        "${{parent.jobs.validate_prepare.outputs.prepared_data}}"
+    )
+    assert job_definition["jobs"]["publish_outputs"]["inputs"]["run_artifacts"] == (
+        "${{parent.jobs.score_evaluate.outputs.run_artifacts}}"
+    )
 
 
 def test_function_app_discovers_platform_job_template():
@@ -203,6 +224,11 @@ def test_apply_job_inputs_updates_loaded_pipeline_defaults(tmp_path):
     assert job._to_dict()["inputs"]["run_id"] == "run-from-function"
     assert job._to_dict()["inputs"]["trigger_type"] == "event-grid"
     assert job._to_dict()["inputs"]["model_commit_sha"] == "abc123"
+    assert set(job._to_dict()["jobs"].keys()) == {
+        "validate_prepare",
+        "score_evaluate",
+        "publish_outputs",
+    }
 
 
 def _copy_job_package(tmp_path):

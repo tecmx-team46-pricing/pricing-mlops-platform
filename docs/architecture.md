@@ -32,7 +32,7 @@ GitHub Actions queda para CI/CD, validacion y despliegue controlado. No es compu
 | Runtime MLOps | `mlops/functions/`, `mlops/azureml/`, `mlops/scripts/` | Codigo de Azure Function, definicion del pipeline/job AML, publicacion y operacion del flujo remoto. |
 | Contratos MLOps | `mlops/configs/`, `mlops/schemas/`, `mlops/docs/` | Schemas, thresholds, storage layout y documentacion del flujo. No contiene IaC. |
 
-`pricing-mlops` queda como repo funcional/data science alineado con Cookiecutter Data Science. El script de publicacion de plataforma empaqueta un snapshot de ese repo en `pricing-mlops-source/`; el pipeline `mlops/azureml/pricing-mlops-pipeline.yml` usa `code: ../pricing-mlops-source` y ejecuta `python scripts/run_azure_ml_flow.py`. El command job `mlops/azureml/pricing-mlops-job.yml` queda como fallback.
+`pricing-mlops` queda como repo funcional/data science alineado con Cookiecutter Data Science. El script de publicacion de plataforma empaqueta un snapshot de ese repo en `pricing-mlops-source/`; el pipeline `mlops/azureml/pricing-mlops-pipeline.yml` usa `code: ../pricing-mlops-source` y muestra tres nodos: `validate_prepare`, `score_evaluate` y `publish_outputs`. El command job `mlops/azureml/pricing-mlops-job.yml` queda como fallback.
 
 ## Ambientes
 
@@ -55,7 +55,7 @@ No existe `prod` en IaC, parameter files ni workflows.
 | User Assigned Identities | `rg-pricing-mlops-platform-shared` | Activo | OIDC para repos. |
 | Storage / ADLS Gen2 | `rg-pricing-mlops-staging` | Activo | Data lake MLOps: `raw-masked`, `curated`, `runs`, `snapshots`, `drift-logs`, `reports`, `artifacts`. |
 | Storage runtime Azure ML | `rg-pricing-mlops-staging` | Activo via IaC | Operacional: snapshots, logs, environments y artifacts internos AML para el workspace v2 activo. |
-| Azure ML Workspace v2 | `rg-pricing-mlops-staging` | Activo | `mlw-pricing-mlops-stg-v2-<suffix>`; command jobs serverless/administrados, sin GPU ni endpoint online. Usa Storage runtime Azure ML como storage asociado. |
+| Azure ML Workspace v2 | `rg-pricing-mlops-staging` | Activo | `mlw-pricing-mlops-stg-v2-<suffix>`; pipeline/component jobs serverless/administrados, sin GPU ni endpoint online. Usa Storage runtime Azure ML como storage asociado. |
 | Azure ML Workspace legacy | `rg-pricing-mlops-staging` | Legacy | `mlw-pricing-mlops-staging-<suffix>`; conserva datastores internos en el Storage MLOps principal. No borrar sin aprobacion. |
 | Azure Function | `rg-pricing-mlops-staging` | Activo | `func-pricing-mlops-staging-<suffix>` en `centralus`, plan Y1/Dynamic. |
 | Event Grid subscription | `rg-pricing-mlops-staging` | Activo via IaC | Filtra `Microsoft.Storage.BlobCreated` bajo `raw-masked/incoming/*.csv` y dispara la Function. |

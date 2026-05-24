@@ -38,7 +38,7 @@ flowchart TD
   AML --> Storage["Storage MLOps<br/>raw-masked / curated / runs / snapshots / drift-logs / reports / artifacts"]
   AML -. runtime interno .-> AMLRuntime["Storage runtime Azure ML<br/>snapshots / logs / environments"]
   Function -. host state .-> FunctionStorage["Storage host Function"]
-  Platform --> Runtime["mlops/<br/>Function code / AML job YAML"]
+  Platform --> Runtime["mlops/<br/>Function code / AML pipeline YAML"]
   Runtime --> Function
   Runtime --> AML
   ModelRepo["pricing-mlops<br/>codigo funcional CCDS"] --> AML
@@ -89,6 +89,12 @@ mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v
 ```
 
 El publish prepara un paquete temporal con el entrypoint de Azure Functions, `mlops/azureml/pricing-mlops-pipeline.yml`, fallback `mlops/azureml/pricing-mlops-job.yml` y un snapshot del repo `pricing-mlops` bajo `pricing-mlops-source/`. Por defecto obtiene el modelo desde `MODEL_REPO_GITHUB` + `MODEL_REPO_REF`; `MODEL_REPO_PATH` es fallback local de desarrollo. La Function no clona GitHub por evento.
+
+El pipeline activo muestra tres nodos en Azure ML:
+
+```text
+validate_prepare -> score_evaluate -> publish_outputs
+```
 
 ## Storage
 
