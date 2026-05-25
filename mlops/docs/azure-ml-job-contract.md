@@ -25,9 +25,9 @@ command: >-
   python scripts/run_azure_ml_flow.py
 ```
 
-`../pricing-mlops-source` existe dentro del paquete de Azure Functions preparado por `mlops/scripts/publish_orchestrator_function.sh`. Esa carpeta es un snapshot del repo `pricing-mlops`, que mantiene el codigo data science alineado con Cookiecutter Data Science.
+`../pricing-mlops-source` existe dentro del paquete de Azure Functions preparado por `mlops/scripts/publish_orchestrator_function.sh`. Azure ML v2 no trata `code:` como un repo GitHub vivo; `code:` apunta a esa carpeta local y el SDK sube ese snapshot al someter el pipeline/job. Esa carpeta es un snapshot del repo `pricing-mlops`, que mantiene el codigo data science alineado con Cookiecutter Data Science.
 
-La plataforma resuelve el snapshot con `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` durante el empaquetado. Para desarrollo local se permite `MODEL_REPO_PATH`; la Azure Function no clona GitHub por evento.
+La plataforma resuelve el snapshot con `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` durante el empaquetado. Usar commit SHA o tag es la opcion mas reproducible; un branch es valido pero menos estricto porque puede apuntar a otro commit despues. Para desarrollo local se permite `MODEL_REPO_PATH` solo con `ALLOW_LOCAL_MODEL_SOURCE=true`; la Azure Function no clona GitHub por evento.
 
 Inputs inyectados por la Function:
 

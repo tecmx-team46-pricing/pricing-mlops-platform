@@ -85,13 +85,13 @@ scripts/deploy.sh staging
 Publicar la Function y operar el endpoint se hace desde plataforma:
 
 ```bash
-MODEL_REPO_PATH=../pricing-mlops \
+MODEL_REPO_REF=<commit-sha-or-tag> \
 mlops/scripts/publish_orchestrator_function.sh staging
 
 mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
 ```
 
-El publish prepara un paquete temporal con el entrypoint de Azure Functions, `mlops/azureml/pricing-mlops-pipeline.yml`, fallback `mlops/azureml/pricing-mlops-job.yml` y un snapshot del repo `pricing-mlops` bajo `pricing-mlops-source/`. Por defecto obtiene el modelo desde `MODEL_REPO_GITHUB` + `MODEL_REPO_REF`; `MODEL_REPO_PATH` es fallback local de desarrollo. La Function no clona GitHub por evento.
+El publish prepara un paquete temporal con el entrypoint de Azure Functions, `mlops/azureml/pricing-mlops-pipeline.yml`, fallback `mlops/azureml/pricing-mlops-job.yml` y un snapshot del repo `pricing-mlops` bajo `pricing-mlops-source/`. Para `staging` y `validation`, ese snapshot se resuelve desde `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` durante el empaquetado; usar un commit SHA o tag es la ruta mas reproducible. Un branch funciona, pero puede moverse. `MODEL_REPO_PATH` queda solo como fallback local/dev con `ALLOW_LOCAL_MODEL_SOURCE=true`. La Function no clona GitHub por evento.
 
 El pipeline activo muestra tres nodos en Azure ML:
 

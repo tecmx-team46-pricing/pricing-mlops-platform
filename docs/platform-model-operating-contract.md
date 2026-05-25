@@ -44,7 +44,7 @@ MLOPS_SQL_SCHEMA=dbo
 MLOPS_SQL_RUN_LOG_TABLE=model_run_log
 MLOPS_SQL_SNAPSHOT_TABLE=model_output_snapshot_metadata
 MODEL_REPO_GITHUB=tecmx-team46-pricing/pricing-mlops
-MODEL_REPO_REF=<branch|tag|sha>
+MODEL_REPO_REF=<commit-sha|tag|branch>
 ```
 
 No se publican account keys, connection strings ni secretos.
@@ -70,6 +70,8 @@ mlops/scripts/run_model_flow_function.sh
 -> snapshot `pricing-mlops-source`
 -> Storage outputs
 ```
+
+`MODEL_REPO_REF` se resuelve en publish/build time desde GitHub y se empaqueta como `pricing-mlops-source`; Azure ML recibe ese snapshot local, no el repo de plataforma ni un clone vivo de GitHub. Para reproducibilidad, usar commit SHA o tag. `MODEL_REPO_PATH` es solo fallback local/dev con `ALLOW_LOCAL_MODEL_SOURCE=true`; no es la ruta normal para `staging` ni `validation`.
 
 El flujo automatico es:
 

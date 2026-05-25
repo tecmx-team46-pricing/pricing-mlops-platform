@@ -30,7 +30,7 @@ Se conserva `pricing-mlops-job.yml` como fallback operativo de un solo job para 
 La plataforma resuelve el codigo modelo en build/package con:
 
 - `MODEL_REPO_GITHUB=tecmx-team46-pricing/pricing-mlops`
-- `MODEL_REPO_REF=<branch|tag|sha>`
-- `MODEL_REPO_PATH=<ruta local>` solo para desarrollo
+- `MODEL_REPO_REF=<commit-sha|tag|branch>`
+- `MODEL_REPO_PATH=<ruta local>` solo para desarrollo con `ALLOW_LOCAL_MODEL_SOURCE=true`
 
-El paquete escribe `model_source.json` con `model_repo`, `model_ref` y `model_commit_sha`. La Azure Function lee ese archivo e inyecta la metadata al pipeline/job. La Function no clona GitHub por evento.
+El paquete escribe `model_source.json` con `model_source`, `model_repo`, `model_ref` y `model_commit_sha`. La Azure Function lee ese archivo e inyecta la metadata al pipeline/job. La Function no clona GitHub por evento. Un commit SHA o tag debe preferirse para reproducibilidad; un branch se permite para velocidad operativa, pero el publish resuelve y registra el SHA real.

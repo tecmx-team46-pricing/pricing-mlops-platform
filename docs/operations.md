@@ -45,7 +45,7 @@ La operacion diaria del flujo vive en este repo bajo `mlops/scripts/`. El repo `
 Publicar o actualizar el codigo de la Function:
 
 ```bash
-MODEL_REPO_PATH=../pricing-mlops \
+MODEL_REPO_REF=<commit-sha-or-tag> \
 mlops/scripts/publish_orchestrator_function.sh staging
 ```
 
@@ -53,9 +53,11 @@ Dry-run sin desplegar a Azure:
 
 ```bash
 DRY_RUN=true KEEP_PACKAGE=true \
-MODEL_REPO_PATH=../pricing-mlops \
+MODEL_REPO_REF=<commit-sha-or-tag> \
 mlops/scripts/publish_orchestrator_function.sh staging
 ```
+
+`MODEL_REPO_REF` se resuelve desde `MODEL_REPO_GITHUB` en build/publish time y el commit real queda escrito en `model_source.json`. Para desarrollo local se permite `MODEL_REPO_PATH=../pricing-mlops` solo con `ALLOW_LOCAL_MODEL_SOURCE=true`; si ese repo local tiene cambios sin commit, el script falla salvo que se use `ALLOW_DIRTY_LOCAL_MODEL_SOURCE=true` para una prueba local deliberada.
 
 Ejecutar el flujo remoto:
 
