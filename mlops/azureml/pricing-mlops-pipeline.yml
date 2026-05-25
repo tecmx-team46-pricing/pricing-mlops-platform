@@ -61,6 +61,7 @@ jobs:
         python -m pip install -e . &&
         python scripts/components/score_evaluate.py
         --storage-account ${{inputs.storage_account}}
+        --input-container raw-masked
         --prepared-container artifacts
         --prepared-prefix component-state/${{inputs.run_id}}/prepared
         --output-dir outputs/run_artifacts
@@ -126,8 +127,14 @@ jobs:
         --run-artifacts-prefix component-state/${{inputs.run_id}}/run_artifacts
         --environment ${{inputs.environment}}
         --run-owner ${{inputs.run_owner}}
+        --run-id ${{inputs.run_id}}
+        --input-container raw-masked
+        --input-blob-path ${{inputs.input_blob_path}}
         --compute-target azure-ml
         --trigger-type ${{inputs.trigger_type}}
+        --model-repo ${{inputs.model_repo}}
+        --model-ref ${{inputs.model_ref}}
+        --model-commit-sha ${{inputs.model_commit_sha}}
       environment:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml
@@ -140,13 +147,25 @@ jobs:
           type: string
         run_owner:
           type: string
+        input_blob_path:
+          type: string
         trigger_type:
+          type: string
+        model_repo:
+          type: string
+        model_ref:
+          type: string
+        model_commit_sha:
           type: string
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
       environment: ${{parent.inputs.environment}}
       run_owner: ${{parent.inputs.run_owner}}
+      input_blob_path: ${{parent.inputs.input_blob_path}}
       trigger_type: ${{parent.inputs.trigger_type}}
+      model_repo: ${{parent.inputs.model_repo}}
+      model_ref: ${{parent.inputs.model_ref}}
+      model_commit_sha: ${{parent.inputs.model_commit_sha}}
     identity:
       type: user_identity
