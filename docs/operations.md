@@ -90,10 +90,40 @@ La Function rechaza eventos fuera de `raw-masked/incoming/`, `samples/`, paths a
 | Function | Function App `func-pricing-mlops-staging-<suffix>` > Functions / Log stream |
 | Azure ML jobs | Machine Learning workspace `mlw-pricing-mlops-stg-v2-<suffix>` > Jobs |
 | Outputs funcionales | Storage MLOps `<mlops-storage-account>` > Containers |
+| SQL audit | SQL server `sql-pricing-mlops-staging-<suffix>` > SQL databases > `pricing_mlops_audit` > Query editor (preview) |
 | Artifacts runtime AML | Storage runtime Azure ML `stamlpmlopsstg<suffix>` para el workspace v2 activo; el workspace legacy conserva artifacts anteriores en `<mlops-storage-account>` |
 | Function host state | Storage `stfn<generated-suffix>` |
 | Costos | Cost Management > Cost analysis > filtrar `rg-pricing-mlops-staging` |
 | RBAC | Resource > Access control (IAM) |
+
+## SQL Audit
+
+Runbook completo: [`sql-audit-runbook.md`](sql-audit-runbook.md).
+
+Conexion local con Microsoft Entra:
+
+```bash
+sqlcmd \
+  -S sql-pricing-mlops-staging-<suffix>.database.windows.net \
+  -d pricing_mlops_audit \
+  -G
+```
+
+Consulta rapida:
+
+```sql
+select top 10
+  run_id,
+  environment,
+  status,
+  row_count,
+  trigger_type,
+  model_commit_sha
+from dbo.model_run_log
+order by started_at_utc desc;
+```
+
+SQL guarda metadata y referencias. Los artifacts funcionales siguen en Blob Storage.
 
 ## Seguridad Actual
 

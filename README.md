@@ -11,6 +11,7 @@ Operador o prueba controlada
 -> Azure Function /api/model-flow
 -> Azure ML pipeline job
 -> Storage/ADLS outputs versionados
+-> Azure SQL audit metadata
 
 BlobCreated raw-masked/incoming/*.csv
 -> Event Grid
@@ -18,6 +19,7 @@ BlobCreated raw-masked/incoming/*.csv
 -> Azure ML pipeline job
 -> Storage/ADLS outputs versionados
 -> Table/JSON run metadata
+-> Azure SQL audit metadata
 ```
 
 GitHub Actions no es el orquestador operativo del flujo ML. En este repo solo valida o despliega infraestructura por `workflow_dispatch`.
@@ -36,6 +38,7 @@ flowchart TD
   EventGrid --> Function
   Function --> AML["Azure ML v2 Pipeline<br/>compute ML"]
   AML --> Storage["Storage MLOps<br/>raw-masked / curated / runs / snapshots / drift-logs / reports / artifacts"]
+  AML --> SQL["Azure SQL audit<br/>model_run_log / snapshot metadata"]
   AML -. runtime interno .-> AMLRuntime["Storage runtime Azure ML<br/>snapshots / logs / environments"]
   Function -. host state .-> FunctionStorage["Storage host Function"]
   Platform --> Runtime["mlops/<br/>Function code / AML pipeline YAML"]
@@ -114,14 +117,15 @@ Leer en este orden:
 4. [`docs/azure-services.md`](docs/azure-services.md)
 5. [`docs/github-actions.md`](docs/github-actions.md)
 6. [`docs/platform-model-operating-contract.md`](docs/platform-model-operating-contract.md)
-7. [`docs/data-governance-plan.md`](docs/data-governance-plan.md)
-8. [`docs/roadmap.md`](docs/roadmap.md)
-9. [`docs/azure-ml-tooling-decision.md`](docs/azure-ml-tooling-decision.md)
-10. [`docs/original/technical-design-original.md`](docs/original/technical-design-original.md)
+7. [`docs/sql-audit-runbook.md`](docs/sql-audit-runbook.md)
+8. [`docs/data-governance-plan.md`](docs/data-governance-plan.md)
+9. [`docs/roadmap.md`](docs/roadmap.md)
+10. [`docs/azure-ml-tooling-decision.md`](docs/azure-ml-tooling-decision.md)
+11. [`docs/original/technical-design-original.md`](docs/original/technical-design-original.md)
 
 ## Fuera De Alcance
 
 - Produccion real.
-- ADF, SQL, Private Endpoints, Hub-Spoke y endpoints online de Azure ML.
+- ADF, Private Endpoints, Hub-Spoke y endpoints online de Azure ML.
 - Datos `raw-unmasked` en `sandbox-local`, `staging` o `validation`.
 - Account keys, connection strings o secretos versionados.

@@ -65,4 +65,4 @@ Referencias oficiales revisadas:
 
 ## Futuro Conceptual
 
-ADF, Azure SQL, Private Endpoints, Hub-Spoke, registro formal de modelos y prod requieren decision explicita de seguridad/costo. No son parte de la base operativa actual.
+ADF, Private Endpoints, Hub-Spoke, registro formal de modelos y prod requieren decision explicita de seguridad/costo. Azure SQL audit ya existe como capa metadata-only en `staging`; su siguiente mejora es endurecer red/acceso y migraciones automatizadas.

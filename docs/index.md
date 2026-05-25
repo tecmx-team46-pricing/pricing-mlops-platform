@@ -7,6 +7,7 @@ Ruta corta para entender el repo sin leer planes historicos.
 | [`../README.md`](../README.md) | Resumen, comandos principales y alcance. |
 | [`architecture.md`](architecture.md) | Arquitectura actual, ambientes, servicios Azure y drift contra lo desplegado. |
 | [`operations.md`](operations.md) | Runbook de validacion, deploy, portal, costos y operacion diaria. |
+| [`sql-audit-runbook.md`](sql-audit-runbook.md) | Conexion, auth, queries y migraciones de Azure SQL audit. |
 | [`github-actions.md`](github-actions.md) | Workflows vigentes, OIDC y reglas de PR/deploy. |
 | [`platform-model-operating-contract.md`](platform-model-operating-contract.md) | Contrato entre plataforma y repo funcional. |
 | [`legacy-resource-inventory.md`](legacy-resource-inventory.md) | Inventario de recursos activos, legacy conservados y legacy eliminados. |

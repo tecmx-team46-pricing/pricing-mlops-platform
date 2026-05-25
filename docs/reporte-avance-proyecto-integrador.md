@@ -48,7 +48,7 @@ El avance actual implementa una version acotada y de bajo costo de esa arquitect
 | Azure Machine Learning como compute ML | Implementado con Azure ML command jobs. |
 | Storage/ADLS para inputs y outputs | Implementado con contenedores para raw masked, curated, runs, snapshots, drift logs, reports y artifacts. |
 | GitHub Actions | Usado para CI/CD y pruebas controladas, no como compute ML operativo. |
-| Azure SQL | Pospuesto. No es necesario para el MVP actual. |
+| Azure SQL | Implementado despues del MVP inicial como auditoria metadata-only en `staging`. |
 | Azure Data Factory | Pospuesto. La orquestacion inicial se resolvio con Azure Functions. |
 | Private Endpoints / Hub-Spoke | Pospuesto por costo y complejidad. |
 | Produccion | Fuera de alcance. No existe IaC ni parameters de prod. |
@@ -305,7 +305,7 @@ Los principales pendientes son:
 - Limpiar o archivar particiones historicas de Storage generadas por PoCs anteriores, por ejemplo `compute=container-job` o rutas antiguas sin `compute=azure-ml`.
 - Decidir si se crea un workspace Azure ML nuevo para que los artifacts internos de Azure ML usen el Storage runtime separado.
 - Evaluar ADF si el flujo crece a multiples fuentes y programaciones.
-- Evaluar Azure SQL solo si se requiere consulta estructurada o consumo por dashboards.
+- Endurecer Azure SQL audit: red, firewall temporal de migracion, retencion y consultas operativas.
 - Definir estrategia de monitoreo y alertamiento para ejecuciones fallidas.
 
 ## 17. Proximos Pasos Recomendados
