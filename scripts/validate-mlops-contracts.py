@@ -137,6 +137,26 @@ def validate_azure_ml_runtime_storage_contract() -> None:
         )
 
 
+def validate_sql_audit_cost_controls() -> None:
+    sql_audit_module = (
+        ROOT / "infra" / "workloads" / "pricing-mlops" / "modules" / "sql-audit.bicep"
+    ).read_text(encoding="utf-8")
+
+    required_terms = {
+        "param minCapacity string = '0.5'",
+        "@allowed([",
+        "'0.5'",
+        "param autoPauseDelay int = 15",
+        "minCapacity: json(minCapacity)",
+    }
+    missing_terms = {term for term in required_terms if term not in sql_audit_module}
+    if missing_terms:
+        raise SystemExit(
+            "sql-audit.bicep missing low-cost serverless defaults: "
+            f"{sorted(missing_terms)}"
+        )
+
+
 def main() -> None:
     for schema_name, expected_required in SCHEMAS.items():
         validate_schema(schema_name, expected_required)
@@ -144,6 +164,7 @@ def main() -> None:
     validate_thresholds()
     validate_storage_layout()
     validate_azure_ml_runtime_storage_contract()
+    validate_sql_audit_cost_controls()
     print("MLOps contracts OK")
 
 

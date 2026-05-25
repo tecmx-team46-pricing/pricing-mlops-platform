@@ -30,11 +30,15 @@ param skuFamily string = 'Gen5'
 @description('Serverless SQL database vCore capacity.')
 param skuCapacity int = 1
 
-@description('Serverless database minimum capacity.')
-param minCapacity int = 1
+@description('Serverless database minimum vCore capacity.')
+@allowed([
+  '0.5'
+  '1'
+])
+param minCapacity string = '0.5'
 
 @description('Auto-pause delay in minutes. Use -1 to disable auto-pause.')
-param autoPauseDelay int = 60
+param autoPauseDelay int = 15
 
 @description('Allow Azure platform services to reach SQL. Required for staging MVP without private endpoints.')
 param allowAzureServices bool = true
@@ -70,7 +74,7 @@ resource database 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   }
   properties: {
     autoPauseDelay: autoPauseDelay
-    minCapacity: minCapacity
+    minCapacity: json(minCapacity)
     maxSizeBytes: 34359738368
     zoneRedundant: false
   }
