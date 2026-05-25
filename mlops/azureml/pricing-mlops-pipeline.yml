@@ -14,6 +14,14 @@ inputs:
   model_ref: PoC/model-flow-template
   model_commit_sha: unknown
   job_identity_client_id: ''
+  sql_enabled: 'false'
+  sql_server: ''
+  sql_database: ''
+  sql_schema: dbo
+  sql_run_log_table: model_run_log
+  sql_snapshot_table: model_output_snapshot_metadata
+  artifact_sinks: azure_blob
+  optional_artifact_sinks: azure_ml,sql_metadata
 jobs:
   validate_prepare:
     type: command
@@ -56,7 +64,7 @@ jobs:
   score_evaluate:
     type: command
     compute: azureml:serverless
-    dependsOn:
+    depends_on:
       - validate_prepare
     component:
       type: command
@@ -123,7 +131,7 @@ jobs:
   publish_outputs:
     type: command
     compute: azureml:serverless
-    dependsOn:
+    depends_on:
       - score_evaluate
     component:
       type: command
@@ -131,9 +139,25 @@ jobs:
       display_name: publish_outputs
       code: ../pricing-mlops-source
       command: >-
-        python -m pip install -e . &&
+        if [ "$(printf '%s' '${{inputs.sql_enabled}}' | tr '[:upper:]' '[:lower:]')" = "true" ]; then
+        apt-get update &&
+        ACCEPT_EULA=Y apt-get install -y curl gnupg unixodbc unixodbc-dev &&
+        curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg &&
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" > /etc/apt/sources.list.d/mssql-release.list &&
+        apt-get update &&
+        ACCEPT_EULA=Y apt-get install -y msodbcsql18;
+        fi &&
+        python -m pip install -e .[sql] &&
         MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
+        MLOPS_SQL_ENABLED=${{inputs.sql_enabled}}
+        MLOPS_SQL_SERVER=${{inputs.sql_server}}
+        MLOPS_SQL_DATABASE=${{inputs.sql_database}}
+        MLOPS_SQL_SCHEMA=${{inputs.sql_schema}}
+        MLOPS_SQL_RUN_LOG_TABLE=${{inputs.sql_run_log_table}}
+        MLOPS_SQL_SNAPSHOT_TABLE=${{inputs.sql_snapshot_table}}
+        MLOPS_ARTIFACT_SINKS=${{inputs.artifact_sinks}}
+        MLOPS_OPTIONAL_ARTIFACT_SINKS=${{inputs.optional_artifact_sinks}}
         python scripts/components/publish_outputs.py
         --storage-account ${{inputs.storage_account}}
         --run-artifacts-container artifacts
@@ -172,6 +196,22 @@ jobs:
           type: string
         job_identity_client_id:
           type: string
+        sql_enabled:
+          type: string
+        sql_server:
+          type: string
+        sql_database:
+          type: string
+        sql_schema:
+          type: string
+        sql_run_log_table:
+          type: string
+        sql_snapshot_table:
+          type: string
+        artifact_sinks:
+          type: string
+        optional_artifact_sinks:
+          type: string
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
@@ -183,5 +223,13 @@ jobs:
       model_ref: ${{parent.inputs.model_ref}}
       model_commit_sha: ${{parent.inputs.model_commit_sha}}
       job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
+      sql_enabled: ${{parent.inputs.sql_enabled}}
+      sql_server: ${{parent.inputs.sql_server}}
+      sql_database: ${{parent.inputs.sql_database}}
+      sql_schema: ${{parent.inputs.sql_schema}}
+      sql_run_log_table: ${{parent.inputs.sql_run_log_table}}
+      sql_snapshot_table: ${{parent.inputs.sql_snapshot_table}}
+      artifact_sinks: ${{parent.inputs.artifact_sinks}}
+      optional_artifact_sinks: ${{parent.inputs.optional_artifact_sinks}}
     identity:
       type: user_identity

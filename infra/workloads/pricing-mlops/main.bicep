@@ -92,8 +92,32 @@ param functionPlanCapacity int = 1
 @description('Create Event Grid BlobCreated trigger for automatic model flow runs.')
 param enableBlobCreatedEventTrigger bool = true
 
+@description('Create Function Managed Identity Operator assignment over Azure ML job identity.')
+param enableFunctionManagedIdentityOperator bool = true
+
 @description('Model repo ref packaged and recorded by the MLOps runtime.')
 param modelRepoRef string = 'PoC/model-flow-template'
+
+@description('Deploy Azure SQL Serverless audit metadata spine for Pricing MLOps.')
+param enableSqlAudit bool = false
+
+@description('Azure region for Azure SQL audit resources. Empty value uses workload location.')
+param sqlAuditLocation string = ''
+
+@description('Azure SQL audit server name. Empty value uses an environment-aware generated name.')
+param sqlAuditServerName string = ''
+
+@description('Azure SQL audit database name.')
+param sqlAuditDatabaseName string = 'pricing_mlops_audit'
+
+@description('Microsoft Entra administrator display/login name for Azure SQL.')
+param sqlEntraAdministratorLogin string = ''
+
+@description('Microsoft Entra administrator object id for Azure SQL.')
+param sqlEntraAdministratorObjectId string = ''
+
+@description('Allow Azure platform services to reach SQL for staging MVP without private endpoints.')
+param sqlAllowAzureServices bool = true
 
 @description('GitHub repository in org/repo format. Empty value skips workload role assignments.')
 param githubRepository string = ''
@@ -147,6 +171,9 @@ var defaultAzureMlWorkspaceV2Name = take('mlw-${projectName}-${azureMlRuntimeEnv
 var activeAzureMlWorkspaceName = useAzureMlWorkspaceV2 ? (empty(azureMlWorkspaceV2Name) ? defaultAzureMlWorkspaceV2Name : azureMlWorkspaceV2Name) : azureMlLegacyWorkspaceName
 var azureMlApplicationInsightsName = take('appi-${projectName}-${environmentName}-${shortSuffix}', 255)
 var azureMlJobIdentityName = 'id-${projectName}-aml-${environmentName}'
+var defaultSqlAuditServerName = take('sql-${projectName}-${environmentName}-${shortSuffix}', 63)
+var activeSqlAuditServerName = empty(sqlAuditServerName) ? defaultSqlAuditServerName : sqlAuditServerName
+var effectiveSqlAuditLocation = empty(sqlAuditLocation) ? location : sqlAuditLocation
 var githubActionsIdentityName = 'id-gha-${projectName}-${environmentName}'
 var modelGithubActionsIdentityName = 'id-gha-${projectName}-model-${environmentName}'
 var keyVaultName = take('kv-pmlops-${uniqueString(subscription().id, sharedResourceGroupName)}', 24)
@@ -219,6 +246,9 @@ module functionOrchestrator 'modules/function-orchestrator.bicep' = if (enableFu
     azureMlWorkspaceResourceGroupName: workloadResourceGroupName
     azureMlJobIdentityClientId: enableAzureMl ? azureMlJobIdentity!.outputs.clientId : ''
     azureMlJobIdentityName: enableAzureMl ? azureMlJobIdentityName : ''
+    sqlAuditEnabled: enableSqlAudit
+    sqlAuditServerName: enableSqlAudit ? sqlAudit!.outputs.fullyQualifiedDomainName : ''
+    sqlAuditDatabaseName: enableSqlAudit ? sqlAudit!.outputs.databaseName : ''
     modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
     enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
     functionPlanSkuName: functionPlanSkuName
@@ -226,8 +256,26 @@ module functionOrchestrator 'modules/function-orchestrator.bicep' = if (enableFu
     functionPlanSkuSize: functionPlanSkuSize
     functionPlanCapacity: functionPlanCapacity
     enableBlobCreatedEventTrigger: enableBlobCreatedEventTrigger
+    enableFunctionManagedIdentityOperator: enableFunctionManagedIdentityOperator
     modelRepoGithub: empty(modelGithubRepository) ? 'tecmx-team46-pricing/pricing-mlops' : modelGithubRepository
     modelRepoRef: modelRepoRef
+  }
+}
+
+module sqlAudit 'modules/sql-audit.bicep' = if (enableSqlAudit) {
+  name: 'pricing-mlops-sql-audit-${uniqueString(workloadResourceGroupName)}'
+  scope: resourceGroup(workloadResourceGroupName)
+  params: {
+    location: effectiveSqlAuditLocation
+    tags: union(workloadTags, {
+      purpose: 'mlops-audit'
+      data_classification: 'metadata-only'
+    })
+    serverName: activeSqlAuditServerName
+    databaseName: sqlAuditDatabaseName
+    entraAdministratorLogin: sqlEntraAdministratorLogin
+    entraAdministratorObjectId: sqlEntraAdministratorObjectId
+    allowAzureServices: sqlAllowAzureServices
   }
 }
 
@@ -310,3 +358,6 @@ output azureMlWorkspaceId string = enableAzureMl ? azureMl!.outputs.azureMlWorks
 output azureMlApplicationInsightsName string = enableAzureMl ? azureMl!.outputs.applicationInsightsName : ''
 output azureMlJobIdentityName string = enableAzureMl ? azureMlJobIdentity!.outputs.identityName : ''
 output azureMlJobIdentityClientId string = enableAzureMl ? azureMlJobIdentity!.outputs.clientId : ''
+output sqlAuditServerName string = enableSqlAudit ? sqlAudit!.outputs.serverName : ''
+output sqlAuditFullyQualifiedDomainName string = enableSqlAudit ? sqlAudit!.outputs.fullyQualifiedDomainName : ''
+output sqlAuditDatabaseName string = enableSqlAudit ? sqlAudit!.outputs.databaseName : ''

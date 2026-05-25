@@ -35,6 +35,18 @@ param azureMlJobIdentityClientId string = ''
 @description('Name of the user-assigned managed identity used by Azure ML pipeline component jobs.')
 param azureMlJobIdentityName string = ''
 
+@description('Enable Azure SQL audit metadata publishing from Azure ML publish component.')
+param sqlAuditEnabled bool = false
+
+@description('Azure SQL audit server FQDN.')
+param sqlAuditServerName string = ''
+
+@description('Azure SQL audit database name.')
+param sqlAuditDatabaseName string = ''
+
+@description('Azure SQL schema used by audit tables.')
+param sqlAuditSchema string = 'dbo'
+
 @description('Principal id of the functional model repo GitHub Actions managed identity.')
 param modelGithubActionsPrincipalId string = ''
 
@@ -55,6 +67,9 @@ param functionPlanCapacity int = 1
 
 @description('Create Event Grid trigger wiring for BlobCreated events under raw-masked/incoming/.')
 param enableBlobCreatedEventTrigger bool = true
+
+@description('Create Managed Identity Operator role assignment from Function to Azure ML job identity.')
+param enableFunctionManagedIdentityOperator bool = true
 
 @description('Container allowed for automatic Event Grid model runs.')
 param allowedEventContainer string = 'raw-masked'
@@ -246,6 +261,38 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           value: 'true'
         }
         {
+          name: 'MLOPS_SQL_ENABLED'
+          value: sqlAuditEnabled ? 'true' : 'false'
+        }
+        {
+          name: 'MLOPS_SQL_SERVER'
+          value: sqlAuditServerName
+        }
+        {
+          name: 'MLOPS_SQL_DATABASE'
+          value: sqlAuditDatabaseName
+        }
+        {
+          name: 'MLOPS_SQL_SCHEMA'
+          value: sqlAuditSchema
+        }
+        {
+          name: 'MLOPS_SQL_RUN_LOG_TABLE'
+          value: 'model_run_log'
+        }
+        {
+          name: 'MLOPS_SQL_SNAPSHOT_TABLE'
+          value: 'model_output_snapshot_metadata'
+        }
+        {
+          name: 'MLOPS_ARTIFACT_SINKS'
+          value: sqlAuditEnabled ? 'azure_blob,sql_metadata' : 'azure_blob'
+        }
+        {
+          name: 'MLOPS_OPTIONAL_ARTIFACT_SINKS'
+          value: 'azure_ml'
+        }
+        {
           name: 'MODEL_REPO_GITHUB'
           value: modelRepoGithub
         }
@@ -292,7 +339,7 @@ resource azureMlJobIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@20
   name: azureMlJobIdentityName
 }
 
-resource functionManagedIdentityOperator 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(azureMlJobIdentityName)) {
+resource functionManagedIdentityOperator 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableFunctionManagedIdentityOperator && !empty(azureMlJobIdentityName)) {
   scope: azureMlJobIdentity
   name: guid(azureMlJobIdentity.id, functionApp.name, managedIdentityOperatorRoleDefinitionId)
   properties: {

@@ -63,6 +63,10 @@ param storageContainers array = [
 #disable-next-line no-unused-params
 param enableFunctionOrchestrator bool = true
 
+@description('Create Function Managed Identity Operator assignment from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param enableFunctionManagedIdentityOperator bool = true
+
 @description('Azure Function region used by the workload entrypoint. Kept here so parameter files can be shared.')
 #disable-next-line no-unused-params
 param functionLocation string = ''
@@ -82,6 +86,34 @@ param azureMlWorkspaceV2Name string = ''
 @description('Existing Azure ML associated Container Registry name. Kept here so parameter files can be shared.')
 #disable-next-line no-unused-params
 param azureMlContainerRegistryName string = ''
+
+@description('Deploy Azure SQL audit from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param enableSqlAudit bool = false
+
+@description('Azure SQL audit region from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlAuditLocation string = ''
+
+@description('Azure SQL audit server name from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlAuditServerName string = ''
+
+@description('Azure SQL audit database name from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlAuditDatabaseName string = 'pricing_mlops_audit'
+
+@description('Microsoft Entra administrator display/login name from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlEntraAdministratorLogin string = ''
+
+@description('Microsoft Entra administrator object id from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlEntraAdministratorObjectId string = ''
+
+@description('Allow Azure platform services to reach SQL from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlAllowAzureServices bool = true
 
 @description('GitHub repository in org/repo format. Empty value skips federated credential creation.')
 param githubRepository string = ''

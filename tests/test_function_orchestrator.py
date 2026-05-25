@@ -54,8 +54,8 @@ def test_pipeline_template_uses_packaged_model_source():
     assert "scripts/components/publish_outputs.py" in (
         job_definition["jobs"]["publish_outputs"]["component"]["command"]
     )
-    assert job_definition["jobs"]["score_evaluate"]["dependsOn"] == ["validate_prepare"]
-    assert job_definition["jobs"]["publish_outputs"]["dependsOn"] == ["score_evaluate"]
+    assert job_definition["jobs"]["score_evaluate"]["depends_on"] == ["validate_prepare"]
+    assert job_definition["jobs"]["publish_outputs"]["depends_on"] == ["score_evaluate"]
     assert "component-state/${{inputs.run_id}}/prepared" in (
         job_definition["jobs"]["score_evaluate"]["component"]["command"]
     )

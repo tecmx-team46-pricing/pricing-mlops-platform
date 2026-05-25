@@ -291,6 +291,14 @@ def submit_azure_ml_job(request: dict[str, str]) -> dict[str, str | bool]:
         "model_ref": request["model_ref"],
         "model_commit_sha": request["model_commit_sha"],
         "job_identity_client_id": os.getenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "").strip(),
+        "sql_enabled": os.getenv("MLOPS_SQL_ENABLED", "false").strip(),
+        "sql_server": os.getenv("MLOPS_SQL_SERVER", "").strip(),
+        "sql_database": os.getenv("MLOPS_SQL_DATABASE", "").strip(),
+        "sql_schema": os.getenv("MLOPS_SQL_SCHEMA", "dbo").strip(),
+        "sql_run_log_table": os.getenv("MLOPS_SQL_RUN_LOG_TABLE", "model_run_log").strip(),
+        "sql_snapshot_table": os.getenv("MLOPS_SQL_SNAPSHOT_TABLE", "model_output_snapshot_metadata").strip(),
+        "artifact_sinks": os.getenv("MLOPS_ARTIFACT_SINKS", "azure_blob").strip(),
+        "optional_artifact_sinks": os.getenv("MLOPS_OPTIONAL_ARTIFACT_SINKS", "azure_ml,sql_metadata").strip(),
     })
     _apply_job_identity(job)
     created = client.jobs.create_or_update(job)

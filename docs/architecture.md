@@ -9,7 +9,7 @@ Manual: Azure Function HTTP -> Azure ML pipeline job -> Storage/ADLS
 Automatico: BlobCreated raw-masked/incoming/*.csv -> Event Grid -> Azure Function -> Azure ML pipeline job -> Storage/ADLS
 ```
 
-Azure Functions orquesta y valida el request o evento. Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de outputs desde el snapshot del repo `pricing-mlops`. Storage/ADLS conserva inputs masked, evidencia versionada y metadata consultable de corridas.
+Azure Functions orquesta y valida el request o evento. Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de outputs desde el snapshot del repo `pricing-mlops`. Storage/ADLS conserva inputs masked y evidencia versionada. Azure Table `mlopsruns` y Azure SQL audit guardan metadata consultable de corridas.
 
 La arquitectura distingue tres cuentas de Storage:
 
@@ -18,6 +18,8 @@ La arquitectura distingue tres cuentas de Storage:
 | Storage MLOps principal `<mlops-storage-account>` | Data lake funcional MLOps. | Solo `raw-masked`, `curated`, `baseline`, `runs`, `snapshots`, `drift-logs`, `reports` y `artifacts`. No usa account keys. |
 | Storage runtime Azure ML `stamlpmlopsstg<suffix>` | Infraestructura operativa interna de Azure ML. | Snapshots de codigo, logs internos AML, environments y artifacts runtime. Tag `purpose=azure-ml-runtime`. |
 | Storage host Function `stfn<generated-suffix>` | Estado runtime de Azure Functions. | `AzureWebJobsStorage`; no es data lake ni artifact store AML. |
+
+Azure SQL audit (`sql-pricing-mlops-staging-<suffix>` / `pricing_mlops_audit`) es metadata-only. No reemplaza Storage Blob ni guarda datasets completos; sirve para consultar `model_run_log`, `model_output_snapshot_metadata` y `data_quality_log`.
 
 El workspace activo de `staging` es `mlw-pricing-mlops-stg-v2-<suffix>` y usa `stamlpmlopsstg<suffix>` como storage asociado. El workspace original `mlw-pricing-mlops-staging-<suffix>` fue creado con `<mlops-storage-account>` como storage asociado y queda como legacy para rollback o auditoria; no se debe recrear ni borrar sin decision explicita.
 
@@ -60,6 +62,7 @@ No existe `prod` en IaC, parameter files ni workflows.
 | Azure Function | `rg-pricing-mlops-staging` | Activo | `func-pricing-mlops-staging-<suffix>` en `centralus`, plan Y1/Dynamic. |
 | Event Grid subscription | `rg-pricing-mlops-staging` | Activo via IaC | Filtra `Microsoft.Storage.BlobCreated` bajo `raw-masked/incoming/*.csv` y dispara la Function. |
 | Azure Table `mlopsruns` | `rg-pricing-mlops-staging` | Activo via IaC | Indice consultable de corridas; fallback JSON bajo `runs` si Table no esta disponible. |
+| Azure SQL audit | `rg-pricing-mlops-staging` | Activo via IaC + migracion | `sql-pricing-mlops-staging-<suffix>` en `centralus`, DB `pricing_mlops_audit`, metadata-only. |
 
 Storage y Azure ML de `staging` viven en `eastus2`. La Function vive en `centralus` porque `eastus2` presento quota 0 para App Service/Functions en esta subscription.
 
@@ -104,6 +107,6 @@ El repo modelo no recibe acceso a `raw-unmasked`.
 
 ## Fuera De Alcance Actual
 
-- ADF, Azure SQL, Private Endpoints, Hub-Spoke.
+- ADF, Private Endpoints, Hub-Spoke.
 - Endpoints online AML, GPU, clusters persistentes.
 - Produccion real.

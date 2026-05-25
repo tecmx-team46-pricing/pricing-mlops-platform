@@ -35,6 +35,14 @@ MLOPS_ALLOWED_EVENT_PREFIX=incoming/
 MLOPS_DEFAULT_OWNER=team46
 MLOPS_RUN_INDEX_TABLE=mlopsruns
 MLOPS_USE_AML_PIPELINE=true
+MLOPS_ARTIFACT_SINKS=azure_blob,sql_metadata
+MLOPS_OPTIONAL_ARTIFACT_SINKS=azure_ml
+MLOPS_SQL_ENABLED=true
+MLOPS_SQL_SERVER=sql-pricing-mlops-staging-<suffix>.database.windows.net
+MLOPS_SQL_DATABASE=pricing_mlops_audit
+MLOPS_SQL_SCHEMA=dbo
+MLOPS_SQL_RUN_LOG_TABLE=model_run_log
+MLOPS_SQL_SNAPSHOT_TABLE=model_output_snapshot_metadata
 MODEL_REPO_GITHUB=tecmx-team46-pricing/pricing-mlops
 MODEL_REPO_REF=<branch|tag|sha>
 ```
@@ -75,6 +83,18 @@ raw-masked/incoming/*.csv BlobCreated
 ```
 
 La Function devuelve `azure_ml_job_name`, `run_id`, `correlation_id` y `expected_output_prefix`.
+
+## Metadata SQL
+
+Azure SQL audit es un sink de metadata. El componente `publish_outputs` escribe:
+
+| Tabla | Contenido |
+|---|---|
+| `dbo.model_run_log` | Run id, ambiente, owner, status, row count, drift, input, modelo/ref/commit y manifest URI. |
+| `dbo.model_output_snapshot_metadata` | Run id, snapshot URI, row count, drift y version de schema. |
+| `dbo.data_quality_log` | Reservada para checks de calidad por run. |
+
+Los CSVs, reportes y JSON funcionales siguen viviendo en Blob Storage. SQL usa Microsoft Entra auth desde la identidad administrada del job AML.
 
 ## Layout De Outputs
 
