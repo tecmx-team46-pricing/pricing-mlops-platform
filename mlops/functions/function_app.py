@@ -290,6 +290,7 @@ def submit_azure_ml_job(request: dict[str, str]) -> dict[str, str | bool]:
         "model_repo": request["model_repo"],
         "model_ref": request["model_ref"],
         "model_commit_sha": request["model_commit_sha"],
+        "job_identity_client_id": os.getenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "").strip(),
     })
     _apply_job_identity(job)
     created = client.jobs.create_or_update(job)
@@ -323,13 +324,17 @@ def _apply_job_identity(job) -> None:
         return
 
     job_identity_client_id = os.getenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "").strip()
-    if not job_identity_client_id or not hasattr(job, "jobs"):
+    if not job_identity_client_id:
         return
 
     from azure.ai.ml.entities import ManagedIdentityConfiguration
 
     managed_identity = ManagedIdentityConfiguration(client_id=job_identity_client_id)
-    for node in job.jobs.values():
+    if not getattr(job, "jobs", None):
+        job.identity = managed_identity
+        return
+    nodes = job.jobs.values()
+    for node in nodes:
         if hasattr(node, "identity"):
             node.identity = managed_identity
 

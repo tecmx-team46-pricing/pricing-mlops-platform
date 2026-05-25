@@ -255,6 +255,21 @@ def test_apply_job_identity_sets_managed_identity_on_pipeline_nodes(tmp_path, mo
         }
 
 
+def test_apply_job_identity_sets_managed_identity_on_command_job(tmp_path, monkeypatch):
+    function_app = _load_function_app()
+    job_file = _copy_job_package(tmp_path)
+    job = load_job(source=job_file)
+    monkeypatch.setenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "managed-client-id")
+    monkeypatch.setenv("MLOPS_USE_MANAGED_JOB_IDENTITY", "true")
+
+    function_app._apply_job_identity(job)
+
+    assert job._to_dict()["identity"] == {
+        "type": "managed_identity",
+        "client_id": "managed-client-id",
+    }
+
+
 def test_apply_job_identity_keeps_user_identity_by_default(tmp_path, monkeypatch):
     function_app = _load_function_app()
     package_root = tmp_path / "package"

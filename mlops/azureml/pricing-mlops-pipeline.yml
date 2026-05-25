@@ -13,6 +13,7 @@ inputs:
   model_repo: tecmx-team46-pricing/pricing-mlops
   model_ref: PoC/model-flow-template
   model_commit_sha: unknown
+  job_identity_client_id: ''
 jobs:
   validate_prepare:
     type: command
@@ -24,6 +25,8 @@ jobs:
       code: ../pricing-mlops-source
       command: >-
         python -m pip install -e . &&
+        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/validate_prepare.py
         --storage-account ${{inputs.storage_account}}
         --input-container raw-masked
@@ -41,10 +44,13 @@ jobs:
           type: string
         run_id:
           type: string
+        job_identity_client_id:
+          type: string
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       input_blob_path: ${{parent.inputs.input_blob_path}}
       run_id: ${{parent.inputs.run_id}}
+      job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
     identity:
       type: user_identity
   score_evaluate:
@@ -59,6 +65,8 @@ jobs:
       code: ../pricing-mlops-source
       command: >-
         python -m pip install -e . &&
+        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/score_evaluate.py
         --storage-account ${{inputs.storage_account}}
         --input-container raw-masked
@@ -97,6 +105,8 @@ jobs:
           type: string
         model_commit_sha:
           type: string
+        job_identity_client_id:
+          type: string
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       environment: ${{parent.inputs.environment}}
@@ -107,6 +117,7 @@ jobs:
       model_repo: ${{parent.inputs.model_repo}}
       model_ref: ${{parent.inputs.model_ref}}
       model_commit_sha: ${{parent.inputs.model_commit_sha}}
+      job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
     identity:
       type: user_identity
   publish_outputs:
@@ -121,6 +132,8 @@ jobs:
       code: ../pricing-mlops-source
       command: >-
         python -m pip install -e . &&
+        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/publish_outputs.py
         --storage-account ${{inputs.storage_account}}
         --run-artifacts-container artifacts
@@ -157,6 +170,8 @@ jobs:
           type: string
         model_commit_sha:
           type: string
+        job_identity_client_id:
+          type: string
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
@@ -167,5 +182,6 @@ jobs:
       model_repo: ${{parent.inputs.model_repo}}
       model_ref: ${{parent.inputs.model_ref}}
       model_commit_sha: ${{parent.inputs.model_commit_sha}}
+      job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
     identity:
       type: user_identity

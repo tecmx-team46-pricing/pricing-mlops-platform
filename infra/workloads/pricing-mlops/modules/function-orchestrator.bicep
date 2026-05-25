@@ -32,6 +32,9 @@ param azureMlWorkspaceResourceGroupName string
 @description('Client id of the user-assigned managed identity used by Azure ML pipeline component jobs.')
 param azureMlJobIdentityClientId string = ''
 
+@description('Name of the user-assigned managed identity used by Azure ML pipeline component jobs.')
+param azureMlJobIdentityName string = ''
+
 @description('Principal id of the functional model repo GitHub Actions managed identity.')
 param modelGithubActionsPrincipalId string = ''
 
@@ -72,6 +75,7 @@ var storageBlobDataContributorRoleDefinitionId = 'ba92f5b4-2d11-453d-a403-e96b00
 var storageTableDataContributorRoleDefinitionId = '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
 var websiteContributorRoleDefinitionId = 'de139f84-1756-47ae-9be6-808fbbe84772'
 var azureMlDataScientistRoleDefinitionId = 'f6c7c914-8db3-469d-8ca1-694a8f32e121'
+var managedIdentityOperatorRoleDefinitionId = 'f1a07417-d97a-45cb-824c-7a7467783830'
 
 resource workloadStorage 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
   name: workloadStorageAccountName
@@ -239,7 +243,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'MLOPS_USE_MANAGED_JOB_IDENTITY'
-          value: 'false'
+          value: 'true'
         }
         {
           name: 'MODEL_REPO_GITHUB'
@@ -279,6 +283,20 @@ resource functionTableContributor 'Microsoft.Authorization/roleAssignments@2022-
   name: guid(workloadStorage.id, functionApp.name, storageTableDataContributorRoleDefinitionId)
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageTableDataContributorRoleDefinitionId)
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource azureMlJobIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = if (!empty(azureMlJobIdentityName)) {
+  name: azureMlJobIdentityName
+}
+
+resource functionManagedIdentityOperator 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(azureMlJobIdentityName)) {
+  scope: azureMlJobIdentity
+  name: guid(azureMlJobIdentity.id, functionApp.name, managedIdentityOperatorRoleDefinitionId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', managedIdentityOperatorRoleDefinitionId)
     principalId: functionApp.identity.principalId
     principalType: 'ServicePrincipal'
   }

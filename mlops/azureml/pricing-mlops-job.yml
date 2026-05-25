@@ -6,6 +6,12 @@ description: Minimal Pricing MLOps flow over shared masked input.
 code: ../pricing-mlops-source
 command: >-
   python -m pip install -e . &&
+  MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+  AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
+  MLOPS_TRIGGER_TYPE=${{inputs.trigger_type}}
+  MODEL_REPO_GITHUB=${{inputs.model_repo}}
+  MODEL_REPO_REF=${{inputs.model_ref}}
+  MODEL_REPO_COMMIT_SHA=${{inputs.model_commit_sha}}
   python scripts/run_azure_ml_flow.py
   --storage-account ${{inputs.storage_account}}
   --environment ${{inputs.environment}}
@@ -25,6 +31,11 @@ inputs:
   run_owner: team46
   run_id: manual
   input_blob_path: samples/sample_pricing_v1.csv
+  trigger_type: manual
+  model_repo: tecmx-team46-pricing/pricing-mlops
+  model_ref: PoC/model-flow-template
+  model_commit_sha: unknown
+  job_identity_client_id: ''
 environment_variables:
   MLOPS_COMPUTE_TARGET: azure-ml
   MLOPS_CONTAINER_RAW_MASKED: raw-masked

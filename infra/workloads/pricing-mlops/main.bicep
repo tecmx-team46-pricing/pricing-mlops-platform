@@ -218,6 +218,7 @@ module functionOrchestrator 'modules/function-orchestrator.bicep' = if (enableFu
     azureMlWorkspaceName: activeAzureMlWorkspaceName
     azureMlWorkspaceResourceGroupName: workloadResourceGroupName
     azureMlJobIdentityClientId: enableAzureMl ? azureMlJobIdentity!.outputs.clientId : ''
+    azureMlJobIdentityName: enableAzureMl ? azureMlJobIdentityName : ''
     modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
     enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
     functionPlanSkuName: functionPlanSkuName
