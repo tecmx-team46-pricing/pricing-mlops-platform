@@ -12,6 +12,26 @@
 
 SQL es metadata-only. Los CSVs, reportes y JSON funcionales siguen en Blob Storage.
 
+## Flujo
+
+```mermaid
+flowchart TD
+  Manual["Operador<br/>run_model_flow_function.sh"] --> Function["Azure Function<br/>/api/model-flow"]
+  BlobEvent["BlobCreated<br/>raw-masked/incoming/*.csv"] --> EventGrid["Event Grid"]
+  EventGrid --> Function
+
+  Function --> AML["Azure ML pipeline<br/>validate_prepare -> score_evaluate -> publish_outputs"]
+  AML --> BlobStorage["Storage MLOps<br/>runs / snapshots / drift-logs / reports / artifacts / curated"]
+  AML --> SqlAudit["Azure SQL audit<br/>pricing_mlops_audit"]
+
+  SqlAudit --> RunLog["dbo.model_run_log"]
+  SqlAudit --> SnapshotMeta["dbo.model_output_snapshot_metadata"]
+  SqlAudit --> QualityLog["dbo.data_quality_log"]
+
+  User["Portal / sqlcmd -G<br/>Microsoft Entra auth"] --> SqlAudit
+  AmlIdentity["id-pricing-mlops-aml-staging<br/>managed identity"] -. db_datareader/db_datawriter .-> SqlAudit
+```
+
 ## Auth
 
 No usar usuario/password, account keys ni connection strings con secretos.
