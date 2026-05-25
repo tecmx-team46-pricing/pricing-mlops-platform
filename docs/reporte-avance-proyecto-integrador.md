@@ -2,7 +2,7 @@
 
 **Proyecto:** Plataforma MLOps para Pricing Intelligence
 **Equipo:** Team 46
-**Materia:** Proyecto Integrador de Maestria
+**Materia:** MNA - Proyecto integrador (Gpo 10)
 **Fecha:** 22 de mayo de 2026
 **Repositorios relacionados:** `pricing-mlops-platform`, `pricing-mlops`, `pricing-mlops-eda`
 
@@ -96,7 +96,7 @@ Los recursos activos principales se encuentran en el ambiente `staging`.
 | Managed Identity | `id-pricing-mlops-aml-staging` | Identidad para ejecucion segura en Azure ML. |
 | ACR asociado a AML | Administrado por Azure ML | Runtime interno de Azure ML, no ruta activa de Container Apps. |
 
-Tambien se eliminaron recursos legacy del PoC anterior con Container Apps y ACR dedicado, porque ya no formaban parte de la ruta activa del diseno.
+Tambien se eliminaron recursos legacy del PoC intermedio con Container Apps y ACR dedicado. Container Apps no era parte del diseno original; se retiro para regresar a la ruta Function + Azure ML.
 
 El Storage MLOps principal se documento como data lake funcional. El Storage runtime de Azure ML ya existe por IaC y el workspace activo v2 lo usa como storage asociado; el workspace anterior conserva artifacts legacy en el Storage MLOps principal hasta que se apruebe su limpieza.
 
@@ -241,7 +241,7 @@ El MVP se mantuvo con servicios de bajo costo y evitando recursos innecesarios:
 - Sin Hub-Spoke.
 - Sin produccion.
 
-Tambien se limpiaron recursos legacy del PoC anterior basado en Container Apps, ya que la direccion tecnica final del MVP se movio a Azure Functions + Azure ML.
+Tambien se limpiaron recursos legacy del PoC intermedio basado en Container Apps. Container Apps no formaba parte del plan original; fue una exploracion tecnica temporal. La direccion tecnica final del MVP regreso al patron original: Azure Functions como orquestador y Azure ML como compute principal.
 
 ## 13. Validaciones Realizadas
 
@@ -269,13 +269,31 @@ El plan original sigue siendo la referencia principal del proyecto. El MVP imple
 | Orquestacion | Azure Functions | Se mantiene. |
 | Compute ML | Azure ML | Se mantiene. |
 | GitHub Actions | Automatizacion y despliegue | Se limito a CI/CD; no opera el ML. |
-| Container Apps | Evaluado como PoC | Retirado de la ruta activa. |
+| Container Apps | No estaba en el plan original | Fue un PoC intermedio y se retiro de la ruta activa. |
 | ADF | Posible orquestador futuro | Pospuesto. |
 | SQL | Persistencia analitica futura | Pospuesto. |
 | Modelo real | No disponible completamente | Pendiente de integracion. |
 | Seguridad avanzada | Red privada/API Management | Pospuesta por costo y alcance. |
 
 El cambio mas importante fue descartar Container Apps como ruta activa y regresar al patron del diseno original: Azure Function como orquestador y Azure ML como compute principal. Esto acerca el MVP al diseno original, aunque todavia faltan componentes de madurez empresarial.
+
+### Aclaracion Sobre Drift
+
+En el proyecto hay dos tipos de drift que conviene separar:
+
+- **Drift del proyecto:** cambios de alcance y orden de implementacion respecto al plan original. Ejemplos: posponer ADF, posponer red privada y retirar Container Apps despues del PoC intermedio.
+- **Drift de datos/modelo:** desviacion estadistica que la plataforma debe monitorear en las corridas de pricing.
+
+El drift funcional actual ya registra un semaforo, pero todavia es basico. La siguiente iteracion debe acercarlo al plan original con PSI, KS y Z-test:
+
+| Senal | Metodo objetivo | Umbral original | Interpretacion |
+|---|---|---|---|
+| `rslpriceusd` y `quantity` | PSI | 0.10 amarillo / 0.25 rojo | Cambios fuertes en precio o volumen. |
+| `elasticity_mean` | KS | 0.05 amarillo / 0.15 rojo | Cambio en elasticidad del mercado. |
+| `P85 - P20` | KS | 0.10 amarillo / 0.20 rojo | Compresion del rango de precios sugeridos. |
+| Tasa `P20_Was_Adjusted` | Z-test de proporciones | z > 2.0 amarillo / z > 3.5 rojo | Aumento de casos que tocan piso de margen. |
+
+El objetivo no es solo guardar `red`, `yellow` o `green`, sino explicar que metrica causo el semaforo, con que umbral y sobre que poblacion.
 
 ## 15. Avance Contra La Meta Original
 
@@ -293,14 +311,54 @@ El avance actual se puede entender como una primera etapa dentro de la ruta haci
 | Seguridad avanzada | Autenticacion robusta, red privada y gobierno completo. | RBAC/Managed Identity; Function key temporal. | Parcial |
 | Produccion | Ambiente productivo gobernado. | No implementado. | Pendiente |
 
+## 15.1 Azure ML Pipeline Como DAG Real
+
+La integracion actual con Azure ML ya muestra tres nodos visibles:
+
+```text
+validate_prepare -> score_evaluate -> publish_outputs
+```
+
+Esto es un avance porque Azure ML ya opera como compute principal y la Function no ejecuta el modelo. Sin embargo, el pipeline actual todavia no es un DAG de datos completo. Los nodos usan `depends_on` para conservar el orden, pero parte del estado intermedio se comparte por Blob Storage bajo:
+
+```text
+artifacts/component-state/<run_id>/
+```
+
+Esto funciona para el MVP, pero Azure ML no interpreta esos blobs como dependencias nativas entre componentes. La oportunidad de mejora es evolucionar a SDK v2 DSL con componentes registrados, datastore explicito e inputs/outputs `uri_folder`:
+
+```text
+validate_prepare.outputs.prepared_data
+  -> score_evaluate.inputs.prepared_data
+
+score_evaluate.outputs.run_artifacts
+  -> publish_outputs.inputs.run_artifacts
+```
+
+Beneficios esperados:
+
+- DAG real visible en Azure ML Studio.
+- Mejor lineage entre datos preparados, scoring, drift y publicacion.
+- Contratos explicitos entre componentes.
+- Diagnostico mas claro cuando falla una etapa.
+- Menor dependencia de convenciones manuales de rutas intermedias.
+
+Validaciones necesarias:
+
+- Mantener el YAML actual como fallback.
+- Confirmar que el datastore explicito no use account keys ni connection strings.
+- Validar RBAC de la managed identity sobre Storage funcional.
+- Confirmar que los outputs finales sigan usando el layout funcional existente.
+
 ## 16. Riesgos Y Pendientes
 
 Los principales pendientes son:
 
 - Integrar un modelo real o definir un baseline propio.
 - Definir si el modelo sera entregado como paquete, API, artefacto de Azure ML o adaptador.
-- Implementar drift estadistico mas robusto, por ejemplo PSI, KS o pruebas por segmento.
+- Implementar drift estadistico mas robusto: PSI, KS, Z-test, detalle por metrica y explicacion del semaforo.
 - Formalizar registro de modelos, versionamiento, promocion y rollback.
+- Evolucionar el pipeline Azure ML a un DAG real con SDK v2 DSL, componentes registrados, datastore explicito e inputs/outputs `uri_folder`.
 - Fortalecer autenticacion del endpoint de Function con Entra ID o API Management.
 - Limpiar o archivar particiones historicas de Storage generadas por PoCs anteriores, por ejemplo `compute=container-job` o rutas antiguas sin `compute=azure-ml`.
 - Decidir si se crea un workspace Azure ML nuevo para que los artifacts internos de Azure ML usen el Storage runtime separado.
@@ -315,11 +373,12 @@ Para la siguiente etapa se recomienda:
 1. Definir el contrato de entrada del modelo real.
 2. Crear un adaptador para integrar el modelo sin exponer su implementacion interna.
 3. Reemplazar el scoring minimo por scoring real o baseline formal.
-4. Agregar metricas de drift y calidad mas cercanas al caso de negocio.
-5. Mejorar seguridad del endpoint con Entra ID.
-6. Normalizar Storage para que los reportes activos usen solo `compute=azure-ml` y dejar los outputs legacy como historicos o eliminarlos con aprobacion.
-7. Agregar dashboard operativo simple para ejecuciones y resultados.
-8. Preparar ambiente `validation` para pruebas controladas antes de una futura promocion.
+4. Agregar metricas de drift y calidad mas cercanas al caso de negocio, guardando detalle por metrica y justificacion del semaforo.
+5. Migrar el pipeline a SDK v2 DSL para representar dependencias de datos nativas en Azure ML.
+6. Mejorar seguridad del endpoint con Entra ID.
+7. Normalizar Storage para que los reportes activos usen solo `compute=azure-ml` y dejar los outputs legacy como historicos o eliminarlos con aprobacion.
+8. Agregar dashboard operativo simple para ejecuciones y resultados.
+9. Preparar ambiente `validation` para pruebas controladas antes de una futura promocion.
 
 ## 18. Conclusion
 
