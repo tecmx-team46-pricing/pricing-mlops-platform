@@ -38,7 +38,7 @@ Los objetivos especificos cubiertos en esta etapa de avance son:
 
 ## 3. Relacion Con El Diseno Tecnico Original
 
-El diseno tecnico original planteaba una arquitectura MLOps con servicios como Azure Functions, Azure Machine Learning, almacenamiento de datos, monitoreo y componentes futuros como ADF, SQL y redes privadas.
+El diseno tecnico original planteaba una arquitectura MLOps con servicios como Azure Functions, Azure Machine Learning, almacenamiento de datos, monitoreo y componentes futuros como Azure Data Factory (ADF), SQL y redes privadas.
 
 El avance actual implementa una version acotada y de bajo costo de esa arquitectura. Esta version no pretende cerrar todo el alcance original. Su funcion es validar los componentes base que permiten continuar hacia la arquitectura completa de forma controlada.
 
@@ -49,7 +49,7 @@ El avance actual implementa una version acotada y de bajo costo de esa arquitect
 | Storage/ADLS para inputs y outputs | Implementado con contenedores para raw masked, curated, runs, snapshots, drift logs, reports y artifacts. |
 | GitHub Actions | Usado para CI/CD y pruebas controladas, no como compute ML operativo. |
 | Azure SQL | Implementado despues del MVP inicial como auditoria metadata-only en `staging`. |
-| Azure Data Factory | Pospuesto. La orquestacion inicial se resolvio con Azure Functions. |
+| Azure Data Factory (ADF) | Pospuesto. La orquestacion inicial se resolvio con Azure Functions. |
 | Private Endpoints / Hub-Spoke | Pospuesto por costo y complejidad. |
 | Produccion | Fuera de alcance. No existe IaC ni parameters de prod. |
 
@@ -235,7 +235,7 @@ El MVP se mantuvo con servicios de bajo costo y evitando recursos innecesarios:
 - Azure ML command jobs bajo demanda.
 - Sin GPU.
 - Sin endpoints online de Azure ML.
-- Sin ADF.
+- Sin Azure Data Factory (ADF).
 - Sin SQL.
 - Sin Private Endpoints.
 - Sin Hub-Spoke.
@@ -269,8 +269,7 @@ El plan original sigue siendo la referencia principal del proyecto. El MVP imple
 | Orquestacion | Azure Functions | Se mantiene. |
 | Compute ML | Azure ML | Se mantiene. |
 | GitHub Actions | Automatizacion y despliegue | Se limito a CI/CD; no opera el ML. |
-| Container Apps | No estaba en el plan original | Fue un PoC intermedio y se retiro de la ruta activa. |
-| ADF | Posible orquestador futuro | Pospuesto. |
+| Azure Data Factory (ADF) | Posible orquestador futuro | Pospuesto. |
 | SQL | Persistencia analitica futura | Pospuesto. |
 | Modelo real | No disponible completamente | Pendiente de integracion. |
 | Seguridad avanzada | Red privada/API Management | Pospuesta por costo y alcance. |

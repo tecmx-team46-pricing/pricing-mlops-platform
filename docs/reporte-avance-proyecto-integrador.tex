@@ -130,7 +130,7 @@ La entrega se puede leer como una plataforma minima viable, no como un sistema d
 Datos & Dataset masked de muestra en \code{raw-masked}; rechazo explicito de \code{raw-unmasked} en staging. & Ingesta desde sistemas fuente reales, masking productivo y reconciliacion con datos historicos completos.\\
 Modelo & Baseline operativo y scoring controlado para validar contratos. & Modelo campeon real, entrenamiento formal, registro de modelos y promocion entre ambientes.\\
 MLOps & Orquestacion, pipeline, outputs versionados y metadata SQL. & Rollback productivo, aprobaciones de negocio, alertas automaticas y tablero ejecutivo.\\
-Infraestructura & Bicep para foundation y workload; staging operativo. & Produccion, Hub-Spoke, Private Endpoints y ADF.\\
+Infraestructura & Bicep para foundation y workload; staging operativo. & Produccion, Hub-Spoke, Private Endpoints y Azure Data Factory (ADF).\\
 Seguridad & Managed identities, RBAC, sin secretos en Git y sin account keys para Storage MLOps. & Autenticacion enterprise del endpoint, red privada completa y politicas de retencion aprobadas.\\
 \bottomrule
 \end{longtable}
@@ -296,7 +296,7 @@ SQL audit & \code{dbo.model\_run\_log} & Indice consultable para auditoria y rep
 \textbf{Tema} & \textbf{Plan original} & \textbf{Estado actual} & \textbf{Estado}\\
 \midrule
 \endhead
-Orquestacion & Azure Functions y ADF para coordinar ingesta y flujo. & Azure Functions ya opera HTTP y Event Grid; ADF se pospuso. & \estado{verdeOk}{Parcial}\\
+Orquestacion & Azure Functions y Azure Data Factory (ADF) para coordinar ingesta y flujo. & Azure Functions ya opera HTTP y Event Grid; ADF se pospuso. & \estado{verdeOk}{Parcial}\\
 Compute ML & Azure ML para validacion, entrenamiento y scoring. & Azure ML ejecuta pipeline de 3 componentes. & \estado{verdeOk}{MVP}\\
 Storage/ADLS & Capas raw, curated y snapshots. & Containers funcionales para raw-masked, curated, runs, snapshots, drift-logs, reports y artifacts. & \estado{verdeOk}{MVP}\\
 Azure SQL & Espina dorsal de auditoria. & Tablas \code{model\_run\_log}, \code{model\_output\_snapshot\_metadata} y \code{data\_quality\_log}. & \estado{verdeOk}{MVP}\\
@@ -304,7 +304,6 @@ Drift & PSI, KS y semaforos por impacto de negocio. & Drift basico; semaforo reg
 Calidad de datos & Great Expectations y reglas criticas. & Validacion inicial de contrato; reglas de negocio avanzadas pendientes. & \estado{ambar}{Parcial}\\
 Modelo real & Modelo campeon versionado con rollback. & Baseline/scoring controlado; modelo real pendiente. & \estado{rojo}{Pendiente}\\
 Seguridad avanzada & Hub-Spoke, Private Endpoints, Key Vault y red cerrada. & RBAC, identities y no secretos; Function key temporal y red privada pendiente. & \estado{ambar}{Parcial}\\
-Container Apps & No aparece en el plan original. & Fue un PoC intermedio retirado; la ruta activa vuelve a Function + Azure ML. & \estado{verdeOk}{Descartado}\\
 Produccion & Ambiente productivo gobernado. & No existe \code{prod} en IaC ni parameters. & \estado{rojo}{Fuera alcance}\\
 \bottomrule
 \end{longtable}
@@ -528,7 +527,7 @@ Para que la siguiente entrega muestre madurez adicional, se recomienda cerrarla 
 
 \section*{Anexo visual: referencia del diseno original}
 
-El diseno original planteo una arquitectura enterprise con red privada, ADF, Azure Functions, Azure ML, SQL y Key Vault. Las siguientes imagenes se conservan como referencia historica del plan inicial.
+El diseno original planteo una arquitectura enterprise con red privada, Azure Data Factory (ADF), Azure Functions, Azure ML, SQL y Key Vault. Las siguientes imagenes se conservan como referencia historica del plan inicial.
 
 \begin{figure}[h!]
 \centering
