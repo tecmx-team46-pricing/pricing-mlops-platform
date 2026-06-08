@@ -1,0 +1,549 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+
+\geometry{margin=2.2cm}
+\setlength{\parskip}{0.55em}
+\setlength{\parindent}{0pt}
+\setlength{\headheight}{14pt}
+\setlength{\emergencystretch}{2em}
+\renewcommand{\arraystretch}{1.18}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!45!black,
+  urlcolor=blue!45!black
+}
+
+\definecolor{azulTec}{HTML}{0B3A5B}
+\definecolor{verdeOk}{HTML}{2E7D32}
+\definecolor{ambar}{HTML}{B7791F}
+\definecolor{rojo}{HTML}{B91C1C}
+\definecolor{grisFondo}{HTML}{F4F6F8}
+\definecolor{grisLinea}{HTML}{D8DEE6}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Proyecto Integrador -- Team 46}
+\rhead{Pricing MLOps Platform}
+\cfoot{\thepage}
+
+\newcommand{\estado}[2]{\textcolor{#1}{\textbf{#2}}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\metricbox}[3]{
+  \begin{minipage}[t]{0.30\linewidth}
+    \colorbox{grisFondo}{
+      \parbox{\dimexpr\linewidth-2\fboxsep\relax}{
+        \textcolor{azulTec}{\textbf{#1}}\\[0.3em]
+        {\Large \textbf{#2}}\\[-0.1em]
+        {\small #3}
+      }
+    }
+  \end{minipage}
+}
+
+\title{
+  \textbf{Reporte de Avance}\\
+  Plataforma MLOps para Pricing Intelligence
+}
+\author{
+  Instituto Tecnologico y de Estudios Superiores de Monterrey\\
+  MNA -- Proyecto integrador (Gpo 10)\\
+  Team 46\\[0.5em]
+  Emanuel Flores Martinez -- A01796497\\
+  Mario Javier Soriano Aguilera -- A01384282\\
+  David Alberto Serrano Garcia -- A01795935
+}
+\date{24 de mayo de 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+\metricbox{Estado general}{MVP operativo}{Function $\rightarrow$ Azure ML $\rightarrow$ Storage $\rightarrow$ SQL audit}
+\hfill
+\metricbox{Ambiente validado}{staging}{Sin datos unmasked ni produccion}
+\hfill
+\metricbox{Evidencia SQL}{1 corrida}{Run auditado el 25-may-2026}
+\end{center}
+
+\section*{Resumen ejecutivo}
+
+Durante esta etapa se construyo una primera base operativa de MLOps para Pricing Intelligence en Azure. El proyecto paso de un diseno conceptual a un flujo ejecutable en la nube con infraestructura reproducible, datos masked, ejecucion en Azure ML, outputs versionados en Storage y metadata consultable en Azure SQL.
+
+El avance no representa todavia el producto final ni un modelo productivo de pricing. La contribucion principal es haber validado la columna vertebral operativa: un disparador controlado, un compute ML separado del orquestador, persistencia de artefactos y una capa de auditoria metadata-only. Esto permite integrar posteriormente un modelo real sin rehacer la plataforma.
+
+\section*{Integrantes}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Integrante} & \textbf{Matricula}\\
+\midrule
+Emanuel Flores Martinez & A01796497\\
+Mario Javier Soriano Aguilera & A01384282\\
+David Alberto Serrano Garcia & A01795935\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Objetivo del proyecto}
+
+El objetivo original es construir una capa MLOps que permita operar recomendaciones de pricing de forma reproducible, auditable y gobernada. La plataforma debe soportar validaciones de datos, ejecuciones de modelo, deteccion de drift, evidencia historica y controles de seguridad.
+
+En esta entrega el alcance se concentro en un MVP de bajo costo:
+
+\begin{itemize}[leftmargin=*]
+  \item Infraestructura Azure declarada con Bicep.
+  \item Separacion entre plataforma, codigo funcional y evidencia historica.
+  \item Orquestacion con Azure Functions.
+  \item Ejecucion del flujo tecnico en Azure Machine Learning.
+  \item Outputs funcionales versionados en Storage/ADLS.
+  \item Auditoria metadata-only en Azure SQL.
+  \item Uso exclusivo de datos masked en \code{staging}.
+\end{itemize}
+
+\section*{Alcance detallado de la entrega}
+
+La entrega se puede leer como una plataforma minima viable, no como un sistema de pricing terminado. La diferencia es importante: el valor de esta etapa esta en probar que la infraestructura, la orquestacion, la ejecucion ML y la auditoria pueden trabajar juntas de forma repetible.
+
+\begin{longtable}{p{0.24\linewidth}p{0.34\linewidth}p{0.32\linewidth}}
+\toprule
+\textbf{Dimension} & \textbf{Incluido en esta etapa} & \textbf{No incluido todavia}\\
+\midrule
+\endhead
+Datos & Dataset masked de muestra en \code{raw-masked}; rechazo explicito de \code{raw-unmasked} en staging. & Ingesta desde sistemas fuente reales, masking productivo y reconciliacion con datos historicos completos.\\
+Modelo & Baseline operativo y scoring controlado para validar contratos. & Modelo campeon real, entrenamiento formal, registro de modelos y promocion entre ambientes.\\
+MLOps & Orquestacion, pipeline, outputs versionados y metadata SQL. & Rollback productivo, aprobaciones de negocio, alertas automaticas y tablero ejecutivo.\\
+Infraestructura & Bicep para foundation y workload; staging operativo. & Produccion, Hub-Spoke, Private Endpoints y Azure Data Factory (ADF).\\
+Seguridad & Managed identities, RBAC, sin secretos en Git y sin account keys para Storage MLOps. & Autenticacion enterprise del endpoint, red privada completa y politicas de retencion aprobadas.\\
+\bottomrule
+\end{longtable}
+
+\section*{Organizacion de repositorios}
+
+El proyecto quedo separado para evitar mezclar responsabilidades de plataforma con codigo funcional de ciencia de datos.
+
+\begin{longtable}{p{0.27\linewidth}p{0.36\linewidth}p{0.27\linewidth}}
+\toprule
+\textbf{Repositorio} & \textbf{Responsabilidad} & \textbf{Evidencia usada en el reporte}\\
+\midrule
+\endhead
+\code{pricing-mlops-platform} & IaC, Azure Functions, definicion de pipeline AML, scripts operativos, SQL audit y documentacion. & Bicep, \code{function\_app.py}, YAML de Azure ML, SQL schema y runbooks.\\
+\code{pricing-mlops} & Flujo funcional/data science: validacion, curated, scoring, drift, reportes y publicacion de artefactos. & Componentes \code{validate\_prepare}, \code{score\_evaluate} y \code{publish\_outputs}.\\
+\code{pricing-mlops-eda} & Referencia historica y analisis exploratorio. & Contexto original, no ruta operativa actual.\\
+\bottomrule
+\end{longtable}
+
+\section*{Arquitectura implementada}
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+  node distance=1.25cm and 1.25cm,
+  box/.style={draw=grisLinea, rounded corners=3pt, fill=grisFondo, align=center, minimum width=3.1cm, minimum height=1cm},
+  primary/.style={draw=azulTec, rounded corners=3pt, fill=azulTec!8, align=center, minimum width=3.25cm, minimum height=1cm},
+  data/.style={draw=verdeOk!70!black, rounded corners=3pt, fill=verdeOk!8, align=center, minimum width=3.3cm, minimum height=1cm},
+  audit/.style={draw=ambar!80!black, rounded corners=3pt, fill=ambar!9, align=center, minimum width=3.2cm, minimum height=1cm},
+  arrow/.style={-{Latex[length=2mm]}, thick, draw=azulTec!75!black}
+]
+\node[box] (manual) {Operador o\\prueba controlada};
+\node[box, below=of manual] (event) {BlobCreated\\\code{raw-masked/incoming/*.csv}};
+\node[primary, right=of manual] (function) {Azure Function\\\code{/api/model-flow}};
+\node[primary, right=of function] (aml) {Azure ML pipeline\\\code{validate\_prepare}\\\code{score\_evaluate}\\\code{publish\_outputs}};
+\node[data, right=of aml] (storage) {Storage MLOps\\runs, snapshots,\\drift, reports, curated};
+\node[audit, below=of storage] (sql) {Azure SQL audit\\\code{model\_run\_log}\\\code{snapshot\_metadata}};
+\node[box, below=of aml] (repo) {Repo funcional\\\code{pricing-mlops}\\snapshot empaquetado};
+
+\draw[arrow] (manual) -- (function);
+\draw[arrow] (event) -- node[above, sloped]{Event Grid} (function);
+\draw[arrow] (function) -- (aml);
+\draw[arrow] (repo) -- (aml);
+\draw[arrow] (aml) -- (storage);
+\draw[arrow] (aml) -- (sql);
+\end{tikzpicture}
+\caption{Flujo operativo actual del MVP.}
+\end{figure}
+
+La Function no ejecuta el modelo. Su responsabilidad es validar parametros, rechazar entradas inseguras y someter el job de Azure ML. Azure ML ejecuta el flujo funcional del repositorio \code{pricing-mlops}. Storage conserva los artefactos completos, mientras que SQL guarda metadata consultable para auditoria.
+
+\section*{Flujo tecnico paso a paso}
+
+\begin{enumerate}[leftmargin=*]
+  \item Un operador llama la Function HTTP o llega un evento de BlobCreated desde \code{raw-masked/incoming/*.csv}.
+  \item La Function valida ambiente, owner, container, extension del archivo y path relativo seguro.
+  \item La Function genera un \code{run\_id}, calcula el prefijo esperado de salida y somete un pipeline job a Azure ML.
+  \item Azure ML ejecuta \code{validate\_prepare}: descarga el CSV masked, valida el contrato inicial y crea curated intermedio.
+  \item Azure ML ejecuta \code{score\_evaluate}: aplica scoring controlado, calcula drift basico y produce artefactos locales del run.
+  \item Azure ML ejecuta \code{publish\_outputs}: publica los seis artefactos funcionales en Storage y, si esta habilitado, escribe metadata en SQL.
+  \item El operador puede consultar evidencia por tres vias: Azure ML Jobs, Storage Blob y Azure SQL audit.
+\end{enumerate}
+
+\begin{longtable}{p{0.24\linewidth}p{0.35\linewidth}p{0.31\linewidth}}
+\toprule
+\textbf{Componente} & \textbf{Responsabilidad actual} & \textbf{Criterio de exito}\\
+\midrule
+\endhead
+\code{model-flow} HTTP & Entrada manual/controlada para iniciar una corrida. & Responde \code{202} con \code{run\_id} y nombre del job AML.\\
+Event Grid trigger & Entrada automatica por llegada de CSV masked. & Acepta solo \code{raw-masked/incoming/*.csv}.\\
+\code{validate\_prepare} & Validacion inicial y generacion de curated. & Produce estado preparado sin tocar datos unmasked.\\
+\code{score\_evaluate} & Scoring baseline y drift basico. & Genera snapshot, drift log y reporte.\\
+\code{publish\_outputs} & Publicacion en Storage y SQL metadata. & Seis artefactos en Blob y registros SQL cuando el sink esta activo.\\
+\bottomrule
+\end{longtable}
+
+\section*{Integracion actual con Azure ML Pipeline}
+
+La integracion actual con Azure ML ya representa un avance importante frente a ejecutar todo en una Function o en un script local. El pipeline aparece en Azure ML Studio con tres nodos visibles: \code{validate\_prepare}, \code{score\_evaluate} y \code{publish\_outputs}. Esto permite separar responsabilidades, observar cada etapa y mantener a Azure ML como compute principal del flujo.
+
+Sin embargo, la version actual todavia no es un DAG de datos completo. Los nodos se ejecutan en secuencia mediante \code{depends\_on}, pero una parte del estado intermedio se pasa por Blob Storage bajo \code{artifacts/component-state/<run\_id>/}. Esto es robusto e idempotente para el MVP, pero Azure ML no interpreta esos blobs como dependencias nativas de datos entre componentes.
+
+\begin{longtable}{p{0.25\linewidth}p{0.32\linewidth}p{0.33\linewidth}}
+\toprule
+\textbf{Aspecto} & \textbf{Estado actual} & \textbf{Limitacion}\\
+\midrule
+\endhead
+Definicion del pipeline & YAML \code{pricing-mlops-pipeline.yml}. & Menos expresivo para contratos de datos complejos que SDK v2 DSL.\\
+Secuencia de nodos & \code{depends\_on} fuerza orden de ejecucion. & El orden existe, pero no modela datos como edges nativos.\\
+Estado intermedio & Blobs bajo \code{component-state/<run\_id>}. & Azure ML Studio no puede inferir plenamente lineage de inputs/outputs.\\
+Outputs finales & Se publican al layout funcional de Storage MLOps. & Correcto para auditoria, pero separado de outputs nativos de componentes AML.\\
+Datastore & Uso operativo del storage funcional por identidad. & Falta formalizar un datastore AML explicito para dependencias intermedias.\\
+\bottomrule
+\end{longtable}
+
+\section*{Oportunidad: Pipeline Azure ML como DAG real}
+
+La oportunidad de mejora es evolucionar el pipeline a un DAG real de datos con Azure ML SDK v2 DSL, componentes registrados y contratos explicitos de entrada/salida. En vez de coordinar el estado intermedio por convencion de blobs, cada componente expondria outputs nativos tipo \code{uri\_folder} que el siguiente componente consumiría directamente.
+
+\begin{verbatim}
+validate_prepare.outputs.prepared_data
+  -> score_evaluate.inputs.prepared_data
+
+score_evaluate.outputs.run_artifacts
+  -> publish_outputs.inputs.run_artifacts
+\end{verbatim}
+
+La mejora propuesta conserva el layout final de evidencia en Storage, pero hace que Azure ML entienda mejor el grafo, el lineage y las dependencias. Esto tambien reduce ambiguedad al diagnosticar fallas: si \code{score\_evaluate} falla, Azure ML sabria con mayor claridad que input de datos recibio desde \code{validate\_prepare}.
+
+\begin{longtable}{p{0.24\linewidth}p{0.34\linewidth}p{0.32\linewidth}}
+\toprule
+\textbf{Cambio propuesto} & \textbf{Beneficio} & \textbf{Validacion necesaria}\\
+\midrule
+\endhead
+Implementar version SDK v2 DSL en \code{mlops/azureml/}. & Pipeline mas declarativo, componible y legible. & Mantener YAML actual como fallback hasta validar estabilidad.\\
+Registrar componentes con interfaces explicitas. & Contratos claros para \code{prepared\_data} y \code{run\_artifacts}. & Confirmar que Studio muestre dependencias de datos reales.\\
+Usar inputs/outputs \code{uri\_folder}. & Lineage nativo entre componentes. & Verificar rutas generadas y persistencia esperada.\\
+Crear datastore AML explicito al Storage funcional. & Evita depender del artifact store implicito. & Validar RBAC sin account keys ni connection strings.\\
+Ejecutar con managed identity. & Mantiene el modelo de seguridad actual. & Confirmar permisos de lectura/escritura por componente.\\
+\bottomrule
+\end{longtable}
+
+\section*{Servicios desplegados}
+
+\begin{longtable}{p{0.25\linewidth}p{0.35\linewidth}p{0.30\linewidth}}
+\toprule
+\textbf{Servicio} & \textbf{Recurso} & \textbf{Rol}\\
+\midrule
+\endhead
+Resource Group & \code{rg-pricing-mlops-staging} & Ambiente operativo del MVP.\\
+Storage MLOps & \code{<mlops-storage-account>} & Data lake funcional para inputs masked y outputs.\\
+Azure ML Workspace & \code{mlw-pricing-mlops-stg-v2-<suffix>} & Ejecucion de pipeline serverless.\\
+Azure Function App & \code{func-pricing-mlops-staging-<suffix>} & Orquestador HTTP y Event Grid.\\
+Azure SQL Database & \code{pricing\_mlops\_audit} & Auditoria metadata-only.\\
+Storage runtime AML & \code{stamlpmlopsstg<suffix>} & Logs, snapshots y artefactos internos de Azure ML.\\
+Storage Function host & \code{stfn<generated-suffix>} & Estado tecnico de Azure Functions.\\
+Managed Identity & \code{id-pricing-mlops-aml-staging} & Acceso sin secretos desde jobs AML.\\
+\bottomrule
+\end{longtable}
+
+\section*{Capas de almacenamiento y auditoria}
+
+La separacion de storages reduce ambiguedad operativa. El Storage MLOps principal contiene evidencia funcional del flujo. El Storage runtime de Azure ML guarda artefactos internos del servicio, como logs, snapshots y environments. El Storage de Function es un requisito tecnico del runtime de Azure Functions y no debe interpretarse como data lake.
+
+\begin{longtable}{p{0.24\linewidth}p{0.30\linewidth}p{0.36\linewidth}}
+\toprule
+\textbf{Capa} & \textbf{Ejemplo} & \textbf{Interpretacion}\\
+\midrule
+\endhead
+Input masked & \code{raw-masked/samples/sample\_pricing\_v1.csv} & Entrada controlada usada para validar el flujo.\\
+Curated & \code{curated/...\allowbreak curated\_pricing.csv} & Datos procesados listos para consumo posterior.\\
+Snapshot & \code{snapshots/...\allowbreak model\_output\_snapshot.csv} & Resultado de scoring publicado por corrida.\\
+Drift log & \code{drift-logs/...\allowbreak model\_drift\_log.json} & Resultado del semaforo y metricas de desviacion.\\
+Run log & \code{runs/...\allowbreak model\_run\_log.json} & Manifest de ejecucion y metadata funcional.\\
+SQL audit & \code{dbo.model\_run\_log} & Indice consultable para auditoria y reportes.\\
+\bottomrule
+\end{longtable}
+
+\section*{Avance contra el plan original}
+
+\begin{longtable}{p{0.22\linewidth}p{0.31\linewidth}p{0.31\linewidth}p{0.10\linewidth}}
+\toprule
+\textbf{Tema} & \textbf{Plan original} & \textbf{Estado actual} & \textbf{Estado}\\
+\midrule
+\endhead
+Orquestacion & Azure Functions y Azure Data Factory (ADF) para coordinar ingesta y flujo. & Azure Functions ya opera HTTP y Event Grid; ADF se pospuso. & \estado{verdeOk}{Parcial}\\
+Compute ML & Azure ML para validacion, entrenamiento y scoring. & Azure ML ejecuta pipeline de 3 componentes. & \estado{verdeOk}{MVP}\\
+Storage/ADLS & Capas raw, curated y snapshots. & Containers funcionales para raw-masked, curated, runs, snapshots, drift-logs, reports y artifacts. & \estado{verdeOk}{MVP}\\
+Azure SQL & Espina dorsal de auditoria. & Tablas \code{model\_run\_log}, \code{model\_output\_snapshot\_metadata} y \code{data\_quality\_log}. & \estado{verdeOk}{MVP}\\
+Drift & PSI, KS y semaforos por impacto de negocio. & Drift basico; semaforo registrado en la corrida auditada. & \estado{ambar}{Parcial}\\
+Calidad de datos & Great Expectations y reglas criticas. & Validacion inicial de contrato; reglas de negocio avanzadas pendientes. & \estado{ambar}{Parcial}\\
+Modelo real & Modelo campeon versionado con rollback. & Baseline/scoring controlado; modelo real pendiente. & \estado{rojo}{Pendiente}\\
+Seguridad avanzada & Hub-Spoke, Private Endpoints, Key Vault y red cerrada. & RBAC, identities y no secretos; Function key temporal y red privada pendiente. & \estado{ambar}{Parcial}\\
+Produccion & Ambiente productivo gobernado. & No existe \code{prod} en IaC ni parameters. & \estado{rojo}{Fuera alcance}\\
+\bottomrule
+\end{longtable}
+
+\section*{Drift respecto al plan original}
+
+En este reporte se usa la palabra drift en dos sentidos distintos. El primero es el \textbf{drift del proyecto}, es decir, los cambios de alcance y orden de implementacion respecto al diseno original. El segundo es el \textbf{drift de datos/modelo}, que es la desviacion estadistica que la plataforma debe detectar durante las corridas de pricing.
+
+El drift del proyecto fue principalmente de alcance y orden de implementacion, no de objetivo. La meta de una plataforma MLOps auditable para pricing se mantiene.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{ADF se pospuso.} Para el MVP, Event Grid + Azure Functions cubre el disparo automatico sobre archivos \code{raw-masked/incoming/*.csv}. ADF sigue teniendo sentido si aparecen multiples fuentes, calendarios y transformaciones previas.
+  \item \textbf{Private Endpoints y Hub-Spoke se pospusieron.} La razon principal fue costo, complejidad y tiempo academico. El MVP conserva controles base: sin secretos en Git, identities, RBAC y datos masked.
+  \item \textbf{GitHub Actions no opera ML.} Se limito a CI/CD y validaciones. La operacion ML vive en Function + Azure ML.
+  \item \textbf{Container Apps no era parte del plan original.} Fue una exploracion tecnica intermedia para probar ejecucion remota, pero se retiro porque el diseno original y la ruta actual son Azure Functions como orquestador y Azure ML como compute ML.
+  \item \textbf{SQL se incorporo antes de cerrar el modelo real.} Esto mejora auditoria, pero aun requiere endurecimiento y correccion de URIs finales.
+\end{itemize}
+
+\begin{longtable}{p{0.20\linewidth}p{0.28\linewidth}p{0.25\linewidth}p{0.17\linewidth}}
+\toprule
+\textbf{Decision} & \textbf{Motivo} & \textbf{Impacto positivo} & \textbf{Deuda generada}\\
+\midrule
+\endhead
+Posponer ADF & Reducir complejidad inicial. & MVP mas rapido con Function + Event Grid. & Falta ingesta multi-fuente calendarizada.\\
+Posponer red privada & Costo y tiempo academico. & Menor friccion de despliegue. & Falta hardening enterprise.\\
+Descartar Container Apps & No pertenece al diseno objetivo y duplicaba responsabilidades de AML. & Menos superficie operativa y mejor alineacion con el plan original. & Mantener solo evidencia historica del PoC.\\
+Usar baseline & Modelo real no cerrado. & Permite probar plataforma completa. & Falta calidad predictiva real.\\
+Separar Storage runtime AML & Evitar mezclar artifacts internos con outputs funcionales. & Mejor gobierno de artefactos. & Requiere limpieza legacy controlada.\\
+Agregar SQL audit & Mejorar trazabilidad desde temprano. & Consultas operativas sin leer blobs. & Falta guardar URIs finales de Blob.\\
+\bottomrule
+\end{longtable}
+
+\section*{Drift de datos y modelo}
+
+El drift funcional actual ya genera un semaforo y lo publica en Storage y SQL, pero todavia es una version basica. Su valor en esta etapa es probar el contrato operativo: el pipeline calcula un resultado, lo registra como \code{drift\_status} y deja evidencia por run. La siguiente iteracion debe convertir ese semaforo en una decision de negocio calibrada.
+
+\begin{longtable}{p{0.22\linewidth}p{0.18\linewidth}p{0.20\linewidth}p{0.30\linewidth}}
+\toprule
+\textbf{Senal} & \textbf{Metodo objetivo} & \textbf{Umbral original} & \textbf{Interpretacion}\\
+\midrule
+\endhead
+\code{rslpriceusd} y \code{quantity} & PSI & 0.10 amarillo / 0.25 rojo & Cambios fuertes en rangos de precio o volumen de venta.\\
+\code{elasticity\_mean} & KS & 0.05 amarillo / 0.15 rojo & Cambio en el comportamiento elastico del mercado.\\
+\code{P85 - P20} & KS & 0.10 amarillo / 0.20 rojo & Compresion del rango de precios sugeridos.\\
+Tasa \code{P20\_Was\_Adjusted} & Z-test de proporciones & z $>$ 2.0 amarillo / z $>$ 3.5 rojo & Aumento de casos que tocan el piso de margen.\\
+\bottomrule
+\end{longtable}
+
+Para evitar falsas alarmas, el semaforo no debe depender solo de una metrica global. La mejora recomendada es calcular drift por columnas criticas y por segmentos de negocio, guardar el detalle en \code{model\_drift\_log.json}, registrar el resumen en SQL y conservar la justificacion del color final. Asi el reporte no solo dira \code{red}, \code{yellow} o \code{green}; tambien dira que senal causo la alerta, con que umbral y sobre que poblacion.
+
+\section*{Evidencia de ejecucion}
+
+La evidencia se consulto en Azure SQL y Storage el 24 de mayo de 2026, hora local America/Tijuana. Algunos identificadores tecnicos, como \code{run\_id}, usan fecha UTC.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Campo} & \textbf{Valor}\\
+\midrule
+Run ID & \code{20260525T021122Z-function}\\
+Ambiente & \code{staging}\\
+Estado & \code{succeeded}\\
+Trigger & \code{manual}\\
+Filas procesadas & \code{3}\\
+Drift status & \textcolor{rojo}{\textbf{red}}\\
+Modelo / ref & \code{PoC/model-flow-template}\\
+Commit & \code{f4efe0245695891c400072eb2e1d341145129e42}\\
+Inicio UTC & \code{2026-05-25T02:16:31.175029+00:00}\\
+Fin UTC & \code{2026-05-25T02:16:31.175520+00:00}\\
+\bottomrule
+\end{tabular}
+\caption{Ultima corrida registrada en \code{dbo.model\_run\_log}.}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lrr}
+\toprule
+\textbf{Tabla SQL} & \textbf{Registros} & \textbf{Uso}\\
+\midrule
+\code{model\_run\_log} & 1 & Metadata principal de corrida.\\
+\code{model\_output\_snapshot\_metadata} & 1 & Metadata de snapshot publicado.\\
+\code{data\_quality\_log} & 0 & Reservada para checks detallados.\\
+\bottomrule
+\end{tabular}
+\caption{Conteos actuales en la base \code{pricing\_mlops\_audit}.}
+\end{table}
+
+\begin{longtable}{p{0.28\linewidth}p{0.30\linewidth}p{0.32\linewidth}}
+\toprule
+\textbf{Tabla} & \textbf{Campos relevantes} & \textbf{Uso academico/operativo}\\
+\midrule
+\endhead
+\code{model\_run\_log} & \code{run\_id}, \code{status}, \code{row\_count}, \code{drift\_status}, \code{model\_commit\_sha}. & Demuestra trazabilidad por ejecucion, ambiente, input y version de codigo/modelo.\\
+\code{model\_output\_snapshot\_metadata} & \code{snapshot\_uri}, \code{row\_count}, \code{output\_schema\_version}. & Permite ubicar el resultado publicado y validar version de contrato de salida.\\
+\code{data\_quality\_log} & \code{check\_name}, \code{check\_status}, \code{observed\_value}, \code{threshold\_value}. & Debe convertirse en evidencia de compuertas de calidad por run.\\
+\bottomrule
+\end{longtable}
+
+\begin{longtable}{p{0.22\linewidth}p{0.55\linewidth}r}
+\toprule
+\textbf{Container} & \textbf{Artefacto verificado en Storage} & \textbf{Bytes}\\
+\midrule
+\endhead
+\code{runs} & \code{model\_run\_log.json} & 1122\\
+\code{snapshots} & \code{model\_output\_snapshot.csv} & 610\\
+\code{drift-logs} & \code{model\_drift\_log.json} & 648\\
+\code{reports} & \code{report.md} & 346\\
+\code{artifacts} & \code{curated\_pricing.csv} & 351\\
+\code{curated} & \code{curated\_pricing.csv} & 351\\
+\bottomrule
+\caption{Outputs funcionales versionados en Storage para el run auditado.}
+\end{longtable}
+
+\section*{Lectura de resultados}
+
+La corrida registrada es exitosa desde el punto de vista de plataforma: el pipeline termino, publico outputs y escribio metadata SQL. El semaforo \code{red} no significa que la plataforma fallo; significa que el motor de drift clasifico el dataset de muestra como fuera de tolerancia bajo la logica actual. Para una entrega academica, esto es util porque demuestra que el campo de drift ya viaja desde el flujo funcional hasta SQL y Storage.
+
+La interpretacion correcta es:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Exito tecnico:} Function, Azure ML, Storage y SQL se integraron de punta a punta.
+  \item \textbf{Limitacion analitica:} el drift aun no usa todas las metricas propuestas en el plan original.
+  \item \textbf{Limitacion de auditoria:} SQL tiene registros, pero los campos de URI deben apuntar a Blob Storage final, no a rutas temporales locales.
+  \item \textbf{Limitacion de escala:} la evidencia usa 3 filas de muestra; falta validar con datasets historicos masked de mayor volumen.
+\end{itemize}
+
+\section*{Resultados ya logrados}
+
+\begin{itemize}[leftmargin=*]
+  \item IaC organizada en foundation, workloads y parameter files por ambiente.
+  \item Ambiente \code{staging} activo con Storage, Azure ML, Function, Event Grid y SQL audit.
+  \item Pipeline Azure ML visible con tres nodos: \code{validate\_prepare}, \code{score\_evaluate} y \code{publish\_outputs}.
+  \item Flujo remoto ejecutado sin usar GitHub Actions como compute operativo.
+  \item Seis outputs funcionales publicados en Storage para una corrida auditada.
+  \item Base SQL con metadata de corrida y snapshot.
+  \item Separacion de Storage funcional MLOps, Storage runtime Azure ML y Storage tecnico de Function.
+  \item Politica practica de datos: \code{staging} no usa \code{raw-unmasked}.
+\end{itemize}
+
+\begin{longtable}{p{0.24\linewidth}p{0.38\linewidth}p{0.28\linewidth}}
+\toprule
+\textbf{Entregable} & \textbf{Que demuestra} & \textbf{Archivo o recurso}\\
+\midrule
+\endhead
+Infraestructura declarativa & El ambiente se puede reconstruir y revisar por codigo. & \code{infra/foundation}, \code{infra/workloads}.\\
+Function orchestrator & El orquestador valida entradas y somete jobs AML. & \code{mlops/functions/function\_app.py}.\\
+Pipeline AML & El compute ML corre fuera de la Function. & \code{mlops/azureml/pricing-mlops-pipeline.yml}.\\
+SQL audit schema & Hay una base para auditoria consultable. & \code{mlops/sql/001\_create\_audit\_tables.sql}.\\
+Runbook operativo & El flujo se puede ejecutar y diagnosticar. & \code{docs/operations.md}, \code{docs/sql-audit-runbook.md}.\\
+Reporte academico & El avance queda documentado con evidencia. & Este documento LaTeX/PDF.\\
+\bottomrule
+\end{longtable}
+
+\section*{Hallazgos y oportunidades de mejora}
+
+\begin{longtable}{p{0.26\linewidth}p{0.39\linewidth}p{0.27\linewidth}}
+\toprule
+\textbf{Oportunidad} & \textbf{Situacion actual} & \textbf{Mejora recomendada}\\
+\midrule
+\endhead
+Auditoria SQL de URIs & SQL registra la corrida, pero \code{snapshot\_uri} y \code{artifact\_manifest\_uri} aparecen como rutas temporales locales \code{/tmp/...}. & Guardar las rutas Blob finales para que SQL sea evidencia auditable directa.\\
+Drift estadistico & La corrida registra \code{red}, pero el motor aun es basico. & Implementar PSI, KS y Z-test por metricas de negocio, con umbrales aprobados.\\
+Calidad de datos & \code{data\_quality\_log} existe pero no tiene registros. & Persistir checks por run: nulos, unicidad, monotonicidad y margen minimo.\\
+Pipeline AML como DAG real & Hay tres nodos visibles con \code{depends\_on}; parte del estado intermedio vive en Blob y no como edge nativo de datos. & Evolucionar a SDK v2 DSL con componentes registrados, datastore explicito e inputs/outputs \code{uri\_folder}.\\
+Modelo real & El flujo usa baseline/scoring controlado. & Integrar modelo real como paquete, componente AML o adaptador estable.\\
+Seguridad endpoint & Function key funciona como control temporal. & Migrar a Entra ID/Easy Auth o API Management.\\
+Retencion & Existen outputs funcionales y artifacts runtime. & Definir reglas de lifecycle por clase de datos y evidencia academica.\\
+Ambiente validation & Esta preparado, pero no opera como paso formal. & Usarlo como antesala para pruebas controladas antes de cualquier ambiente productivo.\\
+\bottomrule
+\end{longtable}
+
+\section*{Riesgos principales}
+
+\begin{longtable}{p{0.22\linewidth}p{0.34\linewidth}p{0.34\linewidth}}
+\toprule
+\textbf{Riesgo} & \textbf{Efecto si no se atiende} & \textbf{Mitigacion recomendada}\\
+\midrule
+\endhead
+Modelo real no integrado & El proyecto se queda como plataforma sin validacion predictiva. & Definir contrato del modelo y conectar un adaptador independiente del orquestador.\\
+Drift basico & El semaforo podria no representar riesgo de negocio real o podria generar falsas alarmas. & Calibrar PSI, KS y Z-test con historicos, guardar detalle por metrica y pedir aprobacion de stakeholders.\\
+Auditoria incompleta de URIs & SQL no serviria como indice directo a evidencia final. & Persistir rutas \code{https://...blob.core.windows.net/...} o \code{azureml://...} finales.\\
+Endpoint con Function key & Control suficiente para MVP, debil para operacion enterprise. & Migrar a Entra ID, Easy Auth o API Management.\\
+Artifacts legacy & Costos y confusion entre Storage funcional y runtime. & Aplicar inventario y retencion por clase de artefacto.\\
+Pipeline sin dependencias de datos nativas & Azure ML puede ejecutar en orden, pero no captura completamente lineage, contratos intermedios ni diagnostico de datos entre nodos. & Migrar a DAG real con outputs \code{prepared\_data} y \code{run\_artifacts} conectados como inputs nativos.\\
+\bottomrule
+\end{longtable}
+
+\section*{Siguientes pasos}
+
+\begin{longtable}{p{0.16\linewidth}p{0.32\linewidth}p{0.28\linewidth}p{0.14\linewidth}}
+\toprule
+\textbf{Prioridad} & \textbf{Paso} & \textbf{Resultado esperado} & \textbf{Horizonte}\\
+\midrule
+\endhead
+Alta & Corregir URIs SQL de snapshot y manifest. & Auditoria SQL apunta directo a evidencia final en Blob. & Corto plazo\\
+Alta & Persistir checks en \code{data\_quality\_log}. & Compuertas de calidad visibles por run. & Corto plazo\\
+Alta & Definir contrato del modelo real. & Entradas, salidas y versionado listos para integracion. & Corto plazo\\
+Media & Implementar PSI, KS y Z-test con detalle por metrica. & Drift alineado con el plan original y explicable por run. & Mediano plazo\\
+Media & Crear adaptador del modelo. & Modelo integrable sin cambiar Function ni pipeline base. & Mediano plazo\\
+Media & Migrar pipeline a SDK v2 DSL. & Dependencias de datos nativas, lineage claro y DAG real en Azure ML. & Mediano plazo\\
+Media & Preparar ambiente \code{validation}. & Pruebas controladas antes de promocion. & Mediano plazo\\
+Baja & Migrar endpoint a Entra ID/API Management. & Autenticacion enterprise. & Mediano plazo\\
+Baja & Definir lifecycle de artifacts. & Menor costo y limpieza gobernada. & Mediano plazo\\
+Baja & Crear dashboard operativo. & Lectura ejecutiva de corridas, drift y estado. & Largo plazo\\
+\bottomrule
+\end{longtable}
+
+\section*{Criterios de cierre para la siguiente entrega}
+
+Para que la siguiente entrega muestre madurez adicional, se recomienda cerrarla con evidencia concreta de:
+
+\begin{itemize}[leftmargin=*]
+  \item Al menos una corrida con URIs finales de Blob registradas correctamente en SQL.
+  \item Registros en \code{data\_quality\_log} para checks de contrato, nulos, unicidad y reglas de negocio.
+  \item Drift calculado con al menos una metrica estadistica del plan original.
+  \item Ejecucion en \code{validation} o justificacion documentada para mantener solo \code{staging}.
+  \item Contrato firmado del modelo real o baseline formal aprobado.
+\end{itemize}
+
+\section*{Anexo visual: referencia del diseno original}
+
+El diseno original planteo una arquitectura enterprise con red privada, Azure Data Factory (ADF), Azure Functions, Azure ML, SQL y Key Vault. Las siguientes imagenes se conservan como referencia historica del plan inicial.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.92\linewidth]{original/assets/original-design-page-2-image-1.png}
+\caption{Topologia objetivo del diseno tecnico original.}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.92\linewidth]{original/assets/original-design-page-4-image-2.png}
+\caption{Sequence flow objetivo del diseno tecnico original.}
+\end{figure}
+
+\section*{Conclusion}
+
+El proyecto ya cuenta con una base MLOps funcional para Pricing Intelligence. La plataforma puede recibir una solicitud, ejecutar un pipeline en Azure ML, publicar evidencia versionada y registrar metadata en SQL. El avance mas relevante es que la arquitectura ya no es solo un diagrama: existe una ejecucion verificable.
+
+El principal trabajo pendiente es convertir el MVP en una plataforma mas cercana al diseno enterprise original: modelo real, drift estadistico robusto, reglas de calidad persistidas, autenticacion fortalecida, pipeline con dependencias de datos nativas y auditoria SQL con URIs finales de Storage.
+
+\end{document}

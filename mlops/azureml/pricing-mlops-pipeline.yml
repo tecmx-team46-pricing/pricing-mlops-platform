@@ -1,0 +1,235 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+type: pipeline
+display_name: pricing-mlops-pipeline
+experiment_name: pricing-mlops
+description: Pricing MLOps pipeline with visible validate, score, and publish components.
+inputs:
+  storage_account: mlopsstorageexample
+  environment: staging
+  run_owner: team46
+  run_id: manual
+  input_blob_path: samples/sample_pricing_v1.csv
+  trigger_type: manual
+  model_repo: tecmx-team46-pricing/pricing-mlops
+  model_ref: PoC/model-flow-template
+  model_commit_sha: unknown
+  job_identity_client_id: ''
+  sql_enabled: 'false'
+  sql_server: ''
+  sql_database: ''
+  sql_schema: dbo
+  sql_run_log_table: model_run_log
+  sql_snapshot_table: model_output_snapshot_metadata
+  artifact_sinks: azure_blob
+  optional_artifact_sinks: azure_ml,sql_metadata
+jobs:
+  validate_prepare:
+    type: command
+    compute: azureml:serverless
+    component:
+      type: command
+      name: pricing_mlops_validate_prepare
+      display_name: validate_prepare
+      code: ../pricing-mlops-source
+      command: >-
+        python -m pip install -e . &&
+        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
+        python scripts/components/validate_prepare.py
+        --storage-account ${{inputs.storage_account}}
+        --input-container raw-masked
+        --input-blob-path ${{inputs.input_blob_path}}
+        --output-dir outputs/prepared_data
+        --prepared-container artifacts
+        --prepared-prefix component-state/${{inputs.run_id}}/prepared
+      environment:
+        image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+        conda_file: environment.yml
+      inputs:
+        storage_account:
+          type: string
+        input_blob_path:
+          type: string
+        run_id:
+          type: string
+        job_identity_client_id:
+          type: string
+    inputs:
+      storage_account: ${{parent.inputs.storage_account}}
+      input_blob_path: ${{parent.inputs.input_blob_path}}
+      run_id: ${{parent.inputs.run_id}}
+      job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
+    identity:
+      type: user_identity
+  score_evaluate:
+    type: command
+    compute: azureml:serverless
+    depends_on:
+      - validate_prepare
+    component:
+      type: command
+      name: pricing_mlops_score_evaluate
+      display_name: score_evaluate
+      code: ../pricing-mlops-source
+      command: >-
+        python -m pip install -e . &&
+        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
+        python scripts/components/score_evaluate.py
+        --storage-account ${{inputs.storage_account}}
+        --input-container raw-masked
+        --prepared-container artifacts
+        --prepared-prefix component-state/${{inputs.run_id}}/prepared
+        --output-dir outputs/run_artifacts
+        --run-artifacts-container artifacts
+        --run-artifacts-prefix component-state/${{inputs.run_id}}/run_artifacts
+        --environment ${{inputs.environment}}
+        --run-owner ${{inputs.run_owner}}
+        --run-id ${{inputs.run_id}}
+        --input-blob-path ${{inputs.input_blob_path}}
+        --trigger-type ${{inputs.trigger_type}}
+        --model-repo ${{inputs.model_repo}}
+        --model-ref ${{inputs.model_ref}}
+        --model-commit-sha ${{inputs.model_commit_sha}}
+      environment:
+        image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+        conda_file: environment.yml
+      inputs:
+        storage_account:
+          type: string
+        environment:
+          type: string
+        run_owner:
+          type: string
+        run_id:
+          type: string
+        input_blob_path:
+          type: string
+        trigger_type:
+          type: string
+        model_repo:
+          type: string
+        model_ref:
+          type: string
+        model_commit_sha:
+          type: string
+        job_identity_client_id:
+          type: string
+    inputs:
+      storage_account: ${{parent.inputs.storage_account}}
+      environment: ${{parent.inputs.environment}}
+      run_owner: ${{parent.inputs.run_owner}}
+      run_id: ${{parent.inputs.run_id}}
+      input_blob_path: ${{parent.inputs.input_blob_path}}
+      trigger_type: ${{parent.inputs.trigger_type}}
+      model_repo: ${{parent.inputs.model_repo}}
+      model_ref: ${{parent.inputs.model_ref}}
+      model_commit_sha: ${{parent.inputs.model_commit_sha}}
+      job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
+    identity:
+      type: user_identity
+  publish_outputs:
+    type: command
+    compute: azureml:serverless
+    depends_on:
+      - score_evaluate
+    component:
+      type: command
+      name: pricing_mlops_publish_outputs
+      display_name: publish_outputs
+      code: ../pricing-mlops-source
+      command: >-
+        if [ "$(printf '%s' '${{inputs.sql_enabled}}' | tr '[:upper:]' '[:lower:]')" = "true" ]; then
+        apt-get update &&
+        ACCEPT_EULA=Y apt-get install -y curl gnupg unixodbc unixodbc-dev &&
+        curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg &&
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" > /etc/apt/sources.list.d/mssql-release.list &&
+        apt-get update &&
+        ACCEPT_EULA=Y apt-get install -y msodbcsql18;
+        fi &&
+        python -m pip install -e .[sql] &&
+        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
+        MLOPS_SQL_ENABLED=${{inputs.sql_enabled}}
+        MLOPS_SQL_SERVER=${{inputs.sql_server}}
+        MLOPS_SQL_DATABASE=${{inputs.sql_database}}
+        MLOPS_SQL_SCHEMA=${{inputs.sql_schema}}
+        MLOPS_SQL_RUN_LOG_TABLE=${{inputs.sql_run_log_table}}
+        MLOPS_SQL_SNAPSHOT_TABLE=${{inputs.sql_snapshot_table}}
+        MLOPS_ARTIFACT_SINKS=${{inputs.artifact_sinks}}
+        MLOPS_OPTIONAL_ARTIFACT_SINKS=${{inputs.optional_artifact_sinks}}
+        python scripts/components/publish_outputs.py
+        --storage-account ${{inputs.storage_account}}
+        --run-artifacts-container artifacts
+        --run-artifacts-prefix component-state/${{inputs.run_id}}/run_artifacts
+        --environment ${{inputs.environment}}
+        --run-owner ${{inputs.run_owner}}
+        --run-id ${{inputs.run_id}}
+        --input-container raw-masked
+        --input-blob-path ${{inputs.input_blob_path}}
+        --compute-target azure-ml
+        --trigger-type ${{inputs.trigger_type}}
+        --model-repo ${{inputs.model_repo}}
+        --model-ref ${{inputs.model_ref}}
+        --model-commit-sha ${{inputs.model_commit_sha}}
+      environment:
+        image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+        conda_file: environment.yml
+      inputs:
+        storage_account:
+          type: string
+        run_id:
+          type: string
+        environment:
+          type: string
+        run_owner:
+          type: string
+        input_blob_path:
+          type: string
+        trigger_type:
+          type: string
+        model_repo:
+          type: string
+        model_ref:
+          type: string
+        model_commit_sha:
+          type: string
+        job_identity_client_id:
+          type: string
+        sql_enabled:
+          type: string
+        sql_server:
+          type: string
+        sql_database:
+          type: string
+        sql_schema:
+          type: string
+        sql_run_log_table:
+          type: string
+        sql_snapshot_table:
+          type: string
+        artifact_sinks:
+          type: string
+        optional_artifact_sinks:
+          type: string
+    inputs:
+      storage_account: ${{parent.inputs.storage_account}}
+      run_id: ${{parent.inputs.run_id}}
+      environment: ${{parent.inputs.environment}}
+      run_owner: ${{parent.inputs.run_owner}}
+      input_blob_path: ${{parent.inputs.input_blob_path}}
+      trigger_type: ${{parent.inputs.trigger_type}}
+      model_repo: ${{parent.inputs.model_repo}}
+      model_ref: ${{parent.inputs.model_ref}}
+      model_commit_sha: ${{parent.inputs.model_commit_sha}}
+      job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
+      sql_enabled: ${{parent.inputs.sql_enabled}}
+      sql_server: ${{parent.inputs.sql_server}}
+      sql_database: ${{parent.inputs.sql_database}}
+      sql_schema: ${{parent.inputs.sql_schema}}
+      sql_run_log_table: ${{parent.inputs.sql_run_log_table}}
+      sql_snapshot_table: ${{parent.inputs.sql_snapshot_table}}
+      artifact_sinks: ${{parent.inputs.artifact_sinks}}
+      optional_artifact_sinks: ${{parent.inputs.optional_artifact_sinks}}
+    identity:
+      type: user_identity

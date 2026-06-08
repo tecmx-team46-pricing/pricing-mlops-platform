@@ -1,6 +1,6 @@
 # MLOps Flow
 
-Este flujo define la operacion minima del sistema de pricing para el MVP. No intenta automatizar retraining ni crear una plataforma de ML completa.
+Este flujo define la operacion base del sistema de pricing. No intenta automatizar retraining ni crear una plataforma de ML completa.
 
 ## Objetivo
 
@@ -38,7 +38,7 @@ flowchart TD
 | Decision | Aplicar semaforo definido en `retraining-decision.md` |
 | Evidencia | Persistir run log, drift log, snapshot y summary |
 
-## Que sigue manual en el MVP
+## Que sigue manual
 
 - Aprobacion de cambios de reglas de pricing.
 - Decision final de recalibrar o reentrenar.

@@ -10,8 +10,9 @@ param projectName string = 'pricing-mlops'
 @description('Operational environment. Shared is a platform scope, not an MLOps environment.')
 @allowed([
   'staging'
-  'sandbox-david'
+  'sandbox-local'
   'validation'
+  'data-lab'
 ])
 param environmentName string = 'staging'
 
@@ -48,6 +49,8 @@ param sharedOwner string = 'team46'
 #disable-next-line no-unused-params
 param storageContainers array = [
   'input'
+  'raw-masked'
+  'curated'
   'baseline'
   'runs'
   'snapshots'
@@ -56,9 +59,61 @@ param storageContainers array = [
   'artifacts'
 ]
 
-@description('Deploy the hello world Function App from the workload entrypoint. Kept here so parameter files can be shared.')
+@description('Deploy the Function orchestrator from the workload entrypoint. Kept here so parameter files can be shared.')
 #disable-next-line no-unused-params
-param enableHelloFunction bool = true
+param enableFunctionOrchestrator bool = true
+
+@description('Create Function Managed Identity Operator assignment from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param enableFunctionManagedIdentityOperator bool = true
+
+@description('Azure Function region used by the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param functionLocation string = ''
+
+@description('Deploy the Azure Machine Learning workspace from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param enableAzureMl bool = false
+
+@description('Use the v2 Azure ML workspace from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param useAzureMlWorkspaceV2 bool = false
+
+@description('Explicit Azure ML workspace v2 name from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param azureMlWorkspaceV2Name string = ''
+
+@description('Existing Azure ML associated Container Registry name. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param azureMlContainerRegistryName string = ''
+
+@description('Deploy Azure SQL audit from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param enableSqlAudit bool = false
+
+@description('Azure SQL audit region from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlAuditLocation string = ''
+
+@description('Azure SQL audit server name from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlAuditServerName string = ''
+
+@description('Azure SQL audit database name from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlAuditDatabaseName string = 'pricing_mlops_audit'
+
+@description('Microsoft Entra administrator display/login name from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlEntraAdministratorLogin string = ''
+
+@description('Microsoft Entra administrator object id from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlEntraAdministratorObjectId string = ''
+
+@description('Allow Azure platform services to reach SQL from the workload entrypoint. Kept here so parameter files can be shared.')
+#disable-next-line no-unused-params
+param sqlAllowAzureServices bool = true
 
 @description('GitHub repository in org/repo format. Empty value skips federated credential creation.')
 param githubRepository string = ''
@@ -68,6 +123,18 @@ param githubEnvironment string = environmentName
 
 @description('Create GitHub Actions OIDC identity and base role assignments for this environment.')
 param enableGithubActionsIdentity bool = !empty(githubRepository)
+
+@description('Create the subscription Contributor role assignment for the platform GitHub Actions identity. Disable when the assignment already exists outside this deployment.')
+param enableGithubSubscriptionContributor bool = enableGithubActionsIdentity
+
+@description('Functional model GitHub repository in org/repo format. Empty value skips model repo federated credential creation.')
+param modelGithubRepository string = ''
+
+@description('GitHub environment used by the functional model repo.')
+param modelGithubEnvironment string = githubEnvironment
+
+@description('Create a separate GitHub Actions OIDC identity for the functional model repo.')
+param enableModelGithubActionsIdentity bool = !empty(modelGithubRepository)
 
 @description('Monthly budget amount in subscription currency. Set 0 to skip budget creation.')
 param monthlyBudgetAmount int = 25
@@ -82,6 +149,7 @@ var sharedResourceGroupName = 'rg-${projectName}-platform-shared'
 var keyVaultName = take('kv-pmlops-${uniqueString(subscription().id, sharedResourceGroupName)}', 24)
 var logAnalyticsName = 'log-${projectName}-shared'
 var githubActionsIdentityName = 'id-gha-${projectName}-${environmentName}'
+var modelGithubActionsIdentityName = 'id-gha-${projectName}-model-${environmentName}'
 var contributorRoleDefinitionId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
 
 var sharedTags = {
@@ -162,10 +230,14 @@ module identities 'modules/identities.bicep' = {
     githubRepository: githubRepository
     githubEnvironment: githubEnvironment
     enableGithubActionsIdentity: enableGithubActionsIdentity
+    modelGithubActionsIdentityName: modelGithubActionsIdentityName
+    modelGithubRepository: modelGithubRepository
+    modelGithubEnvironment: modelGithubEnvironment
+    enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
   }
 }
 
-resource githubSubscriptionContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableGithubActionsIdentity) {
+resource githubSubscriptionContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableGithubSubscriptionContributor) {
   name: guid(subscription().id, githubActionsIdentityName, contributorRoleDefinitionId)
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', contributorRoleDefinitionId)
@@ -209,3 +281,6 @@ output logAnalyticsWorkspaceName string = observability.outputs.logAnalyticsWork
 output githubActionsClientId string = identities.outputs.githubActionsClientId
 output githubActionsPrincipalId string = identities.outputs.githubActionsPrincipalId
 output githubActionsSubject string = identities.outputs.githubActionsSubject
+output modelGithubActionsClientId string = identities.outputs.modelGithubActionsClientId
+output modelGithubActionsPrincipalId string = identities.outputs.modelGithubActionsPrincipalId
+output modelGithubActionsSubject string = identities.outputs.modelGithubActionsSubject

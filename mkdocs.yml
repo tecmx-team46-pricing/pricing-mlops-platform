@@ -1,0 +1,79 @@
+site_name: Pricing MLOps Platform
+site_description: Documentacion academica del proyecto integrador Team 46
+site_author: Team 46
+site_url: https://tecmx-team46-pricing.github.io/pricing-mlops-platform/
+repo_url: https://github.com/tecmx-team46-pricing/pricing-mlops-platform
+repo_name: pricing-mlops-platform
+
+docs_dir: docs
+site_dir: site
+use_directory_urls: true
+
+theme:
+  name: material
+  language: es
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - toc.integrate
+    - content.code.copy
+    - content.tabs.link
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Cambiar a modo oscuro
+    - scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Cambiar a modo claro
+
+plugins:
+  - search:
+      lang: es
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Inicio: index.md
+  - Proyecto:
+      - Contexto y problema: contexto-problema.md
+      - Objetivos y alcance: objetivos-alcance.md
+      - Reporte de avance: reporte-avance-proyecto-integrador.md
+  - Arquitectura:
+      - Vista general: architecture.md
+      - Estructura del repo: project-structure.md
+      - Servicios Azure: azure-services.md
+      - Decisiones Azure ML: azure-ml-tooling-decision.md
+  - MLOps:
+      - Flujo operativo: operations.md
+      - Contrato plataforma-modelo: platform-model-operating-contract.md
+      - Function orchestrator: function-orchestrator.md
+      - Pipeline Azure ML: azure-ml-job-contract.md
+      - Contratos de datos: data-contracts.md
+  - Gobierno y evidencia:
+      - Evidencia del MVP: evidencia.md
+      - Gobierno de datos: data-governance-plan.md
+      - Auditoria SQL: sql-audit-runbook.md
+      - GitHub Actions: github-actions.md
+      - Inventario legacy: legacy-resource-inventory.md
+  - Cierre:
+      - Roadmap: roadmap.md
+      - Diseno original: original/technical-design-original.md

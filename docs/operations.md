@@ -1,130 +1,233 @@
 # Operations
 
-## Despliegue de infraestructura
+## Preflight
 
 ```bash
 az login
 az account set --subscription "<azure-subscription-name>"
-scripts/what-if.sh sandbox-david
-scripts/deploy.sh sandbox-david
+az account show --query "{name:name,id:id}" -o table
 ```
 
-Los scripts aceptan solo:
+## Validacion Local
+
+```bash
+scripts/validate-mlops-contracts.py
+az bicep build --file infra/foundation/main.bicep
+az bicep build --file infra/workloads/pricing-mlops/main.bicep
+az bicep build-params --file infra/parameters/staging.bicepparam
+az bicep build-params --file infra/parameters/validation.bicepparam
+az bicep build-params --file infra/parameters/data-lab.bicepparam
+az bicep build-params --file infra/parameters/sandbox-local.bicepparam
+```
+
+## What-if y Deploy
+
+```bash
+scripts/what-if.sh staging
+scripts/deploy.sh staging
+```
+
+Ambientes aceptados por scripts:
 
 ```text
 staging
-sandbox-david
 validation
+data-lab
+sandbox-local
 ```
 
-Cada ejecucion despliega en orden:
+`sandbox-local` es local/admin only. GitHub Actions solo expone `staging` y `validation` para operacion manual.
 
-1. Foundation: `infra/foundation/main.bicep`
-2. Workload Pricing MLOps: `infra/workloads/pricing-mlops/main.bicep`
+## Operacion Del Flujo ML
 
-`shared` se despliega como scope compartido desde foundation, pero no se opera como ambiente MLOps. `prod` sigue fuera de alcance y no tiene parameter file.
+La operacion diaria del flujo vive en este repo bajo `mlops/scripts/`. El repo `pricing-mlops` contiene el codigo data science y se empaqueta como snapshot para Azure ML.
 
-La Function App del workload usa App Service Plan `B1` por defecto. Si Azure devuelve `SubscriptionIsOverQuotaForSku` para `Basic VMs`, la infraestructura base queda preparada pero la Function App no puede crearse hasta pedir cuota `Basic VMs >= 1` o ajustar los parametros `functionPlanSkuName`, `functionPlanSkuTier` y `functionPlanSkuSize` en el despliegue.
-
-`sandbox-david` puede usar una region distinta a `staging` para evitar saturacion o quotas regionales. El bloqueo original fue App Service/Functions quota 0 en `eastus2`; el parameter file del sandbox usa `centralus` para esta prueba.
-
-Si `sandbox-david` ya tiene recursos en otra region, Azure no puede moverlos en sitio. Un cambio de region requiere borrar y recrear `rg-pricing-mlops-sbx-david` o usar nombres nuevos de recursos.
-
-Mientras se resuelve la cuota de compute, se puede validar foundation y storage sin crear Function App:
+Publicar o actualizar el codigo de la Function:
 
 ```bash
-ENABLE_HELLO_FUNCTION=false scripts/what-if.sh sandbox-david
-ENABLE_HELLO_FUNCTION=false scripts/deploy.sh sandbox-david
+MODEL_REPO_REF=<commit-sha-or-tag> \
+mlops/scripts/publish_orchestrator_function.sh staging
 ```
 
-Antes de desplegar, confirmar el contexto activo:
+Dry-run sin desplegar a Azure:
 
 ```bash
-az account show --query "{name:name, id:id}" --output table
+DRY_RUN=true KEEP_PACKAGE=true \
+MODEL_REPO_REF=<commit-sha-or-tag> \
+mlops/scripts/publish_orchestrator_function.sh staging
 ```
 
-## Publicar Function hello world
+`MODEL_REPO_REF` se resuelve desde `MODEL_REPO_GITHUB` en build/publish time y el commit real queda escrito en `model_source.json`. Para desarrollo local se permite `MODEL_REPO_PATH=../pricing-mlops` solo con `ALLOW_LOCAL_MODEL_SOURCE=true`; si ese repo local tiene cambios sin commit, el script falla salvo que se use `ALLOW_DIRTY_LOCAL_MODEL_SOURCE=true` para una prueba local deliberada.
 
-El despliegue de infraestructura crea la Function App. El codigo runtime vive fuera de `infra/`:
+Ejecutar el flujo remoto:
+
+```bash
+AZURE_FUNCTION_APP=func-pricing-mlops-staging-<suffix> \
+AZURE_RESOURCE_GROUP=rg-pricing-mlops-staging \
+AZURE_ML_WORKSPACE=mlw-pricing-mlops-stg-v2-<suffix> \
+mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
+```
+
+Ese script llama la Function, espera el job AML por ARM/REST y verifica metadata de los seis outputs. No usa GitHub Actions ni `az ml`. En Azure ML > Jobs, el pipeline debe mostrar tres nodos: `validate_prepare`, `score_evaluate` y `publish_outputs`.
+
+El trigger automatico se habilita por Event Grid sobre `raw-masked/incoming/*.csv`. Para probarlo:
+
+```bash
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+az storage blob upload \
+  --account-name <mlops-storage-account> \
+  --container-name raw-masked \
+  --name "incoming/pricing_test_${timestamp}.csv" \
+  --file ../pricing-mlops/data/samples/masked/sample_pricing.csv \
+  --auth-mode login \
+  --overwrite true
+```
+
+La Function rechaza eventos fuera de `raw-masked/incoming/`, `samples/`, paths absolutos, `..`, extensiones distintas de `.csv` y cualquier referencia a `raw-unmasked`.
+
+## Portal
+
+| Necesidad | Ruta |
+|---|---|
+| Function | Function App `func-pricing-mlops-staging-<suffix>` > Functions / Log stream |
+| Azure ML jobs | Machine Learning workspace `mlw-pricing-mlops-stg-v2-<suffix>` > Jobs |
+| Outputs funcionales | Storage MLOps `<mlops-storage-account>` > Containers |
+| SQL audit | SQL server `sql-pricing-mlops-staging-<suffix>` > SQL databases > `pricing_mlops_audit` > Query editor (preview) |
+| Artifacts runtime AML | Storage runtime Azure ML `stamlpmlopsstg<suffix>` para el workspace v2 activo; el workspace legacy conserva artifacts anteriores en `<mlops-storage-account>` |
+| Function host state | Storage `stfn<generated-suffix>` |
+| Costos | Cost Management > Cost analysis > filtrar `rg-pricing-mlops-staging` |
+| RBAC | Resource > Access control (IAM) |
+
+## SQL Audit
+
+Runbook completo: [`sql-audit-runbook.md`](sql-audit-runbook.md).
+
+Conexion local con Microsoft Entra:
+
+```bash
+sqlcmd \
+  -S sql-pricing-mlops-staging-<suffix>.database.windows.net \
+  -d pricing_mlops_audit \
+  -G
+```
+
+Consulta rapida:
+
+```sql
+select top 10
+  run_id,
+  environment,
+  status,
+  row_count,
+  trigger_type,
+  model_commit_sha
+from dbo.model_run_log
+order by started_at_utc desc;
+```
+
+SQL guarda metadata y referencias. Los artifacts funcionales siguen en Blob Storage.
+
+## Seguridad Actual
+
+- Storage MLOps principal tiene account keys deshabilitadas.
+- Storage runtime Azure ML prefiere identity-based access; si Azure ML exige shared keys en una recreacion futura, esa excepcion debe quedar limitada al Storage runtime, nunca al Storage MLOps principal.
+- Function usa Function key como control temporal.
+- Function App usa HTTPS-only, TLS minimo 1.2, FTPS disabled, remote debugging off y detailed errors off.
+- No se versionan secrets, account keys ni connection strings.
+- `raw-unmasked` no existe en `staging`.
+
+Pendiente: migrar el endpoint a Entra ID/Easy Auth o API Management si el equipo aprueba ese modelo.
+
+## Limpieza De Recursos Legacy
+
+El inventario activo esta en [`legacy-resource-inventory.md`](legacy-resource-inventory.md). No borrar recursos Azure legacy sin aprobacion explicita.
+
+La ruta Container Apps/ACR del PoC anterior no forma parte del IaC activo. En `staging`, los recursos legacy ya fueron eliminados:
+
+- `job-pricing-mlops-staging`
+- `cae-pricing-mlops-staging`
+- `acr-pricing-mlops-legacy-<suffix>`
+- `id-pricing-mlops-job-staging-legacy-legacy`
+
+Si reaparecen en otro ambiente, borrarlos solo despues de confirmar que Function + AML + Storage siguen operando.
+
+Orden seguro:
+
+```bash
+az containerapp job delete --resource-group rg-pricing-mlops-staging --name job-pricing-mlops-staging --yes
+az containerapp env delete --resource-group rg-pricing-mlops-staging --name cae-pricing-mlops-staging --yes
+az acr delete --resource-group rg-pricing-mlops-staging --name acr-pricing-mlops-legacy-<suffix> --yes
+az identity delete --resource-group rg-pricing-mlops-staging --name id-pricing-mlops-job-staging-legacy-legacy
+```
+
+No borrar ``; es el ACR asociado al runtime de Azure ML, no el ACR legacy de Container Apps.
+
+## Retencion Recomendada
+
+No borrar containers internos actuales de Azure ML automaticamente. Primero clasificar:
+
+| Clase | Ejemplos | Retencion recomendada |
+|---|---|---|
+| Inputs masked | `raw-masked` | Conservacion explicita por dataset aprobado. |
+| Outputs funcionales | `runs`, `snapshots`, `drift-logs`, `reports`, `artifacts`, `curated` | Conservar ultimos N runs o ultimos X dias segun necesidad academica/operativa. |
+| AML runtime artifacts | `azureml`, `azureml-environments`, `azureml-blobstore-*`, `snapshotzips`, `revisions`, `aml-environment-image-build` | Conservar X dias despues de confirmar que ningun job activo depende de ellos. |
+| Logs diagnosticos | `insights-logs-*`, `insights-metrics-*` | Conservar X dias para troubleshooting y costo bajo. |
+
+Despues del cutover a workspace v2, los containers AML internos que quedaron en `<mlops-storage-account>` son candidatos a limpieza futura solo con aprobacion explicita. Mantenerlos mientras el workspace legacy exista o pueda usarse para rollback.
+
+## Clasificacion Actual De Containers
+
+En `<mlops-storage-account>`, conservar como funcionales MLOps:
 
 ```text
-src/functions/pricing-mlops-hello/
+raw-masked
+curated
+baseline
+runs
+snapshots
+drift-logs
+reports
+artifacts
 ```
 
-Validar localmente:
+`input` queda como container reservado/historico de IaC; revisarlo antes de cualquier borrado.
 
-```bash
-npm test --prefix src/functions/pricing-mlops-hello
-```
-
-Publicar a sandbox:
-
-```bash
-scripts/publish-hello-function.sh sandbox-david
-```
-
-Endpoint esperado despues de publicar:
+En `<mlops-storage-account>`, no borrar mientras exista el workspace legacy:
 
 ```text
-https://<function-app-name>.azurewebsites.net/api/health
+<legacy-workspace-guid>-*
+aml-environment-image-build
+azureml
+azureml-blobstore-<legacy-workspace-guid>
+azureml-environments
+revisions
+snapshotzips
 ```
 
-Debe responder JSON con `status=ok`, `message=hello world`, `workload=pricing-mlops` y el ambiente.
-
-## Configurar GitHub Actions
-
-Crear GitHub environments para los ambientes que se quieran operar desde Actions:
+Logs diagnosticos en `<mlops-storage-account>`, candidatos a lifecycle despues de acordar retencion:
 
 ```text
-staging
-sandbox-david
-validation
+insights-logs-auditevent
+insights-metrics-pt1m
 ```
 
-Variables por environment:
+En `stamlpmlopsstg<suffix>`, los containers AML runtime esperados para el workspace v2 activo incluyen:
 
 ```text
-AZURE_CLIENT_ID=<output githubActionsClientId>
-AZURE_TENANT_ID=<tenant id>
-AZURE_SUBSCRIPTION_ID=<subscription id>
-AZURE_STORAGE_ACCOUNT=<output storageAccountName>
+azureml
+azureml-blobstore-<active-workspace-guid>
+<active-workspace-guid>-*
+revisions
+snapshots
+snapshotzips
 ```
 
-`platform-infra.yml` se comporta asi:
+Propuesta de lifecycle pendiente de aprobacion:
 
-- En `pull_request` solo compila Bicep y parameter files.
-- En `pull_request` no hace `azure/login`.
-- En `pull_request` no ejecuta `az deployment`.
-- En `workflow_dispatch`, `operation=validate` solo valida.
-- En `workflow_dispatch`, `operation=what-if` inicia sesion con OIDC y ejecuta `scripts/what-if.sh <environment>`.
-- En `workflow_dispatch`, `operation=deploy` ejecuta primero what-if y luego `scripts/deploy.sh <environment>`.
-
-Para ejecutar `what-if` y `deploy` desde GitHub Actions con templates a scope subscription, la identidad OIDC de cada GitHub environment necesita `Contributor` sobre la subscription.
-
-## Corrida MLOps staging
-
-Local:
-
-```bash
-scripts/run-mlops-staging.py --environment staging
-```
-
-GitHub:
-
-- Abrir Actions.
-- Ejecutar `mlops`.
-- Usar `upload_to_azure=true` solo cuando el Storage ya exista y OIDC este configurado.
-
-## Revision operativa
-
-Cada semana:
-
-- revisar costos;
-- confirmar consumo contra el credito de 200 USD;
-- borrar sandboxes;
-- revisar ultimas corridas yellow/red;
-- revisar si algun experimento debe pasar a IaC.
-
-## Cuando crear prod
-
-Crear prod solo cuando exista ejecucion real con impacto operativo o de negocio. Antes de eso, `prod` debe ser documentacion conceptual.
+| Clase | Accion propuesta |
+|---|---|
+| `raw-masked` | Conservar explicitamente por dataset aprobado. |
+| Outputs funcionales | Conservar ultimos N runs o X dias, segun necesidad academica/operativa. |
+| AML runtime artifacts en `stamlpmlopsstg<suffix>` | Retener X dias despues de confirmar que ningun job activo depende de ellos. |
+| AML legacy en `<mlops-storage-account>` | Retener hasta retirar workspace legacy y pedir aprobacion explicita de borrado. |
+| Logs diagnosticos | Retener X dias para troubleshooting de bajo costo. |

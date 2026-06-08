@@ -10,8 +10,9 @@ param projectName string = 'pricing-mlops'
 @description('Operational environment.')
 @allowed([
   'staging'
-  'sandbox-david'
+  'sandbox-local'
   'validation'
+  'data-lab'
 ])
 param environmentName string = 'staging'
 
@@ -48,6 +49,8 @@ param sharedOwner string = 'team46'
 @description('Storage containers used by the MLOps flow.')
 param storageContainers array = [
   'input'
+  'raw-masked'
+  'curated'
   'baseline'
   'runs'
   'snapshots'
@@ -56,20 +59,65 @@ param storageContainers array = [
   'artifacts'
 ]
 
-@description('Deploy the hello world Function App for the Pricing MLOps workload.')
-param enableHelloFunction bool = true
+@description('Deploy the Function orchestrator for the Pricing MLOps workload.')
+param enableFunctionOrchestrator bool = true
 
-@description('App Service Plan SKU name for the hello Function App. Default is Basic B1 because Consumption and Free quotas may be unavailable in student subscriptions.')
-param functionPlanSkuName string = 'B1'
+@description('Azure region for the Function orchestrator. Empty value uses the workload location.')
+param functionLocation string = ''
 
-@description('App Service Plan SKU tier for the hello Function App.')
-param functionPlanSkuTier string = 'Basic'
+@description('Deploy Azure Machine Learning as the primary ML compute control plane.')
+param enableAzureMl bool = false
 
-@description('App Service Plan SKU size for the hello Function App.')
-param functionPlanSkuSize string = 'B1'
+@description('Use the v2 Azure ML workspace for staging cutover while preserving the original workspace as legacy.')
+param useAzureMlWorkspaceV2 bool = false
 
-@description('App Service Plan instance count for the hello Function App.')
+@description('Explicit Azure ML workspace v2 name. Empty value uses the environment-aware default.')
+param azureMlWorkspaceV2Name string = ''
+
+@description('Existing Azure ML associated Container Registry name. Set after Azure ML creates one automatically, or leave empty for first create.')
+param azureMlContainerRegistryName string = ''
+
+@description('App Service Plan SKU name for the Function App. Y1 is Azure Functions Consumption.')
+param functionPlanSkuName string = 'Y1'
+
+@description('App Service Plan SKU tier for the Function orchestrator.')
+param functionPlanSkuTier string = 'Dynamic'
+
+@description('App Service Plan SKU size for the Function orchestrator.')
+param functionPlanSkuSize string = 'Y1'
+
+@description('App Service Plan instance count for the Function orchestrator.')
 param functionPlanCapacity int = 1
+
+@description('Create Event Grid BlobCreated trigger for automatic model flow runs.')
+param enableBlobCreatedEventTrigger bool = true
+
+@description('Create Function Managed Identity Operator assignment over Azure ML job identity.')
+param enableFunctionManagedIdentityOperator bool = true
+
+@description('Model repo ref packaged and recorded by the MLOps runtime.')
+param modelRepoRef string = 'PoC/model-flow-template'
+
+@description('Deploy Azure SQL Serverless audit metadata spine for Pricing MLOps.')
+param enableSqlAudit bool = false
+
+@description('Azure region for Azure SQL audit resources. Empty value uses workload location.')
+param sqlAuditLocation string = ''
+
+@description('Azure SQL audit server name. Empty value uses an environment-aware generated name.')
+param sqlAuditServerName string = ''
+
+@description('Azure SQL audit database name.')
+param sqlAuditDatabaseName string = 'pricing_mlops_audit'
+
+@description('Microsoft Entra administrator display/login name for Azure SQL.')
+param sqlEntraAdministratorLogin string = ''
+
+@description('Microsoft Entra administrator object id for Azure SQL.')
+param sqlEntraAdministratorObjectId string = ''
+
+@description('Allow Azure platform services to reach SQL for staging MVP without private endpoints.')
+param sqlAllowAzureServices bool = true
 
 @description('GitHub repository in org/repo format. Empty value skips workload role assignments.')
 param githubRepository string = ''
@@ -80,6 +128,20 @@ param githubEnvironment string = environmentName
 
 @description('Use the GitHub Actions OIDC identity created by foundation.')
 param enableGithubActionsIdentity bool = !empty(githubRepository)
+
+@description('Accepted for compatibility with shared environment parameter files. Subscription-level Contributor is managed by foundation only.')
+#disable-next-line no-unused-params
+param enableGithubSubscriptionContributor bool = enableGithubActionsIdentity
+
+@description('Functional model GitHub repository in org/repo format. Empty value skips model repo workload role assignments.')
+param modelGithubRepository string = ''
+
+@description('GitHub environment used by the functional model repo.')
+#disable-next-line no-unused-params
+param modelGithubEnvironment string = githubEnvironment
+
+@description('Use the separate GitHub Actions OIDC identity created for the functional model repo.')
+param enableModelGithubActionsIdentity bool = !empty(modelGithubRepository)
 
 @description('Monthly budget amount in subscription currency. Kept here so parameter files can be shared with foundation.')
 #disable-next-line no-unused-params
@@ -98,10 +160,35 @@ var workloadUniqueSuffix = uniqueString(subscription().id, workloadResourceGroup
 var shortSuffix = take(workloadUniqueSuffix, 6)
 
 var storageAccountName = take('stpmlops${workloadUniqueSuffix}', 24)
+var azureMlRuntimeEnvironmentToken = environmentName == 'staging' ? 'stg' : environmentName == 'validation' ? 'val' : environmentName == 'data-lab' ? 'dlab' : 'sbx'
+var azureMlRuntimeStorageAccountName = take('stamlpmlops${azureMlRuntimeEnvironmentToken}${shortSuffix}', 24)
 var functionHostStorageAccountName = take('stfn${workloadUniqueSuffix}', 24)
 var hostingPlanName = 'asp-${projectName}-${environmentName}'
 var functionAppName = take('func-${projectName}-${replace(environmentName, 'sandbox-', 'sbx-')}-${shortSuffix}', 60)
+var effectiveFunctionLocation = empty(functionLocation) ? location : functionLocation
+var azureMlLegacyWorkspaceName = take('mlw-${projectName}-${environmentName}-${shortSuffix}', 33)
+var defaultAzureMlWorkspaceV2Name = take('mlw-${projectName}-${azureMlRuntimeEnvironmentToken}-v2-${shortSuffix}', 33)
+var activeAzureMlWorkspaceName = useAzureMlWorkspaceV2 ? (empty(azureMlWorkspaceV2Name) ? defaultAzureMlWorkspaceV2Name : azureMlWorkspaceV2Name) : azureMlLegacyWorkspaceName
+var azureMlApplicationInsightsName = take('appi-${projectName}-${environmentName}-${shortSuffix}', 255)
+var azureMlJobIdentityName = 'id-${projectName}-aml-${environmentName}'
+var defaultSqlAuditServerName = take('sql-${projectName}-${environmentName}-${shortSuffix}', 63)
+var activeSqlAuditServerName = empty(sqlAuditServerName) ? defaultSqlAuditServerName : sqlAuditServerName
+var effectiveSqlAuditLocation = empty(sqlAuditLocation) ? location : sqlAuditLocation
 var githubActionsIdentityName = 'id-gha-${projectName}-${environmentName}'
+var modelGithubActionsIdentityName = 'id-gha-${projectName}-model-${environmentName}'
+var keyVaultName = take('kv-pmlops-${uniqueString(subscription().id, sharedResourceGroupName)}', 24)
+var dataRoot = 'https://${storageAccountName}.dfs.${environment().suffixes.storage}'
+var containerNames = {
+  rawMasked: 'raw-masked'
+  input: 'input'
+  curated: 'curated'
+  baseline: 'baseline'
+  runs: 'runs'
+  snapshots: 'snapshots'
+  driftLogs: 'drift-logs'
+  reports: 'reports'
+  artifacts: 'artifacts'
+}
 
 var workloadTags = union({
   project: projectName
@@ -119,6 +206,11 @@ resource githubActionsIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities
   name: githubActionsIdentityName
 }
 
+resource modelGithubActionsIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = if (enableModelGithubActionsIdentity) {
+  scope: resourceGroup(sharedResourceGroupName)
+  name: modelGithubActionsIdentityName
+}
+
 module storage 'modules/storage.bicep' = {
   name: 'pricing-mlops-storage-${uniqueString(workloadResourceGroupName)}'
   scope: resourceGroup(workloadResourceGroupName)
@@ -130,27 +222,142 @@ module storage 'modules/storage.bicep' = {
     githubActionsPrincipalId: enableGithubActionsIdentity ? githubActionsIdentity!.properties.principalId : ''
     githubActionsIdentityName: githubActionsIdentityName
     enableGithubActionsIdentity: enableGithubActionsIdentity
+    modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
+    modelGithubActionsIdentityName: modelGithubActionsIdentityName
+    enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
   }
 }
 
-module helloFunction 'modules/hello-function.bicep' = if (enableHelloFunction) {
-  name: 'pricing-mlops-hello-function-${uniqueString(workloadResourceGroupName)}'
+module functionOrchestrator 'modules/function-orchestrator.bicep' = if (enableFunctionOrchestrator) {
+  name: 'pricing-mlops-function-orchestrator-${uniqueString(workloadResourceGroupName)}'
   scope: resourceGroup(workloadResourceGroupName)
+  dependsOn: [
+    azureMl
+  ]
   params: {
-    location: location
+    location: effectiveFunctionLocation
     tags: workloadTags
     environmentName: environmentName
     functionAppName: functionAppName
     hostingPlanName: hostingPlanName
     functionHostStorageAccountName: functionHostStorageAccountName
+    workloadStorageAccountName: storage.outputs.storageAccountName
+    azureMlWorkspaceName: activeAzureMlWorkspaceName
+    azureMlWorkspaceResourceGroupName: workloadResourceGroupName
+    azureMlJobIdentityClientId: enableAzureMl ? azureMlJobIdentity!.outputs.clientId : ''
+    azureMlJobIdentityName: enableAzureMl ? azureMlJobIdentityName : ''
+    sqlAuditEnabled: enableSqlAudit
+    sqlAuditServerName: enableSqlAudit ? sqlAudit!.outputs.fullyQualifiedDomainName : ''
+    sqlAuditDatabaseName: enableSqlAudit ? sqlAudit!.outputs.databaseName : ''
+    modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
+    enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
     functionPlanSkuName: functionPlanSkuName
     functionPlanSkuTier: functionPlanSkuTier
     functionPlanSkuSize: functionPlanSkuSize
     functionPlanCapacity: functionPlanCapacity
+    enableBlobCreatedEventTrigger: enableBlobCreatedEventTrigger
+    enableFunctionManagedIdentityOperator: enableFunctionManagedIdentityOperator
+    modelRepoGithub: empty(modelGithubRepository) ? 'tecmx-team46-pricing/pricing-mlops' : modelGithubRepository
+    modelRepoRef: modelRepoRef
+  }
+}
+
+module sqlAudit 'modules/sql-audit.bicep' = if (enableSqlAudit) {
+  name: 'pricing-mlops-sql-audit-${uniqueString(workloadResourceGroupName)}'
+  scope: resourceGroup(workloadResourceGroupName)
+  params: {
+    location: effectiveSqlAuditLocation
+    tags: union(workloadTags, {
+      purpose: 'mlops-audit'
+      data_classification: 'metadata-only'
+    })
+    serverName: activeSqlAuditServerName
+    databaseName: sqlAuditDatabaseName
+    entraAdministratorLogin: sqlEntraAdministratorLogin
+    entraAdministratorObjectId: sqlEntraAdministratorObjectId
+    allowAzureServices: sqlAllowAzureServices
+  }
+}
+
+module azureMlJobIdentity 'modules/managed-identity.bicep' = if (enableAzureMl) {
+  name: 'pricing-mlops-aml-identity-${uniqueString(workloadResourceGroupName)}'
+  scope: resourceGroup(workloadResourceGroupName)
+  params: {
+    location: location
+    tags: union(workloadTags, {
+      purpose: 'ml-compute'
+      compute_target: 'azure-ml'
+    })
+    identityName: azureMlJobIdentityName
+  }
+}
+
+module azureMlRuntimeStorage 'modules/azure-ml-runtime-storage.bicep' = if (enableAzureMl) {
+  name: 'pricing-mlops-aml-runtime-storage-${uniqueString(workloadResourceGroupName)}'
+  scope: resourceGroup(workloadResourceGroupName)
+  params: {
+    location: location
+    tags: workloadTags
+    storageAccountName: azureMlRuntimeStorageAccountName
+  }
+}
+
+module azureMlKeyVaultAccess 'modules/key-vault-identity-access.bicep' = if (enableAzureMl) {
+  name: 'pricing-mlops-aml-keyvault-access-${uniqueString(workloadResourceGroupName)}'
+  scope: resourceGroup(sharedResourceGroupName)
+  params: {
+    keyVaultName: keyVaultName
+    principalId: azureMlJobIdentity!.outputs.principalId
+  }
+}
+
+module azureMl 'modules/azure-ml.bicep' = if (enableAzureMl) {
+  name: 'pricing-mlops-azure-ml-${uniqueString(workloadResourceGroupName)}'
+  scope: resourceGroup(workloadResourceGroupName)
+  dependsOn: [
+    azureMlKeyVaultAccess
+  ]
+  params: {
+    location: location
+    tags: union(workloadTags, {
+      purpose: 'ml-compute'
+      compute_target: 'azure-ml'
+    })
+    azureMlWorkspaceName: activeAzureMlWorkspaceName
+    applicationInsightsName: azureMlApplicationInsightsName
+    azureMlJobIdentityId: azureMlJobIdentity!.outputs.identityId
+    azureMlJobIdentityName: azureMlJobIdentity!.outputs.identityName
+    azureMlJobIdentityPrincipalId: azureMlJobIdentity!.outputs.principalId
+    azureMlJobIdentityClientId: azureMlJobIdentity!.outputs.clientId
+    azureMlContainerRegistryName: azureMlContainerRegistryName
+    storageAccountName: storage.outputs.storageAccountName
+    azureMlRuntimeStorageAccountName: azureMlRuntimeStorage!.outputs.storageAccountName
+    keyVaultResourceGroupName: sharedResourceGroupName
+    keyVaultName: keyVaultName
+    logAnalyticsResourceGroupName: sharedResourceGroupName
+    logAnalyticsWorkspaceName: 'log-${projectName}-shared'
+    modelGithubActionsPrincipalId: enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.principalId : ''
+    enableModelGithubActionsIdentity: enableModelGithubActionsIdentity
   }
 }
 
 output workloadResourceGroupName string = workloadResourceGroupName
 output storageAccountName string = storage.outputs.storageAccountName
-output functionAppName string = enableHelloFunction ? helloFunction!.outputs.functionAppName : ''
-output functionHostStorageAccountName string = enableHelloFunction ? helloFunction!.outputs.functionHostStorageAccountName : ''
+output azureMlRuntimeStorageAccountName string = enableAzureMl ? azureMlRuntimeStorage!.outputs.storageAccountName : ''
+output dataRoot string = dataRoot
+output storageDfsEndpoint string = dataRoot
+output containerNames object = containerNames
+output modelGithubActionsClientId string = enableModelGithubActionsIdentity ? modelGithubActionsIdentity!.properties.clientId : ''
+output functionAppName string = enableFunctionOrchestrator ? functionOrchestrator!.outputs.functionAppName : ''
+output functionHealthEndpoint string = enableFunctionOrchestrator ? 'https://${functionOrchestrator!.outputs.functionAppName}.azurewebsites.net/api/health' : ''
+output functionHostStorageAccountName string = enableFunctionOrchestrator ? functionOrchestrator!.outputs.functionHostStorageAccountName : ''
+output azureMlLegacyWorkspaceName string = azureMlLegacyWorkspaceName
+output azureMlWorkspaceV2Name string = useAzureMlWorkspaceV2 ? activeAzureMlWorkspaceName : ''
+output azureMlWorkspaceName string = enableAzureMl ? azureMl!.outputs.azureMlWorkspaceName : ''
+output azureMlWorkspaceId string = enableAzureMl ? azureMl!.outputs.azureMlWorkspaceId : ''
+output azureMlApplicationInsightsName string = enableAzureMl ? azureMl!.outputs.applicationInsightsName : ''
+output azureMlJobIdentityName string = enableAzureMl ? azureMlJobIdentity!.outputs.identityName : ''
+output azureMlJobIdentityClientId string = enableAzureMl ? azureMlJobIdentity!.outputs.clientId : ''
+output sqlAuditServerName string = enableSqlAudit ? sqlAudit!.outputs.serverName : ''
+output sqlAuditFullyQualifiedDomainName string = enableSqlAudit ? sqlAudit!.outputs.fullyQualifiedDomainName : ''
+output sqlAuditDatabaseName string = enableSqlAudit ? sqlAudit!.outputs.databaseName : ''

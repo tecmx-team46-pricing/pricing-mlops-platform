@@ -104,12 +104,67 @@ def validate_storage_layout() -> None:
         raise SystemExit(f"storage_layout.json missing containers: {sorted(missing)}")
 
 
+def validate_azure_ml_runtime_storage_contract() -> None:
+    workload_main = (ROOT / "infra" / "workloads" / "pricing-mlops" / "main.bicep").read_text(
+        encoding="utf-8"
+    )
+    architecture_doc = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
+
+    required_workload_terms = {
+        "azureMlRuntimeStorageAccountName",
+        "azureMlRuntimeStorage",
+        "azureMlRuntimeStorageAccountName string",
+    }
+    missing_workload_terms = {
+        term for term in required_workload_terms if term not in workload_main
+    }
+    if missing_workload_terms:
+        raise SystemExit(
+            "main.bicep missing Azure ML runtime storage contract terms: "
+            f"{sorted(missing_workload_terms)}"
+        )
+
+    required_doc_terms = {
+        "Storage runtime Azure ML",
+        "azure-ml-runtime",
+        "workspace v2",
+    }
+    missing_doc_terms = {term for term in required_doc_terms if term not in architecture_doc}
+    if missing_doc_terms:
+        raise SystemExit(
+            "docs/architecture.md missing Azure ML runtime storage documentation: "
+            f"{sorted(missing_doc_terms)}"
+        )
+
+
+def validate_sql_audit_cost_controls() -> None:
+    sql_audit_module = (
+        ROOT / "infra" / "workloads" / "pricing-mlops" / "modules" / "sql-audit.bicep"
+    ).read_text(encoding="utf-8")
+
+    required_terms = {
+        "param minCapacity string = '0.5'",
+        "@allowed([",
+        "'0.5'",
+        "param autoPauseDelay int = 15",
+        "minCapacity: json(minCapacity)",
+    }
+    missing_terms = {term for term in required_terms if term not in sql_audit_module}
+    if missing_terms:
+        raise SystemExit(
+            "sql-audit.bicep missing low-cost serverless defaults: "
+            f"{sorted(missing_terms)}"
+        )
+
+
 def main() -> None:
     for schema_name, expected_required in SCHEMAS.items():
         validate_schema(schema_name, expected_required)
 
     validate_thresholds()
     validate_storage_layout()
+    validate_azure_ml_runtime_storage_contract()
+    validate_sql_audit_cost_controls()
     print("MLOps contracts OK")
 
 
