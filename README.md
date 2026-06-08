@@ -109,19 +109,37 @@ La Function App usa otro Storage (`stfn<generated-suffix>`) para `AzureWebJobsSt
 
 ## Documentacion
 
+La documentacion academica se publica con MkDocs Material y GitHub Pages. Para previsualizarla localmente:
+
+```bash
+python -m pip install -r requirements-docs.txt
+python -m mkdocs serve
+```
+
+Para validar el sitio antes de abrir un PR:
+
+```bash
+python -m mkdocs build --strict
+```
+
+Cuando GitHub Pages quede habilitado en el repo, el sitio se publicara en:
+
+```text
+https://tecmx-team46-pricing.github.io/pricing-mlops-platform/
+```
+
 Leer en este orden:
 
 1. [`docs/index.md`](docs/index.md)
-2. [`docs/architecture.md`](docs/architecture.md)
-3. [`docs/operations.md`](docs/operations.md)
-4. [`docs/azure-services.md`](docs/azure-services.md)
-5. [`docs/github-actions.md`](docs/github-actions.md)
-6. [`docs/platform-model-operating-contract.md`](docs/platform-model-operating-contract.md)
-7. [`docs/sql-audit-runbook.md`](docs/sql-audit-runbook.md)
-8. [`docs/data-governance-plan.md`](docs/data-governance-plan.md)
-9. [`docs/roadmap.md`](docs/roadmap.md)
-10. [`docs/azure-ml-tooling-decision.md`](docs/azure-ml-tooling-decision.md)
-11. [`docs/original/technical-design-original.md`](docs/original/technical-design-original.md)
+2. [`docs/contexto-problema.md`](docs/contexto-problema.md)
+3. [`docs/objetivos-alcance.md`](docs/objetivos-alcance.md)
+4. [`docs/reporte-avance-proyecto-integrador.md`](docs/reporte-avance-proyecto-integrador.md)
+5. [`docs/architecture.md`](docs/architecture.md)
+6. [`docs/project-structure.md`](docs/project-structure.md)
+7. [`docs/operations.md`](docs/operations.md)
+8. [`docs/evidencia.md`](docs/evidencia.md)
+9. [`docs/data-governance-plan.md`](docs/data-governance-plan.md)
+10. [`docs/roadmap.md`](docs/roadmap.md)
 
 ## Fuera De Alcance
 

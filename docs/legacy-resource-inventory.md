@@ -27,7 +27,7 @@ Este documento separa recursos activos, legacy conservados y recursos legacy eli
 |---|---|---|---|
 | `cae-pricing-mlops-staging` | Container Apps Environment | No existe | `az containerapp env delete --resource-group rg-pricing-mlops-staging --name cae-pricing-mlops-staging --yes` |
 | `job-pricing-mlops-staging` | Container Apps Job | No existe | `az containerapp job delete --resource-group rg-pricing-mlops-staging --name job-pricing-mlops-staging --yes` |
-| `id-pricing-mlops-job-staging-legacy` | Managed Identity | No existe | `az identity delete --resource-group rg-pricing-mlops-staging --name id-pricing-mlops-job-staging-legacy` |
+| `id-pricing-mlops-job-staging-legacy-legacy` | Managed Identity | No existe | `az identity delete --resource-group rg-pricing-mlops-staging --name id-pricing-mlops-job-staging-legacy-legacy` |
 | `acr-pricing-mlops-legacy-<suffix>` | Azure Container Registry | No existe | `az acr delete --resource-group rg-pricing-mlops-staging --name acr-pricing-mlops-legacy-<suffix> --yes` |
 
 ## Containers Observados

@@ -1,32 +1,66 @@
-# Documentation Index
+# Plataforma MLOps Para Pricing Intelligence
 
-Ruta corta para entender el repo sin leer planes historicos.
+Documentacion academica del proyecto integrador Team 46.
 
-| Documento | Uso |
+## Resumen
+
+Este proyecto implementa una base operativa MLOps para un caso de Pricing Intelligence en Azure. La plataforma separa infraestructura, orquestacion, ejecucion del flujo ML, evidencia y gobierno de datos para que las corridas sean trazables, reproducibles y auditables.
+
+El MVP actual valida el approach:
+
+```text
+Azure Function -> Azure ML Pipeline -> Storage/ADLS -> Azure SQL audit
+```
+
+GitHub Actions queda como mecanismo de validacion y despliegue controlado. No opera el flujo ML ni ejecuta el modelo.
+
+## Que Se Construyo
+
+| Area | Resultado |
 |---|---|
-| [`../README.md`](../README.md) | Resumen, comandos principales y alcance. |
-| [`architecture.md`](architecture.md) | Arquitectura actual, ambientes, servicios Azure y drift contra lo desplegado. |
-| [`operations.md`](operations.md) | Runbook de validacion, deploy, portal, costos y operacion diaria. |
-| [`sql-audit-runbook.md`](sql-audit-runbook.md) | Conexion, auth, queries y migraciones de Azure SQL audit. |
-| [`github-actions.md`](github-actions.md) | Workflows vigentes, OIDC y reglas de PR/deploy. |
-| [`platform-model-operating-contract.md`](platform-model-operating-contract.md) | Contrato entre plataforma y repo funcional. |
-| [`legacy-resource-inventory.md`](legacy-resource-inventory.md) | Inventario de recursos activos, legacy conservados y legacy eliminados. |
-| [`../mlops/docs/function-orchestrator.md`](../mlops/docs/function-orchestrator.md) | Runtime Azure Function y empaquetado. |
-| [`../mlops/docs/azure-ml-job-contract.md`](../mlops/docs/azure-ml-job-contract.md) | Contrato del pipeline/job Azure ML. |
-| [`azure-ml-tooling-decision.md`](azure-ml-tooling-decision.md) | Decisiones sobre Pipeline, Data Assets, endpoints, monitoring y tooling AML. |
-| [`data-governance-plan.md`](data-governance-plan.md) | Zonas de datos, acceso y retencion. |
-| [`roadmap.md`](roadmap.md) | Siguientes pasos y fases. |
-| [`reporte-avance-proyecto-integrador.md`](reporte-avance-proyecto-integrador.md) | Reporte academico de avance; conserva el contexto historico de MVP. |
-| [`original/technical-design-original.md`](original/technical-design-original.md) | Diseno tecnico original del PDF, preservado como referencia historica. |
+| Plataforma Azure | Infraestructura reproducible con Bicep para resource groups, Storage, Azure ML, Azure Function, identidades, SQL audit y observabilidad base. |
+| Orquestacion | Azure Function con endpoint HTTP y trigger Event Grid para disparar corridas de Azure ML. |
+| Ejecucion ML | Pipeline Azure ML con tres pasos: `validate_prepare`, `score_evaluate` y `publish_outputs`. |
+| Evidencia | Outputs versionados en Storage: logs, snapshots, drift logs, reportes, curated data y artefactos. |
+| Auditoria | Azure SQL metadata-only para consultar corridas y snapshots sin guardar datasets completos. |
+| Gobierno | Separacion entre datos masked y unmasked; `staging` no guarda `raw-unmasked`. |
 
-## Repos
+## Ruta Recomendada De Lectura
+
+1. [Contexto y problema](contexto-problema.md)
+2. [Objetivos y alcance](objetivos-alcance.md)
+3. [Reporte de avance](reporte-avance-proyecto-integrador.md)
+4. [Arquitectura](architecture.md)
+5. [Estructura del repo](project-structure.md)
+6. [Operacion](operations.md)
+7. [Evidencia del MVP](evidencia.md)
+8. [Gobierno de datos](data-governance-plan.md)
+9. [Roadmap](roadmap.md)
+
+## Repositorios Del Proyecto
 
 | Repo | Rol |
 |---|---|
-| `pricing-mlops-platform` | Azure, IaC, RBAC/OIDC, Storage, Azure ML, Function, runtime MLOps y runbooks. |
-| `pricing-mlops` | Repo funcional/data science: validacion, curated, scoring, drift y reportes. |
-| `pricing-mlops-eda` | Referencia historica/EDA. No es repo operativo. |
+| `pricing-mlops-platform` | Plataforma Azure, IaC, RBAC/OIDC, Storage, Azure ML, Function, runtime MLOps y documentacion operativa. |
+| `pricing-mlops` | Codigo funcional/data science: validacion, curated, scoring, drift y reportes. |
+| `pricing-mlops-eda` | Referencia historica y analisis exploratorio. No es repo operativo. |
 
-## Archivo
+## Estado Del MVP
 
-Los documentos redundantes y planes largos se retiraron de la ruta activa. Si hace falta consultar un estado anterior, usar el historial de Git. [`archive/README.md`](archive/README.md) conserva esta regla.
+El MVP no pretende representar produccion real. Su objetivo es demostrar una base MLOps defendible para una entrega de maestria:
+
+- hay infraestructura reproducible;
+- hay un flujo end-to-end ejecutable en Azure;
+- hay separacion clara entre plataforma y codigo funcional;
+- hay evidencia versionada de corridas;
+- hay controles para no operar con datos unmasked en `staging`;
+- hay un roadmap claro para evolucionar hacia una arquitectura mas completa.
+
+## Fuera De Alcance Actual
+
+- Produccion real.
+- Endpoints online de Azure ML.
+- ADF como orquestador principal.
+- Private Endpoints y Hub-Spoke.
+- Modelo productivo definitivo.
+- Datos `raw-unmasked` en `staging`.

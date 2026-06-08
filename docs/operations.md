@@ -147,7 +147,7 @@ La ruta Container Apps/ACR del PoC anterior no forma parte del IaC activo. En `s
 - `job-pricing-mlops-staging`
 - `cae-pricing-mlops-staging`
 - `acr-pricing-mlops-legacy-<suffix>`
-- `id-pricing-mlops-job-staging-legacy`
+- `id-pricing-mlops-job-staging-legacy-legacy`
 
 Si reaparecen en otro ambiente, borrarlos solo despues de confirmar que Function + AML + Storage siguen operando.
 
@@ -157,7 +157,7 @@ Orden seguro:
 az containerapp job delete --resource-group rg-pricing-mlops-staging --name job-pricing-mlops-staging --yes
 az containerapp env delete --resource-group rg-pricing-mlops-staging --name cae-pricing-mlops-staging --yes
 az acr delete --resource-group rg-pricing-mlops-staging --name acr-pricing-mlops-legacy-<suffix> --yes
-az identity delete --resource-group rg-pricing-mlops-staging --name id-pricing-mlops-job-staging-legacy
+az identity delete --resource-group rg-pricing-mlops-staging --name id-pricing-mlops-job-staging-legacy-legacy
 ```
 
 No borrar ``; es el ACR asociado al runtime de Azure ML, no el ACR legacy de Container Apps.

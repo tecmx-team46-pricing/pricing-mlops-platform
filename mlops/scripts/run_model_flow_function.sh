@@ -10,7 +10,7 @@ SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID:-}"
 RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-rg-pricing-mlops-${ENVIRONMENT}}"
 AZURE_ML_WORKSPACE="${AZURE_ML_WORKSPACE:-}"
 AZURE_FUNCTION_APP="${AZURE_FUNCTION_APP:-}"
-AZURE_STORAGE_ACCOUNT="${AZURE_STORAGE_ACCOUNT:-<mlops-storage-account>}"
+AZURE_STORAGE_ACCOUNT="${AZURE_STORAGE_ACCOUNT:-}"
 RAW_MASKED_CONTAINER="${MLOPS_CONTAINER_RAW_MASKED:-raw-masked}"
 
 case "${ENVIRONMENT}" in
@@ -83,6 +83,25 @@ fi
 
 if [[ -z "${AZURE_ML_WORKSPACE}" ]]; then
   echo "Azure ML workspace not found. Set AZURE_ML_WORKSPACE." >&2
+  exit 1
+fi
+
+if [[ -z "${AZURE_STORAGE_ACCOUNT}" ]]; then
+  AZURE_STORAGE_ACCOUNT="$(az functionapp config appsettings list \
+    --resource-group "${RESOURCE_GROUP}" \
+    --name "${AZURE_FUNCTION_APP}" \
+    --query "[?name=='AZURE_STORAGE_ACCOUNT'].value | [0]" -o tsv)"
+fi
+
+if [[ -z "${AZURE_STORAGE_ACCOUNT}" ]]; then
+  AZURE_STORAGE_ACCOUNT="$(az resource list \
+    --resource-group "${RESOURCE_GROUP}" \
+    --resource-type Microsoft.Storage/storageAccounts \
+    --query "[?starts_with(name, 'stpmlops')].name | [0]" -o tsv)"
+fi
+
+if [[ -z "${AZURE_STORAGE_ACCOUNT}" ]]; then
+  echo "MLOps Storage account not found. Set AZURE_STORAGE_ACCOUNT." >&2
   exit 1
 fi
 

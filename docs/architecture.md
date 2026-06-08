@@ -75,7 +75,7 @@ La ruta activa en repo y documentacion es Function + Azure ML. La infraestructur
 | `cae-pricing-mlops-staging` | Eliminado. |
 | `job-pricing-mlops-staging` | Eliminado. |
 | `acr-pricing-mlops-legacy-<suffix>` | Eliminado. |
-| `id-pricing-mlops-job-staging-legacy` | Eliminado. |
+| `id-pricing-mlops-job-staging-legacy-legacy` | Eliminado. |
 | `` | ACR asociado a Azure ML runtime; sigue siendo necesario para AML. |
 
 No borrar ``: Azure ML lo usa como runtime interno.

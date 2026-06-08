@@ -4,7 +4,7 @@ display_name: pricing-mlops-pipeline
 experiment_name: pricing-mlops
 description: Pricing MLOps pipeline with visible validate, score, and publish components.
 inputs:
-  storage_account: <mlops-storage-account>
+  storage_account: mlopsstorageexample
   environment: staging
   run_owner: team46
   run_id: manual
