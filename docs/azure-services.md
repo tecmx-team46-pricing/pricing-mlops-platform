@@ -1,6 +1,10 @@
-# Azure Services
+# Servicios Azure
+
+Esta pagina traduce la arquitectura a recursos concretos de Azure. Su objetivo no es listar cada propiedad del deployment, sino explicar que papel cumple cada servicio dentro del MVP y que limites operativos se deben respetar.
 
 ## Staging
+
+`staging` es el ambiente principal del MVP. Ahi viven el Storage funcional, el workspace Azure ML activo, la Function orquestadora y la capa de auditoria metadata-only.
 
 | Servicio | Recurso | Rol |
 |---|---|---|
@@ -13,11 +17,11 @@
 | Event Grid subscription | `evg-func-pricing-mlops-staging-<suffix>-blob-created` | Dispara la Function para BlobCreated bajo `raw-masked/incoming/*.csv`. |
 | Table run index | `mlopsruns` | Metadata consultable de corridas, sin account keys. |
 | Azure SQL audit | `sql-pricing-mlops-staging-<suffix>` / `pricing_mlops_audit` | Espina dorsal de auditoria con metadata de corrida y snapshots. No almacena CSVs ni artifacts grandes. |
-| ACR AML | `` | Registry asociado a Azure ML runtime. |
+| ACR AML | Administrado por Azure ML | Registry asociado al runtime interno de Azure ML. No es parte de la ruta legacy de Container Apps. |
 
 ## Storage MLOps
 
-`<mlops-storage-account>` debe ser facil de leer como data lake MLOps. Containers esperados:
+`<mlops-storage-account>` es el data lake funcional. Debe ser facil de leer porque ahi se busca la evidencia de corridas y outputs aprobados. Containers esperados:
 
 ```text
 raw-masked
@@ -39,7 +43,7 @@ Seguridad:
 
 ## Storage Runtime Azure ML
 
-El Storage runtime Azure ML usa `Standard_LRS`, acceso publico deshabilitado y tags:
+El Storage runtime Azure ML existe para separar artifacts internos de Azure ML de los outputs funcionales del proyecto. Usa `Standard_LRS`, acceso publico deshabilitado y tags:
 
 ```text
 environment=staging
@@ -66,7 +70,7 @@ El workspace v2 activo usa este Storage runtime como `storageAccount`. El worksp
 
 ## Azure SQL Audit
 
-`pricing_mlops_audit` complementa Storage Blob y Table `mlopsruns`. Su alcance es metadata consultable:
+`pricing_mlops_audit` complementa Storage Blob y Table `mlopsruns`. Su alcance es metadata consultable para auditar una corrida sin convertir SQL en repositorio de datasets.
 
 - `dbo.model_run_log`
 - `dbo.model_output_snapshot_metadata`
@@ -78,6 +82,8 @@ SQL está en `centralus` porque `eastus2` rechazo nuevas altas de SQL Server par
 
 ## RBAC
 
+Los permisos se concentran en identidades administradas y OIDC. La regla practica es evitar permisos amplios de subscription para operar el flujo.
+
 | Principal | Permiso |
 |---|---|
 | Azure ML workspace v2 managed identity | Blob/File contributor en Storage runtime AML. |
@@ -88,3 +94,5 @@ SQL está en `centralus` porque `eastus2` rechazo nuevas altas de SQL Server par
 | Function managed identity | Table Data Contributor en Storage MLOps para `mlopsruns`. |
 
 No dar Owner ni Contributor de subscription para operar el flujo.
+
+Siguiente lectura recomendada: [Estructura del repo](project-structure.md) para ubicar donde vive cada parte de esta arquitectura.

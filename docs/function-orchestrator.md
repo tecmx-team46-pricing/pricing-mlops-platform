@@ -1,6 +1,8 @@
 # Function Orchestrator
 
-## Rol
+Esta pagina explica el punto de entrada operativo del MVP. La Function es la pieza que recibe una solicitud o evento, valida el contexto y decide como someter el trabajo a Azure ML.
+
+## Rol En La Arquitectura
 
 La Azure Function es el orquestador ligero del flujo MLOps. No ejecuta scoring, drift ni procesamiento pesado. Su responsabilidad es validar solicitudes o eventos, construir metadata de corrida y someter Azure ML.
 
@@ -51,3 +53,5 @@ La fuente tecnica viva se mantiene en:
 ```text
 mlops/docs/function-orchestrator.md
 ```
+
+Siguiente lectura recomendada: [Pipeline Azure ML](azure-ml-job-contract.md), para ver que ejecuta Azure ML despues de la orquestacion.

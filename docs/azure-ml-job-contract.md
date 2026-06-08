@@ -1,4 +1,6 @@
-# Azure ML Pipeline/Job Contract
+# Pipeline Azure ML
+
+Esta pagina describe el contrato entre la Function y Azure ML. La Function inyecta parametros de corrida; Azure ML ejecuta el snapshot funcional y publica outputs bajo una convencion auditable.
 
 ## Ruta Activa
 
@@ -65,3 +67,5 @@ La fuente tecnica viva se mantiene en:
 ```text
 mlops/docs/azure-ml-job-contract.md
 ```
+
+Siguiente lectura recomendada: [Contratos de datos](data-contracts.md), para entender que evidencia debe producir cada corrida.

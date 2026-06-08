@@ -1,6 +1,10 @@
-# Architecture
+# Arquitectura
 
-## Decision Actual
+La arquitectura del MVP busca resolver una necesidad concreta: ejecutar un flujo MLOps de pricing sin depender de ejecuciones manuales opacas, manteniendo evidencia versionada y separando datos funcionales de artifacts internos de plataforma.
+
+La decision principal fue mantener el flujo simple y observable. Azure Functions orquesta, Azure ML ejecuta, Storage conserva evidencia y Azure SQL audit permite consultar metadata sin almacenar datasets completos.
+
+## Decision De Arquitectura
 
 La base operativa actual usa:
 
@@ -10,6 +14,8 @@ Automatico: BlobCreated raw-masked/incoming/*.csv -> Event Grid -> Azure Functio
 ```
 
 Azure Functions orquesta y valida el request o evento. Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de outputs desde el snapshot del repo `pricing-mlops`. Storage/ADLS conserva inputs masked y evidencia versionada. Azure Table `mlopsruns` y Azure SQL audit guardan metadata consultable de corridas.
+
+Esta division evita que un solo componente haga demasiado: la Function no ejecuta el modelo, Azure ML no gobierna la infraestructura, SQL no reemplaza Storage y GitHub Actions no opera el flujo ML.
 
 La arquitectura distingue tres cuentas de Storage:
 
@@ -27,6 +33,8 @@ GitHub Actions queda para CI/CD, validacion y despliegue controlado. No es compu
 
 ## Capas
 
+El repo esta organizado por responsabilidad, no por tecnologia aislada. Cada capa responde una pregunta distinta: que se despliega, que corre, que contratos debe cumplir y como se opera.
+
 | Capa | Ruta | Responsabilidad |
 |---|---|---|
 | Foundation | `infra/foundation/` | Resource Groups, Key Vault, Log Analytics, OIDC/RBAC base y budget opcional. |
@@ -37,6 +45,8 @@ GitHub Actions queda para CI/CD, validacion y despliegue controlado. No es compu
 `pricing-mlops` queda como repo funcional/data science alineado con Cookiecutter Data Science. El script de publicacion de plataforma empaqueta un snapshot de ese repo en `pricing-mlops-source/`; el pipeline `mlops/azureml/pricing-mlops-pipeline.yml` usa `code: ../pricing-mlops-source` y muestra tres nodos: `validate_prepare`, `score_evaluate` y `publish_outputs`. El command job `mlops/azureml/pricing-mlops-job.yml` queda como fallback.
 
 ## Ambientes
+
+Los ambientes actuales estan pensados para MVP academico y validacion controlada. `staging` es el entorno operativo principal; `data-lab` es la unica zona preparada para datos unmasked o masking restringido.
 
 | Scope | Resource Group | Proposito | Datos unmasked |
 |---|---|---|---|
@@ -49,6 +59,8 @@ GitHub Actions queda para CI/CD, validacion y despliegue controlado. No es compu
 No existe `prod` en IaC, parameter files ni workflows.
 
 ## Servicios Activos
+
+La tabla siguiente resume los servicios activos relevantes. Los nombres usan placeholders cuando un recurso real incluye sufijos generados o datos que no conviene fijar en documentacion publica.
 
 | Servicio | Resource Group | Estado | Notas |
 |---|---|---|---|
@@ -76,9 +88,8 @@ La ruta activa en repo y documentacion es Function + Azure ML. La infraestructur
 | `job-pricing-mlops-staging` | Eliminado. |
 | `acr-pricing-mlops-legacy-<suffix>` | Eliminado. |
 | `id-pricing-mlops-job-staging-legacy-legacy` | Eliminado. |
-| `` | ACR asociado a Azure ML runtime; sigue siendo necesario para AML. |
 
-No borrar ``: Azure ML lo usa como runtime interno.
+El ACR asociado al runtime interno de Azure ML sigue siendo necesario para AML. No debe tratarse como el ACR legacy de Container Apps.
 
 ## RBAC
 
@@ -110,3 +121,5 @@ El repo modelo no recibe acceso a `raw-unmasked`.
 - ADF, Private Endpoints, Hub-Spoke.
 - Endpoints online AML, GPU, clusters persistentes.
 - Produccion real.
+
+Siguiente lectura recomendada: [Servicios Azure](azure-services.md) para ver como estas decisiones se reflejan en recursos concretos.

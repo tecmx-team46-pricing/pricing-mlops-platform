@@ -1,153 +1,169 @@
-# Project Structure
+# Estructura Del Proyecto
 
-Este documento explica como leer el repo `pricing-mlops-platform` sin entrar primero al detalle de Azure o de cada runbook.
+Este repo es la capa de plataforma del proyecto. No guarda el modelo de pricing como pieza principal; guarda la infraestructura, la orquestacion y la evidencia que permiten ejecutar el flujo MLOps en Azure de forma repetible.
 
-## Idea Principal
-
-Este repo no contiene principalmente el modelo de pricing. Este repo contiene la plataforma que permite operar el flujo MLOps en Azure:
+La idea corta es:
 
 ```text
 pricing-mlops-platform
--> infraestructura Azure
--> permisos e identidades
--> Azure Function orquestadora
--> definicion del pipeline/job de Azure ML
--> scripts de deploy/operacion
--> contratos, schemas y documentacion
+-> prepara Azure
+-> recibe eventos o solicitudes
+-> dispara Azure ML
+-> guarda outputs y metadata
+-> documenta como operar y auditar el flujo
 ```
 
-El codigo funcional/data science vive en el repo `pricing-mlops`. Durante la publicacion, la plataforma puede empaquetar un snapshot de ese repo para que Azure ML lo ejecute.
+El codigo funcional/data science vive en el repo `pricing-mlops`. Este repo lo empaqueta como snapshot cuando publica la Azure Function, para que Azure ML ejecute una version concreta del flujo.
 
-## Flujo Operativo
+## Mapa Mental
 
-```text
-Archivo CSV masked en Storage
--> Event Grid detecta BlobCreated
--> Azure Function recibe el evento
--> Azure Function dispara Azure ML pipeline
--> Azure ML ejecuta el codigo del modelo
--> Outputs quedan en Storage MLOps
--> Metadata queda en Table/JSON y Azure SQL audit
-```
+Piensa el repo como cuatro capas:
 
-Tambien existe una ruta manual/controlada:
-
-```text
-Operador o script
--> Azure Function /api/model-flow
--> Azure ML pipeline
--> Storage + metadata
-```
-
-## Carpetas Principales
-
-| Ruta | Rol |
-|---|---|
-| `infra/` | Infraestructura como codigo en Bicep. Define resource groups, storage, Azure ML, Function, SQL audit, RBAC/OIDC y budgets. |
-| `infra/foundation/` | Capa compartida: resource groups base, Key Vault, Log Analytics e identidades GitHub Actions/OIDC. |
-| `infra/workloads/pricing-mlops/` | Capa del workload MLOps: Storage funcional, Azure ML workspace, Function App, SQL audit y permisos. |
-| `infra/parameters/` | Parametros por ambiente: `staging`, `validation`, `data-lab` y `sandbox-local`. |
-| `mlops/` | Runtime MLOps que se publica y opera: Function, pipeline Azure ML, configs, schemas, SQL y scripts. |
-| `mlops/functions/` | Codigo de Azure Function. Orquesta requests/eventos y dispara Azure ML. |
-| `mlops/azureml/` | Definicion del pipeline/job Azure ML y ambiente de ejecucion. |
-| `mlops/configs/` | Configuracion funcional del flujo: layout de storage, thresholds y reglas ejemplo. |
-| `mlops/schemas/` | Schemas JSON de logs, snapshots y drift. |
-| `mlops/sql/` | Migraciones SQL para tablas de auditoria. |
-| `mlops/scripts/` | Scripts para publicar Function, correr el flujo y aplicar schema SQL. |
-| `scripts/` | Scripts generales de plataforma: deploy, what-if, destroy sandbox y validacion de contratos. |
-| `.github/workflows/` | Workflows de GitHub Actions para validar/desplegar infraestructura. |
-| `tests/` | Pruebas automatizadas de Function, pipeline/job y empaquetado. |
-| `docs/` | Documentacion activa, runbooks, decisiones y reportes. |
-| `src/` | Codigo legacy/minimo de ejemplo. No es la ruta operativa principal del flujo MLOps. |
-
-## Archivos Clave
-
-| Archivo | Para que sirve |
-|---|---|
-| `README.md` | Resumen principal del repo, arquitectura, comandos y ruta de lectura. |
-| `docs/index.md` | Indice de documentacion activa. |
-| `docs/architecture.md` | Arquitectura actual, servicios activos, ambientes y decisiones vigentes. |
-| `docs/azure-services.md` | Inventario y rol de servicios Azure en staging. |
-| `docs/platform-model-operating-contract.md` | Contrato entre esta plataforma y el repo funcional del modelo. |
-| `mlops/docs/function-orchestrator.md` | Como funciona la Azure Function y el empaquetado. |
-| `mlops/docs/azure-ml-job-contract.md` | Contrato del pipeline/job de Azure ML. |
-| `infra/workloads/pricing-mlops/main.bicep` | Entry point Bicep del workload MLOps. |
-| `infra/foundation/main.bicep` | Entry point Bicep de foundation/shared. |
-| `infra/parameters/staging.bicepparam` | Parametros del ambiente operativo `staging`. |
-| `mlops/functions/function_app.py` | Funcion que valida requests/eventos y envia jobs a Azure ML. |
-| `mlops/azureml/pricing-mlops-pipeline.yml` | Pipeline lineal activo de Azure ML. |
-| `mlops/azureml/pricing-mlops-job.yml` | Fallback de un solo command job. |
-| `mlops/scripts/publish_orchestrator_function.sh` | Empaqueta y publica la Function con el runtime y snapshot del repo modelo. |
-
-## Ambientes
-
-| Ambiente | Proposito | Estado esperado |
+| Capa | Donde vive | Para que sirve |
 |---|---|---|
-| `staging` | Ambiente operativo compartido para el MVP. | Activo. |
-| `validation` | No-prod controlado futuro. | Preparado, no necesariamente activo. |
-| `data-lab` | Landing restringido para datos unmasked/masking. | Preparado. |
-| `sandbox-local` | Pruebas local/admin temporales. | Preparado. |
+| Narrativa y evidencia | `docs/` | Explica el proyecto, decisiones, arquitectura, operacion, gobierno y avance academico. |
+| Infraestructura | `infra/` | Define recursos Azure con Bicep: Storage, Azure ML, Function, SQL audit, identidades y RBAC. |
+| Runtime MLOps | `mlops/` | Contiene la Function, pipeline Azure ML, configs, schemas, SQL y scripts operativos. |
+| Automatizacion | `.github/workflows/`, `scripts/`, `tests/` | Valida contratos, corre pruebas, construye docs y despliega bajo operacion controlada. |
 
-No existe `prod` en IaC, parametros ni workflows. Cuando se hable de "produccion" en conversaciones del proyecto, conviene aclarar si se refieren a produccion real o al MVP/staging operativo.
+## Flujo Del Sistema
+
+Hay dos formas de iniciar una corrida.
+
+La ruta automatica empieza cuando llega un CSV masked:
+
+```text
+raw-masked/incoming/*.csv
+-> Event Grid
+-> Azure Function
+-> Azure ML pipeline
+-> Storage MLOps + Azure SQL audit
+```
+
+La ruta manual sirve para pruebas controladas:
+
+```text
+operador/script
+-> /api/model-flow
+-> Azure Function
+-> Azure ML pipeline
+-> evidencia versionada
+```
+
+Referencias utiles:
+
+| Referencia | Que muestra |
+|---|---|
+| `README.md:7-25` | Resumen del flujo manual y automatico. |
+| `mlops/functions/function_app.py:48-115` | Entrypoints HTTP, Event Grid y healthcheck. |
+| `mlops/functions/function_app.py:178-222` | Validaciones y convencion de outputs por corrida. |
+| `mlops/azureml/pricing-mlops-pipeline.yml:25-235` | Los tres pasos del pipeline: validar, scorear y publicar. |
+
+## Donde Mirar Primero
+
+| Si quieres entender... | Empieza aqui |
+|---|---|
+| La historia del proyecto | `docs/index.md`, `docs/contexto-problema.md`, `docs/reporte-avance-proyecto-integrador.md` |
+| La arquitectura | `README.md:27-48`, `docs/architecture.md`, `docs/azure-services.md` |
+| La infraestructura Azure | `infra/workloads/pricing-mlops/main.bicep:49-103`, `infra/parameters/staging.bicepparam` |
+| La Function orquestadora | `mlops/functions/function_app.py:48-115` |
+| El pipeline Azure ML | `mlops/azureml/pricing-mlops-pipeline.yml:1-235` |
+| Los contratos de evidencia | `mlops/schemas/`, `docs/data-contracts.md` |
+| La operacion diaria | `docs/operations.md`, `mlops/scripts/` |
+| La publicacion del sitio | `mkdocs.yml:54-79`, `.github/workflows/docs.yml:33-64` |
+
+## Directorios Principales
+
+```text
+.
+├── docs/                   # Sitio academico, runbooks y decisiones
+├── infra/                  # Infraestructura Azure en Bicep
+│   ├── foundation/         # Servicios compartidos
+│   ├── parameters/         # Parametros por ambiente
+│   └── workloads/          # Workload Pricing MLOps
+├── mlops/                  # Runtime que se publica y opera
+│   ├── functions/          # Azure Function
+│   ├── azureml/            # Pipeline/job Azure ML
+│   ├── configs/            # Layout y thresholds
+│   ├── schemas/            # Schemas JSON de evidencia
+│   ├── scripts/            # Publicacion y ejecucion
+│   └── sql/                # Auditoria metadata-only
+├── scripts/                # Validacion, what-if y deploy
+├── tests/                  # Pruebas del runtime
+└── .github/workflows/      # CI/CD y GitHub Pages
+```
+
+## Archivos Que Anclan El Proyecto
+
+| Archivo | Rol |
+|---|---|
+| `README.md` | Resumen principal, arquitectura compacta, comandos y ruta de lectura. |
+| `mkdocs.yml` | Configura el sitio de documentacion y su navegacion. |
+| `.github/workflows/docs.yml` | Construye y publica GitHub Pages. |
+| `.github/workflows/platform-infra.yml` | Valida IaC/runtime y ejecuta `what-if` o deploy manual. |
+| `infra/workloads/pricing-mlops/main.bicep` | Entry point del workload MLOps en Azure. |
+| `mlops/functions/function_app.py` | Orquestador HTTP/Event Grid que somete jobs a Azure ML. |
+| `mlops/azureml/pricing-mlops-pipeline.yml` | Pipeline activo de Azure ML. |
+| `mlops/scripts/publish_orchestrator_function.sh` | Empaqueta Function + runtime + snapshot del repo modelo. |
+| `scripts/validate-mlops-contracts.py` | Valida schemas, thresholds, layout y contratos IaC/docs. |
 
 ## Relacion Con El Repo Del Modelo
 
-La separacion conceptual es:
+La frontera entre repos es deliberada:
 
 ```text
 pricing-mlops-platform
--> despliega y opera la plataforma
--> decide donde corre el flujo
--> orquesta Azure ML
--> guarda evidencia, outputs y metadata
+-> plataforma, nube, orquestacion, evidencia, operacion
 
 pricing-mlops
--> contiene la logica funcional/data science
--> valida/prepara datos
--> ejecuta scoring
--> genera reportes, drift y outputs
+-> validacion de datos, curated, scoring, drift, reportes
 ```
 
-En la ruta actual, la plataforma resuelve el repo del modelo mediante `MODEL_REPO_GITHUB` y `MODEL_REPO_REF`, empaqueta un snapshot y lo entrega al pipeline/job de Azure ML. La Function no clona GitHub cada vez que llega un evento.
+La plataforma no clona el repo funcional en cada evento. Durante la publicacion, resuelve `MODEL_REPO_GITHUB` + `MODEL_REPO_REF`, empaqueta un snapshot bajo `pricing-mlops-source/` y Azure ML ejecuta ese snapshot.
 
-## Pipeline Azure ML
+Referencias:
 
-La forma activa es lineal:
-
-```text
-validate_prepare -> score_evaluate -> publish_outputs
-```
-
-| Paso | Responsabilidad |
+| Referencia | Que revisar |
 |---|---|
-| `validate_prepare` | Validar input y preparar datos/features. |
-| `score_evaluate` | Ejecutar scoring/evaluacion con el modelo. |
-| `publish_outputs` | Publicar outputs, metadata, logs y evidencia. |
+| `README.md:85-100` | Como se publica la Function y se registra el snapshot. |
+| `docs/platform-model-operating-contract.md` | Contrato entre plataforma y modelo. |
+| `mlops/docs/azure-ml-job-contract.md` | Contrato tecnico del pipeline/job. |
 
-El archivo `pricing-mlops-job.yml` se conserva como fallback operativo si el pipeline multi-componente falla.
+## Ambientes
 
-## Regiones Azure
+| Ambiente | Proposito |
+|---|---|
+| `staging` | Ambiente operativo del MVP. |
+| `validation` | No-prod controlado futuro. |
+| `data-lab` | Landing restringido para datos unmasked/masking. |
+| `sandbox-local` | Pruebas locales/admin temporales. |
 
-La region base es `eastus2`. En `staging`, Azure ML y Storage viven ahi. La Function y SQL audit quedaron en `centralus` por restricciones de quota/capacidad en la suscripcion.
+No existe `prod` en IaC, parametros ni workflows.
 
-## Como Leer El Repo
+## Lecturas Recomendadas
 
-Para una lectura rapida:
+Para una revision academica:
 
-1. Leer `README.md`.
-2. Leer este documento.
-3. Leer `docs/architecture.md`.
-4. Leer `docs/platform-model-operating-contract.md`.
-5. Leer `mlops/docs/azure-ml-job-contract.md`.
-6. Leer `docs/operations.md` cuando se necesite operar o desplegar.
+1. `docs/index.md`
+2. `docs/contexto-problema.md`
+3. `docs/objetivos-alcance.md`
+4. `docs/reporte-avance-proyecto-integrador.md`
+5. `docs/evidencia.md`
 
-Para entender codigo primero:
+Para entender como corre el sistema:
 
-1. `mlops/functions/function_app.py`
-2. `mlops/azureml/pricing-mlops-pipeline.yml`
-3. `mlops/scripts/publish_orchestrator_function.sh`
-4. `infra/workloads/pricing-mlops/main.bicep`
-5. `infra/parameters/staging.bicepparam`
+1. `README.md:7-25`
+2. `mlops/functions/function_app.py:48-115`
+3. `mlops/azureml/pricing-mlops-pipeline.yml:25-235`
+4. `docs/operations.md`
+
+Para entender que se despliega:
+
+1. `infra/workloads/pricing-mlops/main.bicep`
+2. `infra/parameters/staging.bicepparam`
+3. `docs/azure-services.md`
+
+Siguiente lectura recomendada: [Operacion](operations.md), si quieres pasar del mapa del repo a los comandos concretos.
 
 ## Que No Es Este Repo
 
@@ -156,4 +172,3 @@ Para entender codigo primero:
 - No usa GitHub Actions como orquestador operativo del modelo.
 - No usa endpoints online de Azure ML.
 - No guarda `raw-unmasked` en `staging`.
-- No deberia mezclar outputs funcionales con storage interno/runtime de Azure ML.

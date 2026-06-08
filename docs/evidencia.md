@@ -1,8 +1,17 @@
 # Evidencia Del MVP
 
-## Corrida Validada
+La evidencia del MVP responde una pregunta: si el flujo puede ejecutarse en Azure y dejar rastros revisables.
 
-El avance documenta una ejecucion end-to-end en Azure:
+La corrida registrada cubre la cadena principal:
+
+```text
+Azure Function
+-> Azure ML pipeline
+-> Storage MLOps
+-> Azure SQL audit
+```
+
+## Corrida Validada
 
 | Campo | Valor |
 |---|---|
@@ -13,7 +22,13 @@ El avance documenta una ejecucion end-to-end en Azure:
 | Compute ML | Azure ML pipeline |
 | Persistencia | Storage MLOps y Azure SQL audit |
 
-## Outputs Esperados
+Esta corrida valida tres comportamientos:
+
+- la Function puede iniciar el flujo remoto;
+- Azure ML puede ejecutar el snapshot funcional;
+- la plataforma conserva metadata y artefactos para auditoria posterior.
+
+## Que Artefactos Deben Existir
 
 Una corrida valida publica evidencia en rutas versionadas:
 
@@ -32,30 +47,35 @@ La convencion funcional de ruta es:
 environment=<env>/compute=azure-ml/trigger=<trigger>/owner=<owner>/run_date=<yyyymmdd>/run_id=<run_id>/
 ```
 
-## Trazabilidad
+Esa convencion permite comparar corridas sin depender solo del portal de Azure ML.
 
-La plataforma captura metadata suficiente para explicar una corrida:
+## Que Se Puede Auditar
 
-- ambiente;
-- owner;
+La plataforma captura metadata para explicar una corrida:
+
+- ambiente y owner;
 - `run_id`;
 - input usado;
 - trigger manual o Event Grid;
-- referencia del repo funcional;
-- commit real del snapshot funcional cuando se publica la Function;
-- ubicacion de outputs funcionales;
+- repo funcional y referencia empaquetada;
+- commit real del snapshot funcional;
+- ubicacion de outputs;
 - status de la corrida.
 
-## Lectura De Evidencia
+SQL no guarda datasets completos. Sirve para consultar metadata y ubicar evidencia; los datos y artefactos funcionales siguen en Storage.
 
-Para una revision academica, la evidencia se revisa en este orden:
+## Como Leer La Evidencia
 
-1. [Reporte de avance](reporte-avance-proyecto-integrador.md) para el contexto narrativo.
+Para revisar el MVP, usa este orden:
+
+1. [Reporte de avance](reporte-avance-proyecto-integrador.md) para la narrativa academica.
 2. [Arquitectura](architecture.md) para entender servicios y responsabilidades.
 3. [Operacion](operations.md) para comandos, portal y verificacion.
 4. [Auditoria SQL](sql-audit-runbook.md) para consultas de metadata.
 5. [Contratos de datos](data-contracts.md) para schemas y evidencia minima.
 
-## Limitaciones
+## Limitacion Del Resultado
 
-La evidencia actual demuestra la plataforma y el flujo operativo, no un modelo productivo final. El scoring y drift son una base controlada para validar la arquitectura y permitir integracion posterior de un modelo real.
+La evidencia valida el flujo operativo del MVP. No prueba que exista un modelo productivo final ni un ciclo formal de entrenamiento, promocion y rollback. Esa integracion queda para una etapa posterior.
+
+Siguiente lectura recomendada: [Roadmap](roadmap.md).

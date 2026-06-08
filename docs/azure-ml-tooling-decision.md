@@ -15,7 +15,7 @@ Se conserva `pricing-mlops-job.yml` como fallback operativo de un solo job para 
 | Herramienta | Decision | Razon |
 |---|---|---|
 | Azure ML Pipeline/component job | Adoptado | Representa validacion/preparacion, scoring/evaluacion y publicacion como nodos separados sin mover logica ML a la Function. |
-| Azure ML Designer v2 | No manual | Puede visualizar pipelines, pero no sera fuente de verdad ni paso manual de operacion. |
+| Azure ML Designer v2 | No manual | Puede visualizar pipelines, pero no sera la referencia operativa ni paso manual de operacion. |
 | Data Assets | Preparado | Utiles para baseline/input versionado, pero no bloquean el MVP event-driven. |
 | Model Monitoring | Futuro | Requiere mas historial y politicas; el MVP conserva drift logs propios. |
 | Batch Endpoints | Futuro | Buena ruta para scoring batch estable, pero agrega superficie operativa. |

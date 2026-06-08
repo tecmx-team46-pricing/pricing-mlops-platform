@@ -1,24 +1,22 @@
 # Contexto Y Problema
 
-## Contexto
+Pricing Intelligence no termina cuando se calcula una recomendacion de precio. En un entorno operativo, tambien importa saber con que datos se corrio, que version de codigo participo, donde quedo la evidencia, quien puede revisar los resultados y como repetir la ejecucion.
 
-Pricing Intelligence requiere operar datos, reglas, modelos, resultados y evidencia de forma controlada. En un entorno real, una recomendacion de precio no solo debe generarse: tambien debe poder explicarse, repetirse, auditarse y monitorearse.
+Ese es el problema que atiende este proyecto: convertir un flujo tecnico de pricing en una base MLOps que pueda ser operada, auditada y explicada.
 
-El proyecto parte de una necesidad academica y tecnica: pasar de un diseno conceptual a una base operativa que permita ejecutar un flujo MLOps minimo en la nube, con costos controlados y sin exponer datos sensibles.
+## El Riesgo De Un Flujo Aislado
 
-## Problema
+Sin plataforma, el trabajo de pricing puede quedar repartido entre notebooks, scripts locales, archivos manuales y ejecuciones dificiles de reconstruir. Eso complica tres cosas:
 
-Sin una plataforma MLOps, el flujo de pricing tiende a quedar repartido entre notebooks, scripts locales, archivos manuales y ejecuciones dificiles de auditar. Eso genera riesgos:
+- **Trazabilidad:** no siempre queda claro que version de datos, codigo y configuracion produjo un resultado.
+- **Repetibilidad:** repetir una corrida depende de conocimiento manual o contexto local.
+- **Gobierno:** es facil mezclar datos sensibles, outputs temporales y evidencias sin una frontera clara.
 
-- baja trazabilidad de que version de codigo, datos y configuracion produjo una recomendacion;
-- poca separacion entre infraestructura y logica funcional del modelo;
-- dificultad para repetir corridas y comparar resultados;
-- falta de evidencia versionada para revision academica o tecnica;
-- riesgo de mezclar datos sensibles con ambientes operativos no aprobados.
+Para este proyecto, esos riesgos afectan la revision del trabajo. No basta con mostrar una ejecucion; tambien hay que explicar como se ejecuto, donde quedo la evidencia y que decisiones limitan el alcance.
 
-## Propuesta Del MVP
+## La Decision Del MVP
 
-El MVP resuelve el problema con una arquitectura acotada:
+El equipo eligio una arquitectura acotada y de bajo costo para validar la base operativa:
 
 ```text
 Evento o solicitud manual
@@ -28,8 +26,19 @@ Evento o solicitud manual
 -> Azure SQL audit
 ```
 
-La Function orquesta. Azure ML ejecuta el flujo tecnico. Storage conserva los artefactos funcionales. SQL guarda metadata consultable. GitHub Actions valida y despliega infraestructura, pero no ejecuta el flujo ML.
+La Function recibe solicitudes o eventos y valida el contexto. Azure ML ejecuta el flujo funcional. Storage conserva inputs masked y artefactos versionados. Azure SQL guarda metadata para consulta. GitHub Actions valida y despliega infraestructura, pero no ejecuta el modelo.
 
-## Criterio Academico
+## Que Permite Esta Base
 
-Para la entrega de maestria, el valor principal no es afirmar que existe una plataforma productiva completa. El valor es demostrar que el equipo construyo una base operativa con decisiones claras de arquitectura, seguridad, gobierno de datos, evidencia y evolucion futura.
+El MVP permite validar capacidades basicas antes de invertir en piezas mas costosas o complejas:
+
+- separar plataforma de codigo data science;
+- operar con datos masked en `staging`;
+- publicar outputs con una convencion de rutas;
+- conservar evidencia de corridas;
+- consultar metadata sin guardar datasets completos en SQL;
+- preparar la integracion posterior de un modelo real.
+
+## Lectura Siguiente
+
+Para ver que se comprometio formalmente en esta etapa, continua con [Objetivos y alcance](objetivos-alcance.md).

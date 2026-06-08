@@ -1,51 +1,48 @@
 # Objetivos Y Alcance
 
+El objetivo de esta etapa no es construir una plataforma productiva completa. El objetivo es implementar una base MLOps funcional para Pricing Intelligence, con evidencia para explicar cada corrida y con limites definidos de costo, seguridad y tiempo academico.
+
 ## Objetivo General
 
-Disenar e implementar una plataforma MLOps base para Pricing Intelligence que permita ejecutar, registrar y auditar corridas de un flujo ML en Azure con datos masked o sinteticos.
+Disenar e implementar una plataforma MLOps base en Azure que permita ejecutar, registrar y auditar corridas de un flujo de pricing usando datos masked o sinteticos.
 
 ## Objetivos Especificos
 
-- Separar infraestructura, runtime MLOps y codigo funcional/data science.
+- Separar infraestructura, orquestacion y codigo funcional/data science.
 - Definir infraestructura reproducible con Bicep.
 - Orquestar corridas mediante Azure Function.
 - Ejecutar el flujo tecnico en Azure ML.
 - Publicar evidencia versionada en Storage/ADLS.
 - Registrar metadata consultable en Azure SQL audit.
 - Evitar datos `raw-unmasked` en ambientes operativos.
-- Mantener GitHub Actions como CI/CD y no como compute ML.
-- Documentar la arquitectura para revision academica y tecnica.
+- Mantener GitHub Actions como CI/CD, no como compute ML.
+- Documentar arquitectura, operacion y evidencia para revision academica.
 
 ## Alcance Implementado
 
-| Componente | Estado |
+| Area | Implementacion actual |
 |---|---|
-| Foundation Azure | Implementado para resource groups, identidades, Key Vault y Log Analytics. |
-| Workload `staging` | Implementado con Storage, Azure ML, Function, SQL audit y permisos base. |
-| Orquestacion manual | Implementada con `POST /api/model-flow`. |
-| Orquestacion automatica | Implementada con Event Grid sobre `raw-masked/incoming/*.csv`. |
-| Pipeline Azure ML | Implementado como flujo lineal de tres nodos. |
-| Evidencia | Implementada en Storage con layout versionado. |
-| Auditoria | Implementada como metadata-only en Azure SQL. |
-| Gobierno de datos | Implementado por convencion, documentacion y validaciones de rutas. |
+| Infraestructura | Capa foundation y workload con Resource Groups, Storage, Azure ML, Function, SQL audit, identidades y permisos base. |
+| Orquestacion | Endpoint `POST /api/model-flow` y trigger Event Grid para `raw-masked/incoming/*.csv`. |
+| Ejecucion ML | Pipeline Azure ML con pasos `validate_prepare`, `score_evaluate` y `publish_outputs`. |
+| Evidencia | Outputs versionados en `runs`, `snapshots`, `drift-logs`, `reports`, `artifacts` y `curated`. |
+| Auditoria | Azure SQL metadata-only para consultar corridas y snapshots sin almacenar datasets completos. |
+| Gobierno | Separacion de datos masked/unmasked y rechazo de `raw-unmasked` en ambientes operativos. |
 
 ## Fuera De Alcance
 
-- Produccion real.
-- Endpoints online de Azure ML.
-- ADF como orquestador principal.
-- Private Endpoints, Hub-Spoke y hardening de red completo.
-- Registro formal de modelos productivos.
-- Ciclo completo de entrenamiento, promocion y rollback.
-- Datos `raw-unmasked` en `staging`, `validation` o `sandbox-local`.
+Estos puntos quedan fuera por alcance, costo y tiempo del MVP:
+
+- produccion real;
+- endpoints online de Azure ML;
+- Azure Data Factory como orquestador principal;
+- Private Endpoints, Hub-Spoke y hardening de red completo;
+- registro formal de modelos productivos;
+- ciclo completo de entrenamiento, promocion y rollback;
+- datos `raw-unmasked` en `staging`, `validation` o `sandbox-local`.
 
 ## Criterio De Exito
 
-El proyecto se considera exitoso para esta etapa si puede demostrar:
+El proyecto cumple esta etapa si una corrida se puede iniciar, ejecutar, evidenciar y auditar con separacion entre plataforma y modelo. Esa base permite discutir mejoras futuras a partir de una ejecucion registrada, no solo desde un diagrama.
 
-- infraestructura reproducible;
-- una corrida end-to-end en Azure;
-- outputs y metadata auditables;
-- separacion clara de responsabilidades;
-- controles basicos de seguridad y gobierno;
-- roadmap defendible para evolucion posterior.
+Siguiente lectura recomendada: [Reporte de avance](reporte-avance-proyecto-integrador.md).

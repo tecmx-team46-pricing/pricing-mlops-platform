@@ -1,6 +1,6 @@
 # Contratos De Datos
 
-Los contratos son la evidencia minima que permite reproducir y auditar una corrida.
+Los contratos de datos definen que evidencia minima debe dejar una corrida para poder auditarla. No son solo archivos de salida: son la forma de responder que se ejecuto, con que version, sobre que input y donde quedaron los resultados.
 
 ## `model_run_log`
 
@@ -34,7 +34,7 @@ Schema:
 mlops/schemas/model_output_snapshot.schema.json
 ```
 
-Para el MVP, CSV o JSONL es suficiente como evidencia pequena y legible.
+Para el MVP, CSV o JSONL se mantiene como formato pequeno y legible.
 
 ## `model_drift_log`
 
@@ -61,3 +61,5 @@ La fuente tecnica viva se mantiene en:
 ```text
 mlops/docs/data-contracts.md
 ```
+
+Siguiente lectura recomendada: [Evidencia del MVP](evidencia.md), para ver como estos contratos aparecen en una corrida validada.

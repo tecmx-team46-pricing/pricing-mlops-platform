@@ -1,41 +1,53 @@
 # Plataforma MLOps Para Pricing Intelligence
 
-Documentacion academica del proyecto integrador Team 46.
+Esta documentacion explica como se construyo una base MLOps en Azure para operar y auditar un flujo de Pricing Intelligence con datos masked.
 
-## Resumen
-
-Este proyecto implementa una base operativa MLOps para un caso de Pricing Intelligence en Azure. La plataforma separa infraestructura, orquestacion, ejecucion del flujo ML, evidencia y gobierno de datos para que las corridas sean trazables, reproducibles y auditables.
-
-El MVP actual valida el approach:
+La respuesta del MVP fue construir una base MLOps en Azure:
 
 ```text
-Azure Function -> Azure ML Pipeline -> Storage/ADLS -> Azure SQL audit
+Evento o solicitud manual
+-> Azure Function
+-> Azure ML Pipeline
+-> Storage/ADLS
+-> Azure SQL audit
 ```
 
-GitHub Actions queda como mecanismo de validacion y despliegue controlado. No opera el flujo ML ni ejecuta el modelo.
+La Function no calcula precios. Orquesta. Azure ML ejecuta el flujo funcional. Storage conserva los artefactos. SQL guarda metadata consultable. GitHub Actions valida y despliega de forma controlada, pero no opera el modelo.
 
-## Que Se Construyo
+## Que Cubre El Proyecto
 
-| Area | Resultado |
-|---|---|
-| Plataforma Azure | Infraestructura reproducible con Bicep para resource groups, Storage, Azure ML, Azure Function, identidades, SQL audit y observabilidad base. |
-| Orquestacion | Azure Function con endpoint HTTP y trigger Event Grid para disparar corridas de Azure ML. |
-| Ejecucion ML | Pipeline Azure ML con tres pasos: `validate_prepare`, `score_evaluate` y `publish_outputs`. |
-| Evidencia | Outputs versionados en Storage: logs, snapshots, drift logs, reportes, curated data y artefactos. |
-| Auditoria | Azure SQL metadata-only para consultar corridas y snapshots sin guardar datasets completos. |
-| Gobierno | Separacion entre datos masked y unmasked; `staging` no guarda `raw-unmasked`. |
+Este avance no presenta una plataforma productiva. Presenta un MVP que cubre:
 
-## Ruta Recomendada De Lectura
+- infraestructura Azure reproducible con Bicep;
+- separacion entre plataforma y codigo data science;
+- corrida end-to-end con datos masked;
+- outputs versionados en Storage;
+- metadata auditable en Azure SQL;
+- controles para no operar `raw-unmasked` en `staging`;
+- un roadmap para integrar controles y componentes adicionales.
+
+## Como Leer La Documentacion
+
+Para entender el proyecto en orden:
 
 1. [Contexto y problema](contexto-problema.md)
 2. [Objetivos y alcance](objetivos-alcance.md)
 3. [Reporte de avance](reporte-avance-proyecto-integrador.md)
 4. [Arquitectura](architecture.md)
 5. [Estructura del repo](project-structure.md)
-6. [Operacion](operations.md)
-7. [Evidencia del MVP](evidencia.md)
-8. [Gobierno de datos](data-governance-plan.md)
-9. [Roadmap](roadmap.md)
+6. [Evidencia del MVP](evidencia.md)
+7. [Gobierno de datos](data-governance-plan.md)
+8. [Roadmap](roadmap.md)
+
+Si necesitas operar o revisar detalles tecnicos, salta a:
+
+| Necesidad | Documento |
+|---|---|
+| Entender servicios Azure | [Servicios Azure](azure-services.md) |
+| Ejecutar o diagnosticar el flujo | [Operacion](operations.md) |
+| Revisar contrato plataforma-modelo | [Contrato plataforma-modelo](platform-model-operating-contract.md) |
+| Revisar Function y pipeline | [Function orchestrator](function-orchestrator.md), [Pipeline Azure ML](azure-ml-job-contract.md) |
+| Consultar auditoria | [Auditoria SQL](sql-audit-runbook.md) |
 
 ## Repositorios Del Proyecto
 
@@ -45,22 +57,8 @@ GitHub Actions queda como mecanismo de validacion y despliegue controlado. No op
 | `pricing-mlops` | Codigo funcional/data science: validacion, curated, scoring, drift y reportes. |
 | `pricing-mlops-eda` | Referencia historica y analisis exploratorio. No es repo operativo. |
 
-## Estado Del MVP
+## Limites Del MVP
 
-El MVP no pretende representar produccion real. Su objetivo es demostrar una base MLOps defendible para una entrega de maestria:
+El MVP no contiene produccion real ni un modelo productivo definitivo. Tampoco incluye ADF, endpoints online de Azure ML, Private Endpoints o Hub-Spoke. La etapa actual se limita a operar el flujo, guardar evidencia y dejar preparada la integracion posterior de un modelo formal.
 
-- hay infraestructura reproducible;
-- hay un flujo end-to-end ejecutable en Azure;
-- hay separacion clara entre plataforma y codigo funcional;
-- hay evidencia versionada de corridas;
-- hay controles para no operar con datos unmasked en `staging`;
-- hay un roadmap claro para evolucionar hacia una arquitectura mas completa.
-
-## Fuera De Alcance Actual
-
-- Produccion real.
-- Endpoints online de Azure ML.
-- ADF como orquestador principal.
-- Private Endpoints y Hub-Spoke.
-- Modelo productivo definitivo.
-- Datos `raw-unmasked` en `staging`.
+Siguiente lectura recomendada: [Contexto y problema](contexto-problema.md).
