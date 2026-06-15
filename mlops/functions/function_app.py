@@ -26,6 +26,10 @@ PIPELINE_JOB_FILE_CANDIDATES = (
     APP_ROOT / "azureml" / "pricing-mlops-pipeline.yml",
     APP_ROOT.parent / "azureml" / "pricing-mlops-pipeline.yml",
 )
+NOTEBOOK_PIPELINE_JOB_FILE_CANDIDATES = (
+    APP_ROOT / "azureml" / "pricing-mlops-notebook-pipeline.yml",
+    APP_ROOT.parent / "azureml" / "pricing-mlops-notebook-pipeline.yml",
+)
 MODEL_SOURCE_FILE_CANDIDATES = (
     APP_ROOT / "model_source.json",
     APP_ROOT.parent / "model_source.json",
@@ -38,11 +42,22 @@ PIPELINE_JOB_FILE = next(
     (path for path in PIPELINE_JOB_FILE_CANDIDATES if path.exists()),
     PIPELINE_JOB_FILE_CANDIDATES[0],
 )
+NOTEBOOK_PIPELINE_JOB_FILE = next(
+    (path for path in NOTEBOOK_PIPELINE_JOB_FILE_CANDIDATES if path.exists()),
+    NOTEBOOK_PIPELINE_JOB_FILE_CANDIDATES[0],
+)
 MODEL_SOURCE_FILE = next(
     (path for path in MODEL_SOURCE_FILE_CANDIDATES if path.exists()),
     MODEL_SOURCE_FILE_CANDIDATES[0],
 )
-JOB_FILE = PIPELINE_JOB_FILE if os.getenv("MLOPS_USE_AML_PIPELINE", "true").lower() == "true" else COMMAND_JOB_FILE
+JOB_TEMPLATE = os.getenv("MLOPS_JOB_TEMPLATE", "baseline").lower().strip()
+JOB_FILE = (
+    COMMAND_JOB_FILE
+    if os.getenv("MLOPS_USE_AML_PIPELINE", "true").lower() != "true"
+    else NOTEBOOK_PIPELINE_JOB_FILE
+    if JOB_TEMPLATE == "notebook"
+    else PIPELINE_JOB_FILE
+)
 
 
 @app.function_name(name="model-flow")
@@ -132,6 +147,22 @@ def _orchestration_request(payload: dict[str, object]) -> dict[str, str]:
         "model_ref": _value("MODEL_REPO_REF", payload, model_source["model_ref"]),
         "model_commit_sha": _value("MODEL_REPO_COMMIT_SHA", payload, model_source["model_commit_sha"]),
     }
+    request["baseline_snapshot_container"] = _value(
+        "MLOPS_BASELINE_SNAPSHOT_CONTAINER",
+        payload,
+        os.getenv("MLOPS_CONTAINER_ARTIFACTS", "artifacts"),
+    )
+    request["baseline_snapshot_blob_path"] = _value("MLOPS_BASELINE_SNAPSHOT_BLOB_PATH", payload, "")
+    request["current_history_container"] = _value(
+        "MLOPS_CURRENT_HISTORY_CONTAINER",
+        payload,
+        request["input_container"],
+    )
+    request["current_history_blob_path"] = _value(
+        "MLOPS_CURRENT_AUTH_HISTORY_BLOB_PATH",
+        payload,
+        request["input_blob_path"],
+    )
     _validate_request(request)
     request["run_id"] = _value("MLOPS_RUN_ID", payload, _new_run_id())
     request["expected_output_prefix"] = _expected_output_prefix(request)
@@ -286,6 +317,10 @@ def submit_azure_ml_job(request: dict[str, str]) -> dict[str, str | bool]:
         "run_owner": request["run_owner"],
         "run_id": request["run_id"],
         "input_blob_path": request["input_blob_path"],
+        "baseline_snapshot_container": request["baseline_snapshot_container"],
+        "baseline_snapshot_blob_path": request["baseline_snapshot_blob_path"],
+        "current_history_container": request["current_history_container"],
+        "current_history_blob_path": request["current_history_blob_path"],
         "trigger_type": request["trigger_type"],
         "model_repo": request["model_repo"],
         "model_ref": request["model_ref"],

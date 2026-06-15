@@ -3,7 +3,7 @@ set -euo pipefail
 
 ENVIRONMENT="${1:-staging}"
 EXPECTED_SUBSCRIPTION_NAME="${AZURE_SUBSCRIPTION_NAME:-<azure-subscription-name>}"
-RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-rg-pricing-mlops-${ENVIRONMENT}}"
+RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-}"
 FUNCTION_APP="${AZURE_FUNCTION_APP:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MLOPS_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -29,7 +29,9 @@ required_files=(
   "${MLOPS_ROOT}/functions/requirements.txt"
   "${MLOPS_ROOT}/azureml/pricing-mlops-job.yml"
   "${MLOPS_ROOT}/azureml/pricing-mlops-pipeline.yml"
+  "${MLOPS_ROOT}/azureml/pricing-mlops-notebook-pipeline.yml"
   "${MLOPS_ROOT}/azureml/environment.yml"
+  "${MLOPS_ROOT}/components/platform_publish_outputs.py"
 )
 
 for file in "${required_files[@]}"; do
@@ -40,6 +42,11 @@ for file in "${required_files[@]}"; do
 done
 
 if [[ "${DRY_RUN}" != "true" ]]; then
+  if [[ -z "${RESOURCE_GROUP}" ]]; then
+    echo "AZURE_RESOURCE_GROUP is required. Use the single principal Resource Group for this environment." >&2
+    exit 1
+  fi
+
   if [[ -z "${FUNCTION_APP}" ]]; then
     FUNCTION_APP="$(az resource list \
       --resource-group "${RESOURCE_GROUP}" \
@@ -100,7 +107,9 @@ if [[ -n "${MODEL_REPO_PATH}" ]]; then
     --exclude '.venv/' \
     --exclude 'azureml/' \
     --exclude 'docs/' \
-    --exclude 'notebooks/' \
+    --include 'notebooks/' \
+    --include 'notebooks/operational/***' \
+    --exclude 'notebooks/*' \
     --exclude 'references/' \
     --exclude 'reports/' \
     --exclude 'data/samples/unmasked/' \
@@ -138,7 +147,7 @@ required_model_source_files=(
   "${MODEL_SOURCE_DIR}/scripts/run_azure_ml_flow.py"
   "${MODEL_SOURCE_DIR}/scripts/components/validate_prepare.py"
   "${MODEL_SOURCE_DIR}/scripts/components/score_evaluate.py"
-  "${MODEL_SOURCE_DIR}/scripts/components/publish_outputs.py"
+  "${MODEL_SOURCE_DIR}/scripts/components/run_notebook_monitor.py"
   "${MODEL_SOURCE_DIR}/src/pricing_mlops/__init__.py"
 )
 
@@ -149,13 +158,15 @@ for file in "${required_model_source_files[@]}"; do
   fi
 done
 
-mkdir -p "${PACKAGE_ROOT}/azureml" "${PACKAGE_ROOT}/pricing-mlops-source"
+mkdir -p "${PACKAGE_ROOT}/azureml" "${PACKAGE_ROOT}/pricing-mlops-source" "${PACKAGE_ROOT}/platform-components"
 cp "${MLOPS_ROOT}/functions/function_app.py" "${PACKAGE_ROOT}/function_app.py"
 cp "${MLOPS_ROOT}/functions/host.json" "${PACKAGE_ROOT}/host.json"
 cp "${MLOPS_ROOT}/functions/requirements.txt" "${PACKAGE_ROOT}/requirements.txt"
 cp "${MLOPS_ROOT}/azureml/pricing-mlops-job.yml" "${PACKAGE_ROOT}/azureml/pricing-mlops-job.yml"
 cp "${MLOPS_ROOT}/azureml/pricing-mlops-pipeline.yml" "${PACKAGE_ROOT}/azureml/pricing-mlops-pipeline.yml"
+cp "${MLOPS_ROOT}/azureml/pricing-mlops-notebook-pipeline.yml" "${PACKAGE_ROOT}/azureml/pricing-mlops-notebook-pipeline.yml"
 cp "${MLOPS_ROOT}/azureml/environment.yml" "${PACKAGE_ROOT}/azureml/environment.yml"
+cp "${MLOPS_ROOT}/components/platform_publish_outputs.py" "${PACKAGE_ROOT}/platform-components/platform_publish_outputs.py"
 python - <<'PY' "${PACKAGE_ROOT}/model_source.json" "${MODEL_SOURCE_KIND}" "${MODEL_REPO_GITHUB}" "${MODEL_REPO_REF}" "${MODEL_COMMIT_SHA}"
 import json
 import sys
@@ -182,7 +193,9 @@ rsync -a \
   --exclude '.venv/' \
   --exclude 'azureml/' \
   --exclude 'docs/' \
-  --exclude 'notebooks/' \
+  --include 'notebooks/' \
+  --include 'notebooks/operational/***' \
+  --exclude 'notebooks/*' \
   --exclude 'references/' \
   --exclude 'reports/' \
   --exclude 'data/samples/unmasked/' \
@@ -200,11 +213,13 @@ required_package_paths=(
   "${PACKAGE_ROOT}/host.json"
   "${PACKAGE_ROOT}/requirements.txt"
   "${PACKAGE_ROOT}/azureml/pricing-mlops-pipeline.yml"
+  "${PACKAGE_ROOT}/azureml/pricing-mlops-notebook-pipeline.yml"
   "${PACKAGE_ROOT}/azureml/pricing-mlops-job.yml"
   "${PACKAGE_ROOT}/pricing-mlops-source/pyproject.toml"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/validate_prepare.py"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/score_evaluate.py"
-  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/publish_outputs.py"
+  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/run_notebook_monitor.py"
+  "${PACKAGE_ROOT}/platform-components/platform_publish_outputs.py"
   "${PACKAGE_ROOT}/pricing-mlops-source/src/pricing_mlops/__init__.py"
   "${PACKAGE_ROOT}/model_source.json"
 )

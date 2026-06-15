@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FUNCTION_APP_PATH = ROOT / "mlops" / "functions" / "function_app.py"
 JOB_FILE = ROOT / "mlops" / "azureml" / "pricing-mlops-job.yml"
 PIPELINE_JOB_FILE = ROOT / "mlops" / "azureml" / "pricing-mlops-pipeline.yml"
+NOTEBOOK_PIPELINE_JOB_FILE = ROOT / "mlops" / "azureml" / "pricing-mlops-notebook-pipeline.yml"
 
 
 def _load_function_app():
@@ -39,9 +40,11 @@ def test_pipeline_template_uses_packaged_model_source():
         "score_evaluate",
         "publish_outputs",
     }
-    for job_name in ("validate_prepare", "score_evaluate", "publish_outputs"):
+    for job_name in ("validate_prepare", "score_evaluate"):
         assert job_definition["jobs"][job_name]["component"]["code"] == "../pricing-mlops-source"
         assert job_definition["jobs"][job_name]["compute"] == "azureml:serverless"
+    assert job_definition["jobs"]["publish_outputs"]["component"]["code"] == "../platform-components"
+    assert job_definition["jobs"]["publish_outputs"]["compute"] == "azureml:serverless"
     assert "scripts/components/validate_prepare.py" in (
         job_definition["jobs"]["validate_prepare"]["component"]["command"]
     )
@@ -51,7 +54,7 @@ def test_pipeline_template_uses_packaged_model_source():
     assert "--model-commit-sha ${{inputs.model_commit_sha}}" in (
         job_definition["jobs"]["score_evaluate"]["component"]["command"]
     )
-    assert "scripts/components/publish_outputs.py" in (
+    assert "python platform_publish_outputs.py" in (
         job_definition["jobs"]["publish_outputs"]["component"]["command"]
     )
     assert job_definition["jobs"]["score_evaluate"]["depends_on"] == ["validate_prepare"]
@@ -64,12 +67,49 @@ def test_pipeline_template_uses_packaged_model_source():
     )
 
 
+def test_notebook_pipeline_template_uses_packaged_operational_notebook_source():
+    job_definition = yaml.safe_load(NOTEBOOK_PIPELINE_JOB_FILE.read_text(encoding="utf-8"))
+
+    assert job_definition["type"] == "pipeline"
+    assert set(job_definition["jobs"].keys()) == {
+        "validate_prepare",
+        "run_notebook_monitor",
+        "publish_outputs",
+    }
+    for job_name in ("validate_prepare", "run_notebook_monitor"):
+        assert job_definition["jobs"][job_name]["component"]["code"] == "../pricing-mlops-source"
+        assert job_definition["jobs"][job_name]["compute"] == "azureml:serverless"
+    assert job_definition["jobs"]["publish_outputs"]["component"]["code"] == "../platform-components"
+    assert job_definition["jobs"]["publish_outputs"]["compute"] == "azureml:serverless"
+    notebook_command = job_definition["jobs"]["run_notebook_monitor"]["component"]["command"]
+    assert "python scripts/components/run_notebook_monitor.py" in notebook_command
+    assert "notebooks/operational/${{inputs.notebook_name}}" in notebook_command
+    assert "--baseline-snapshot-container ${{inputs.baseline_snapshot_container}}" in notebook_command
+    assert "--baseline-snapshot-blob-path ${{inputs.baseline_snapshot_blob_path}}" in notebook_command
+    assert "--current-history-container ${{inputs.current_history_container}}" in notebook_command
+    assert "--current-history-blob-path ${{inputs.current_history_blob_path}}" in notebook_command
+    assert "--run-artifacts-prefix component-state/${{inputs.run_id}}/notebook_artifacts" in notebook_command
+    assert job_definition["jobs"]["run_notebook_monitor"]["depends_on"] == ["validate_prepare"]
+    assert job_definition["jobs"]["publish_outputs"]["depends_on"] == ["run_notebook_monitor"]
+    assert "python platform_publish_outputs.py" in (
+        job_definition["jobs"]["publish_outputs"]["component"]["command"]
+    )
+
+
 def test_function_app_discovers_platform_job_template():
     function_app = _load_function_app()
 
     assert function_app.COMMAND_JOB_FILE == JOB_FILE
     assert function_app.PIPELINE_JOB_FILE == PIPELINE_JOB_FILE
+    assert function_app.NOTEBOOK_PIPELINE_JOB_FILE == NOTEBOOK_PIPELINE_JOB_FILE
     assert function_app.JOB_FILE == PIPELINE_JOB_FILE
+
+
+def test_function_app_can_select_notebook_pipeline_template(monkeypatch):
+    monkeypatch.setenv("MLOPS_JOB_TEMPLATE", "notebook")
+    function_app = _load_function_app()
+
+    assert function_app.JOB_FILE == NOTEBOOK_PIPELINE_JOB_FILE
 
 
 def test_orchestration_request_builds_expected_prefix(monkeypatch):
@@ -87,6 +127,10 @@ def test_orchestration_request_builds_expected_prefix(monkeypatch):
 
     assert request["compute_target"] == "azure-ml"
     assert request["trigger_type"] == "manual"
+    assert request["baseline_snapshot_container"] == "artifacts"
+    assert request["baseline_snapshot_blob_path"] == ""
+    assert request["current_history_container"] == "raw-masked"
+    assert request["current_history_blob_path"] == "samples/sample_pricing_v1.csv"
     assert request["run_id"] == "20260517T000000Z-function"
     assert request["expected_output_prefix"] == (
         "environment=staging/compute=azure-ml/trigger=manual/owner=team46/"
@@ -117,6 +161,7 @@ def test_model_flow_submits_aml_job(monkeypatch):
                 "environment": "staging",
                 "run_owner": "team46",
                 "input_blob_path": "samples/sample_pricing_v1.csv",
+                "baseline_snapshot_blob_path": "runs/baseline/model_output_snapshot.csv",
                 "mlops_run_id": "20260517T000000Z-function",
             }
         ).encode(),
@@ -131,6 +176,8 @@ def test_model_flow_submits_aml_job(monkeypatch):
     assert body["azure_ml_job_name"] == "test_job"
     assert body["correlation_id"]
     assert submitted["run_id"] == "20260517T000000Z-function"
+    assert submitted["baseline_snapshot_blob_path"] == "runs/baseline/model_output_snapshot.csv"
+    assert submitted["current_history_blob_path"] == "samples/sample_pricing_v1.csv"
 
 
 def test_event_grid_request_accepts_incoming_csv(monkeypatch):
@@ -205,14 +252,7 @@ def test_apply_job_inputs_updates_loaded_azure_ml_defaults(tmp_path):
 
 def test_apply_job_inputs_updates_loaded_pipeline_defaults(tmp_path):
     function_app = _load_function_app()
-    package_root = tmp_path / "package"
-    azureml_dir = package_root / "azureml"
-    source_dir = package_root / "pricing-mlops-source"
-    azureml_dir.mkdir(parents=True)
-    source_dir.mkdir()
-    shutil.copy(PIPELINE_JOB_FILE, azureml_dir / "pricing-mlops-pipeline.yml")
-    shutil.copy(ROOT / "mlops" / "azureml" / "environment.yml", azureml_dir / "environment.yml")
-    job = load_job(source=azureml_dir / "pricing-mlops-pipeline.yml")
+    job = load_job(source=_copy_pipeline_package(tmp_path))
 
     function_app._apply_job_inputs(
         job,
@@ -235,14 +275,7 @@ def test_apply_job_inputs_updates_loaded_pipeline_defaults(tmp_path):
 
 def test_apply_job_identity_sets_managed_identity_on_pipeline_nodes(tmp_path, monkeypatch):
     function_app = _load_function_app()
-    package_root = tmp_path / "package"
-    azureml_dir = package_root / "azureml"
-    source_dir = package_root / "pricing-mlops-source"
-    azureml_dir.mkdir(parents=True)
-    source_dir.mkdir()
-    shutil.copy(PIPELINE_JOB_FILE, azureml_dir / "pricing-mlops-pipeline.yml")
-    shutil.copy(ROOT / "mlops" / "azureml" / "environment.yml", azureml_dir / "environment.yml")
-    job = load_job(source=azureml_dir / "pricing-mlops-pipeline.yml")
+    job = load_job(source=_copy_pipeline_package(tmp_path))
     monkeypatch.setenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "managed-client-id")
     monkeypatch.setenv("MLOPS_USE_MANAGED_JOB_IDENTITY", "true")
 
@@ -272,14 +305,7 @@ def test_apply_job_identity_sets_managed_identity_on_command_job(tmp_path, monke
 
 def test_apply_job_identity_keeps_user_identity_by_default(tmp_path, monkeypatch):
     function_app = _load_function_app()
-    package_root = tmp_path / "package"
-    azureml_dir = package_root / "azureml"
-    source_dir = package_root / "pricing-mlops-source"
-    azureml_dir.mkdir(parents=True)
-    source_dir.mkdir()
-    shutil.copy(PIPELINE_JOB_FILE, azureml_dir / "pricing-mlops-pipeline.yml")
-    shutil.copy(ROOT / "mlops" / "azureml" / "environment.yml", azureml_dir / "environment.yml")
-    job = load_job(source=azureml_dir / "pricing-mlops-pipeline.yml")
+    job = load_job(source=_copy_pipeline_package(tmp_path))
     monkeypatch.setenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "managed-client-id")
     monkeypatch.delenv("MLOPS_USE_MANAGED_JOB_IDENTITY", raising=False)
 
@@ -298,6 +324,23 @@ def _copy_job_package(tmp_path):
     shutil.copy(JOB_FILE, azureml_dir / "pricing-mlops-job.yml")
     shutil.copy(ROOT / "mlops" / "azureml" / "environment.yml", azureml_dir / "environment.yml")
     return azureml_dir / "pricing-mlops-job.yml"
+
+
+def _copy_pipeline_package(tmp_path):
+    package_root = tmp_path / "package"
+    azureml_dir = package_root / "azureml"
+    source_dir = package_root / "pricing-mlops-source"
+    platform_dir = package_root / "platform-components"
+    azureml_dir.mkdir(parents=True)
+    source_dir.mkdir()
+    platform_dir.mkdir()
+    shutil.copy(PIPELINE_JOB_FILE, azureml_dir / "pricing-mlops-pipeline.yml")
+    shutil.copy(ROOT / "mlops" / "azureml" / "environment.yml", azureml_dir / "environment.yml")
+    shutil.copy(
+        ROOT / "mlops" / "components" / "platform_publish_outputs.py",
+        platform_dir / "platform_publish_outputs.py",
+    )
+    return azureml_dir / "pricing-mlops-pipeline.yml"
 
 
 def _set_required_env(monkeypatch):

@@ -66,6 +66,7 @@ def test_publish_allows_clean_local_model_source_with_flag(tmp_path):
     assert (package_root / "requirements.txt").is_file()
     assert (package_root / "azureml" / "pricing-mlops-pipeline.yml").is_file()
     assert (package_root / "azureml" / "pricing-mlops-job.yml").is_file()
+    assert (package_root / "platform-components" / "platform_publish_outputs.py").is_file()
     assert (package_root / "pricing-mlops-source" / "pyproject.toml").is_file()
     assert (
         package_root
@@ -86,7 +87,14 @@ def test_publish_allows_clean_local_model_source_with_flag(tmp_path):
         / "pricing-mlops-source"
         / "scripts"
         / "components"
-        / "publish_outputs.py"
+        / "run_notebook_monitor.py"
+    ).is_file()
+    assert (
+        package_root
+        / "pricing-mlops-source"
+        / "notebooks"
+        / "operational"
+        / "auth_monitor.ipynb"
     ).is_file()
     assert (package_root / "pricing-mlops-source" / "src" / "pricing_mlops").is_dir()
     assert not (package_root / "pricing-mlops-source" / "docs").exists()
@@ -133,11 +141,20 @@ def _minimal_model_repo(tmp_path: Path) -> Path:
         "print('run')\n",
         encoding="utf-8",
     )
-    for filename in ("validate_prepare.py", "score_evaluate.py", "publish_outputs.py"):
+    for filename in ("validate_prepare.py", "score_evaluate.py"):
         (model_repo / "scripts" / "components" / filename).write_text(
             "print('component')\n",
             encoding="utf-8",
         )
+    (model_repo / "scripts" / "components" / "run_notebook_monitor.py").write_text(
+        "print('notebook component')\n",
+        encoding="utf-8",
+    )
+    (model_repo / "notebooks" / "operational").mkdir(parents=True)
+    (model_repo / "notebooks" / "operational" / "auth_monitor.ipynb").write_text(
+        "{\"cells\": [], \"metadata\": {}, \"nbformat\": 4, \"nbformat_minor\": 5}\n",
+        encoding="utf-8",
+    )
     (model_repo / "src" / "pricing_mlops" / "__init__.py").write_text(
         "__version__ = '0.1.0'\n",
         encoding="utf-8",
