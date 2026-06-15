@@ -67,7 +67,7 @@ if [[ ! -d "${MODEL_REPO_PATH}" ]]; then
   exit 1
 fi
 
-for component in build_monitoring_inputs.py calculate_recommendation_validity.py calculate_operational_decision.py; do
+for component in build_monitoring_inputs.py calculate_recommendation_validity.py calculate_auth_history_drift.py calculate_operational_decision.py; do
   if [[ ! -f "${MODEL_REPO_PATH}/scripts/components/${component}" ]]; then
     echo "MODEL_REPO_PATH does not include ${component}: ${MODEL_REPO_PATH}" >&2
     exit 1
@@ -101,7 +101,7 @@ cp "${JOB_FILE}" "${JOB_WORKDIR}/azureml/pricing-mlops-notebook-pipeline.yml"
 cp "${MLOPS_ROOT}/azureml/environment.yml" "${JOB_WORKDIR}/azureml/environment.yml"
 
 echo "Submitting AUTH monitoring pipeline direct to Azure ML"
-echo "Nodes: validate_prepare,build_monitoring_inputs,calculate_recommendation_validity,calculate_operational_decision,publish_outputs"
+echo "Nodes: validate_prepare,build_monitoring_inputs,calculate_recommendation_validity,calculate_auth_history_drift,calculate_operational_decision,publish_outputs"
 echo "Run id: ${RUN_ID}"
 echo "Input: ${CURRENT_HISTORY_CONTAINER}/${CURRENT_HISTORY_BLOB_PATH}"
 echo "Baseline snapshot: ${BASELINE_SNAPSHOT_CONTAINER}/${BASELINE_SNAPSHOT_BLOB_PATH}"

@@ -75,6 +75,7 @@ def test_notebook_pipeline_template_uses_packaged_auth_monitoring_steps():
         "validate_prepare",
         "build_monitoring_inputs",
         "calculate_recommendation_validity",
+        "calculate_auth_history_drift",
         "calculate_operational_decision",
         "publish_outputs",
     }
@@ -82,6 +83,7 @@ def test_notebook_pipeline_template_uses_packaged_auth_monitoring_steps():
         "validate_prepare",
         "build_monitoring_inputs",
         "calculate_recommendation_validity",
+        "calculate_auth_history_drift",
         "calculate_operational_decision",
     ):
         assert job_definition["jobs"][job_name]["component"]["code"] == "../pricing-mlops-source"
@@ -90,6 +92,7 @@ def test_notebook_pipeline_template_uses_packaged_auth_monitoring_steps():
     assert job_definition["jobs"]["publish_outputs"]["compute"] == "azureml:serverless"
     inputs_command = job_definition["jobs"]["build_monitoring_inputs"]["component"]["command"]
     validity_command = job_definition["jobs"]["calculate_recommendation_validity"]["component"]["command"]
+    drift_command = job_definition["jobs"]["calculate_auth_history_drift"]["component"]["command"]
     decision_command = job_definition["jobs"]["calculate_operational_decision"]["component"]["command"]
     publish_command = job_definition["jobs"]["publish_outputs"]["component"]["command"]
     assert "python scripts/components/build_monitoring_inputs.py" in inputs_command
@@ -99,13 +102,18 @@ def test_notebook_pipeline_template_uses_packaged_auth_monitoring_steps():
     assert "--current-history-blob-path ${{inputs.current_history_blob_path}}" in inputs_command
     assert "python scripts/components/calculate_recommendation_validity.py" in validity_command
     assert "component-state/${{inputs.run_id}}/monitoring_inputs" in validity_command
+    assert "python scripts/components/calculate_auth_history_drift.py" in drift_command
+    assert "component-state/${{inputs.run_id}}/recommendation_validity" in drift_command
     assert "python scripts/components/calculate_operational_decision.py" in decision_command
-    assert "component-state/${{inputs.run_id}}/recommendation_validity" in decision_command
+    assert "component-state/${{inputs.run_id}}/auth_history_drift" in decision_command
     assert "component-state/${{inputs.run_id}}/operational_decision" in publish_command
     assert job_definition["jobs"]["build_monitoring_inputs"]["depends_on"] == ["validate_prepare"]
     assert job_definition["jobs"]["calculate_recommendation_validity"]["depends_on"] == ["build_monitoring_inputs"]
-    assert job_definition["jobs"]["calculate_operational_decision"]["depends_on"] == [
+    assert job_definition["jobs"]["calculate_auth_history_drift"]["depends_on"] == [
         "calculate_recommendation_validity"
+    ]
+    assert job_definition["jobs"]["calculate_operational_decision"]["depends_on"] == [
+        "calculate_auth_history_drift"
     ]
     assert job_definition["jobs"]["publish_outputs"]["depends_on"] == ["calculate_operational_decision"]
     assert "python platform_publish_outputs.py" in (

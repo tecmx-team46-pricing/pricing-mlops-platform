@@ -63,8 +63,9 @@ El notebook queda como referencia del analista y la logica operacional se materi
 flowchart TD
   A["validate_prepare"] --> B["build_monitoring_inputs"]
   B --> C["calculate_recommendation_validity"]
-  C --> D["calculate_operational_decision"]
-  D --> E["publish_outputs"]
+  C --> D["calculate_auth_history_drift"]
+  D --> E["calculate_operational_decision"]
+  E --> F["publish_outputs"]
 ```
 
 Cada paso funcional escribe artefactos acumulados en `component-state/<run_id>/...`.

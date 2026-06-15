@@ -147,6 +147,7 @@ required_model_source_files=(
   "${MODEL_SOURCE_DIR}/scripts/components/score_evaluate.py"
   "${MODEL_SOURCE_DIR}/scripts/components/build_monitoring_inputs.py"
   "${MODEL_SOURCE_DIR}/scripts/components/calculate_recommendation_validity.py"
+  "${MODEL_SOURCE_DIR}/scripts/components/calculate_auth_history_drift.py"
   "${MODEL_SOURCE_DIR}/scripts/components/calculate_operational_decision.py"
   "${MODEL_SOURCE_DIR}/src/pricing_mlops/__init__.py"
 )
@@ -218,6 +219,7 @@ required_package_paths=(
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/score_evaluate.py"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/build_monitoring_inputs.py"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/calculate_recommendation_validity.py"
+  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/calculate_auth_history_drift.py"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/calculate_operational_decision.py"
   "${PACKAGE_ROOT}/platform-components/platform_publish_outputs.py"
   "${PACKAGE_ROOT}/pricing-mlops-source/src/pricing_mlops/__init__.py"

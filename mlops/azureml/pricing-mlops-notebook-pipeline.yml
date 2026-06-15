@@ -161,7 +161,7 @@ jobs:
     type: command
     compute: azureml:serverless
     depends_on:
-      - calculate_recommendation_validity
+      - calculate_auth_history_drift
     component:
       type: command
       name: pricing_mlops_calculate_operational_decision
@@ -172,14 +172,53 @@ jobs:
         MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/calculate_operational_decision.py
-        --input-dir outputs/recommendation_validity
+        --input-dir outputs/auth_history_drift
         --output-dir outputs/operational_decision
         --run-id ${{inputs.run_id}}
         --storage-account ${{inputs.storage_account}}
         --validity-container artifacts
-        --validity-prefix component-state/${{inputs.run_id}}/recommendation_validity
+        --validity-prefix component-state/${{inputs.run_id}}/auth_history_drift
         --decision-container artifacts
         --decision-prefix component-state/${{inputs.run_id}}/operational_decision
+      environment:
+        image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+        conda_file: environment.yml
+      inputs:
+        storage_account:
+          type: string
+        run_id:
+          type: string
+        job_identity_client_id:
+          type: string
+    inputs:
+      storage_account: ${{parent.inputs.storage_account}}
+      run_id: ${{parent.inputs.run_id}}
+      job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
+    identity:
+      type: user_identity
+  calculate_auth_history_drift:
+    type: command
+    compute: azureml:serverless
+    depends_on:
+      - calculate_recommendation_validity
+    component:
+      type: command
+      name: pricing_mlops_calculate_auth_history_drift
+      display_name: calculate_auth_history_drift
+      code: ../pricing-mlops-source
+      command: >-
+        python -m pip install -e . &&
+        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
+        python scripts/components/calculate_auth_history_drift.py
+        --input-dir outputs/recommendation_validity
+        --output-dir outputs/auth_history_drift
+        --run-id ${{inputs.run_id}}
+        --storage-account ${{inputs.storage_account}}
+        --validity-container artifacts
+        --validity-prefix component-state/${{inputs.run_id}}/recommendation_validity
+        --drift-container artifacts
+        --drift-prefix component-state/${{inputs.run_id}}/auth_history_drift
       environment:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml

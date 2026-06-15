@@ -101,6 +101,13 @@ def test_publish_allows_clean_local_model_source_with_flag(tmp_path):
         / "pricing-mlops-source"
         / "scripts"
         / "components"
+        / "calculate_auth_history_drift.py"
+    ).is_file()
+    assert (
+        package_root
+        / "pricing-mlops-source"
+        / "scripts"
+        / "components"
         / "calculate_operational_decision.py"
     ).is_file()
     assert not (package_root / "pricing-mlops-source" / "notebooks").exists()
@@ -154,6 +161,7 @@ def _minimal_model_repo(tmp_path: Path) -> Path:
         "score_evaluate.py",
         "build_monitoring_inputs.py",
         "calculate_recommendation_validity.py",
+        "calculate_auth_history_drift.py",
         "calculate_operational_decision.py",
     ):
         (model_repo / "scripts" / "components" / filename).write_text(

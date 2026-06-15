@@ -18,7 +18,7 @@ def test_direct_notebook_submit_script_documents_required_contract():
     assert "az ml job create" in script
     assert (
         "validate_prepare,build_monitoring_inputs,calculate_recommendation_validity,"
-        "calculate_operational_decision,publish_outputs"
+        "calculate_auth_history_drift,calculate_operational_decision,publish_outputs"
     ) in script
 
 
