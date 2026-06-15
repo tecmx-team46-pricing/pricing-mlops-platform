@@ -43,17 +43,17 @@ require_value() {
 require_value AZURE_RESOURCE_GROUP "${RESOURCE_GROUP}"
 
 if [[ -z "${AZURE_ML_WORKSPACE}" ]]; then
-  echo "AZURE_ML_WORKSPACE is required for direct notebook submit." >&2
+  echo "AZURE_ML_WORKSPACE is required for direct AUTH monitoring submit." >&2
   exit 1
 fi
 
 if [[ -z "${AZURE_STORAGE_ACCOUNT}" ]]; then
-  echo "AZURE_STORAGE_ACCOUNT is required for direct notebook submit." >&2
+  echo "AZURE_STORAGE_ACCOUNT is required for direct AUTH monitoring submit." >&2
   exit 1
 fi
 
 if [[ -z "${BASELINE_SNAPSHOT_BLOB_PATH}" ]]; then
-  echo "MLOPS_BASELINE_SNAPSHOT_BLOB_PATH is required for the Avance 4 notebook." >&2
+  echo "MLOPS_BASELINE_SNAPSHOT_BLOB_PATH is required for AUTH monitoring." >&2
   exit 1
 fi
 
@@ -67,10 +67,12 @@ if [[ ! -d "${MODEL_REPO_PATH}" ]]; then
   exit 1
 fi
 
-if [[ ! -f "${MODEL_REPO_PATH}/scripts/components/run_notebook_monitor.py" ]]; then
-  echo "MODEL_REPO_PATH does not include run_notebook_monitor.py: ${MODEL_REPO_PATH}" >&2
-  exit 1
-fi
+for component in build_monitoring_inputs.py calculate_recommendation_validity.py calculate_operational_decision.py; do
+  if [[ ! -f "${MODEL_REPO_PATH}/scripts/components/${component}" ]]; then
+    echo "MODEL_REPO_PATH does not include ${component}: ${MODEL_REPO_PATH}" >&2
+    exit 1
+  fi
+done
 
 MODEL_COMMIT_SHA="$(git -C "${MODEL_REPO_PATH}" rev-parse HEAD 2>/dev/null || echo unknown)"
 JOB_WORKDIR="$(mktemp -d)"
@@ -83,9 +85,7 @@ rsync -a \
   --exclude '.venv/' \
   --exclude 'azureml/' \
   --exclude 'docs/' \
-  --include 'notebooks/' \
-  --include 'notebooks/operational/***' \
-  --exclude 'notebooks/*' \
+  --exclude 'notebooks/' \
   --exclude 'references/' \
   --exclude 'reports/' \
   --exclude 'data/samples/unmasked/' \
@@ -100,8 +100,8 @@ rsync -a \
 cp "${JOB_FILE}" "${JOB_WORKDIR}/azureml/pricing-mlops-notebook-pipeline.yml"
 cp "${MLOPS_ROOT}/azureml/environment.yml" "${JOB_WORKDIR}/azureml/environment.yml"
 
-echo "Submitting notebook pipeline direct to Azure ML"
-echo "Nodes: validate_prepare,run_notebook_monitor,publish_outputs"
+echo "Submitting AUTH monitoring pipeline direct to Azure ML"
+echo "Nodes: validate_prepare,build_monitoring_inputs,calculate_recommendation_validity,calculate_operational_decision,publish_outputs"
 echo "Run id: ${RUN_ID}"
 echo "Input: ${CURRENT_HISTORY_CONTAINER}/${CURRENT_HISTORY_BLOB_PATH}"
 echo "Baseline snapshot: ${BASELINE_SNAPSHOT_CONTAINER}/${BASELINE_SNAPSHOT_BLOB_PATH}"

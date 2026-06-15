@@ -107,9 +107,7 @@ if [[ -n "${MODEL_REPO_PATH}" ]]; then
     --exclude '.venv/' \
     --exclude 'azureml/' \
     --exclude 'docs/' \
-    --include 'notebooks/' \
-    --include 'notebooks/operational/***' \
-    --exclude 'notebooks/*' \
+    --exclude 'notebooks/' \
     --exclude 'references/' \
     --exclude 'reports/' \
     --exclude 'data/samples/unmasked/' \
@@ -147,7 +145,9 @@ required_model_source_files=(
   "${MODEL_SOURCE_DIR}/scripts/run_azure_ml_flow.py"
   "${MODEL_SOURCE_DIR}/scripts/components/validate_prepare.py"
   "${MODEL_SOURCE_DIR}/scripts/components/score_evaluate.py"
-  "${MODEL_SOURCE_DIR}/scripts/components/run_notebook_monitor.py"
+  "${MODEL_SOURCE_DIR}/scripts/components/build_monitoring_inputs.py"
+  "${MODEL_SOURCE_DIR}/scripts/components/calculate_recommendation_validity.py"
+  "${MODEL_SOURCE_DIR}/scripts/components/calculate_operational_decision.py"
   "${MODEL_SOURCE_DIR}/src/pricing_mlops/__init__.py"
 )
 
@@ -193,9 +193,7 @@ rsync -a \
   --exclude '.venv/' \
   --exclude 'azureml/' \
   --exclude 'docs/' \
-  --include 'notebooks/' \
-  --include 'notebooks/operational/***' \
-  --exclude 'notebooks/*' \
+  --exclude 'notebooks/' \
   --exclude 'references/' \
   --exclude 'reports/' \
   --exclude 'data/samples/unmasked/' \
@@ -218,7 +216,9 @@ required_package_paths=(
   "${PACKAGE_ROOT}/pricing-mlops-source/pyproject.toml"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/validate_prepare.py"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/score_evaluate.py"
-  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/run_notebook_monitor.py"
+  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/build_monitoring_inputs.py"
+  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/calculate_recommendation_validity.py"
+  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/calculate_operational_decision.py"
   "${PACKAGE_ROOT}/platform-components/platform_publish_outputs.py"
   "${PACKAGE_ROOT}/pricing-mlops-source/src/pricing_mlops/__init__.py"
   "${PACKAGE_ROOT}/model_source.json"

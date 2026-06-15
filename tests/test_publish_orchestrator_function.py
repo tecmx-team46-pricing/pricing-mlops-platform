@@ -87,15 +87,23 @@ def test_publish_allows_clean_local_model_source_with_flag(tmp_path):
         / "pricing-mlops-source"
         / "scripts"
         / "components"
-        / "run_notebook_monitor.py"
+        / "build_monitoring_inputs.py"
     ).is_file()
     assert (
         package_root
         / "pricing-mlops-source"
-        / "notebooks"
-        / "operational"
-        / "auth_monitor.ipynb"
+        / "scripts"
+        / "components"
+        / "calculate_recommendation_validity.py"
     ).is_file()
+    assert (
+        package_root
+        / "pricing-mlops-source"
+        / "scripts"
+        / "components"
+        / "calculate_operational_decision.py"
+    ).is_file()
+    assert not (package_root / "pricing-mlops-source" / "notebooks").exists()
     assert (package_root / "pricing-mlops-source" / "src" / "pricing_mlops").is_dir()
     assert not (package_root / "pricing-mlops-source" / "docs").exists()
     assert not (package_root / "pricing-mlops-source" / "tests").exists()
@@ -141,20 +149,17 @@ def _minimal_model_repo(tmp_path: Path) -> Path:
         "print('run')\n",
         encoding="utf-8",
     )
-    for filename in ("validate_prepare.py", "score_evaluate.py"):
+    for filename in (
+        "validate_prepare.py",
+        "score_evaluate.py",
+        "build_monitoring_inputs.py",
+        "calculate_recommendation_validity.py",
+        "calculate_operational_decision.py",
+    ):
         (model_repo / "scripts" / "components" / filename).write_text(
             "print('component')\n",
             encoding="utf-8",
         )
-    (model_repo / "scripts" / "components" / "run_notebook_monitor.py").write_text(
-        "print('notebook component')\n",
-        encoding="utf-8",
-    )
-    (model_repo / "notebooks" / "operational").mkdir(parents=True)
-    (model_repo / "notebooks" / "operational" / "auth_monitor.ipynb").write_text(
-        "{\"cells\": [], \"metadata\": {}, \"nbformat\": 4, \"nbformat_minor\": 5}\n",
-        encoding="utf-8",
-    )
     (model_repo / "src" / "pricing_mlops" / "__init__.py").write_text(
         "__version__ = '0.1.0'\n",
         encoding="utf-8",

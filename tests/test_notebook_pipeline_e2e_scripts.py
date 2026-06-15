@@ -16,7 +16,10 @@ def test_direct_notebook_submit_script_documents_required_contract():
     assert "MLOPS_BASELINE_SNAPSHOT_BLOB_PATH" in script
     assert "MLOPS_CURRENT_AUTH_HISTORY_BLOB_PATH" in script
     assert "az ml job create" in script
-    assert "validate_prepare,run_notebook_monitor,publish_outputs" in script
+    assert (
+        "validate_prepare,build_monitoring_inputs,calculate_recommendation_validity,"
+        "calculate_operational_decision,publish_outputs"
+    ) in script
 
 
 def test_notebook_e2e_preflight_checks_resources_and_required_blobs():

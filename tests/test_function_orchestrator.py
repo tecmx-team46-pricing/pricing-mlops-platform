@@ -67,30 +67,47 @@ def test_pipeline_template_uses_packaged_model_source():
     )
 
 
-def test_notebook_pipeline_template_uses_packaged_operational_notebook_source():
+def test_notebook_pipeline_template_uses_packaged_auth_monitoring_steps():
     job_definition = yaml.safe_load(NOTEBOOK_PIPELINE_JOB_FILE.read_text(encoding="utf-8"))
 
     assert job_definition["type"] == "pipeline"
     assert set(job_definition["jobs"].keys()) == {
         "validate_prepare",
-        "run_notebook_monitor",
+        "build_monitoring_inputs",
+        "calculate_recommendation_validity",
+        "calculate_operational_decision",
         "publish_outputs",
     }
-    for job_name in ("validate_prepare", "run_notebook_monitor"):
+    for job_name in (
+        "validate_prepare",
+        "build_monitoring_inputs",
+        "calculate_recommendation_validity",
+        "calculate_operational_decision",
+    ):
         assert job_definition["jobs"][job_name]["component"]["code"] == "../pricing-mlops-source"
         assert job_definition["jobs"][job_name]["compute"] == "azureml:serverless"
     assert job_definition["jobs"]["publish_outputs"]["component"]["code"] == "../platform-components"
     assert job_definition["jobs"]["publish_outputs"]["compute"] == "azureml:serverless"
-    notebook_command = job_definition["jobs"]["run_notebook_monitor"]["component"]["command"]
-    assert "python scripts/components/run_notebook_monitor.py" in notebook_command
-    assert "notebooks/operational/${{inputs.notebook_name}}" in notebook_command
-    assert "--baseline-snapshot-container ${{inputs.baseline_snapshot_container}}" in notebook_command
-    assert "--baseline-snapshot-blob-path ${{inputs.baseline_snapshot_blob_path}}" in notebook_command
-    assert "--current-history-container ${{inputs.current_history_container}}" in notebook_command
-    assert "--current-history-blob-path ${{inputs.current_history_blob_path}}" in notebook_command
-    assert "--run-artifacts-prefix component-state/${{inputs.run_id}}/notebook_artifacts" in notebook_command
-    assert job_definition["jobs"]["run_notebook_monitor"]["depends_on"] == ["validate_prepare"]
-    assert job_definition["jobs"]["publish_outputs"]["depends_on"] == ["run_notebook_monitor"]
+    inputs_command = job_definition["jobs"]["build_monitoring_inputs"]["component"]["command"]
+    validity_command = job_definition["jobs"]["calculate_recommendation_validity"]["component"]["command"]
+    decision_command = job_definition["jobs"]["calculate_operational_decision"]["component"]["command"]
+    publish_command = job_definition["jobs"]["publish_outputs"]["component"]["command"]
+    assert "python scripts/components/build_monitoring_inputs.py" in inputs_command
+    assert "--baseline-snapshot-container ${{inputs.baseline_snapshot_container}}" in inputs_command
+    assert "--baseline-snapshot-blob-path ${{inputs.baseline_snapshot_blob_path}}" in inputs_command
+    assert "--current-history-container ${{inputs.current_history_container}}" in inputs_command
+    assert "--current-history-blob-path ${{inputs.current_history_blob_path}}" in inputs_command
+    assert "python scripts/components/calculate_recommendation_validity.py" in validity_command
+    assert "component-state/${{inputs.run_id}}/monitoring_inputs" in validity_command
+    assert "python scripts/components/calculate_operational_decision.py" in decision_command
+    assert "component-state/${{inputs.run_id}}/recommendation_validity" in decision_command
+    assert "component-state/${{inputs.run_id}}/operational_decision" in publish_command
+    assert job_definition["jobs"]["build_monitoring_inputs"]["depends_on"] == ["validate_prepare"]
+    assert job_definition["jobs"]["calculate_recommendation_validity"]["depends_on"] == ["build_monitoring_inputs"]
+    assert job_definition["jobs"]["calculate_operational_decision"]["depends_on"] == [
+        "calculate_recommendation_validity"
+    ]
+    assert job_definition["jobs"]["publish_outputs"]["depends_on"] == ["calculate_operational_decision"]
     assert "python platform_publish_outputs.py" in (
         job_definition["jobs"]["publish_outputs"]["component"]["command"]
     )
