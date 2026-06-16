@@ -70,3 +70,20 @@ flowchart TD
 Cada paso funcional escribe artefactos acumulados en `component-state/<run_id>/...`.
 `publish_outputs` pertenece a `pricing-mlops-platform` y publica el arbol final producido por
 `calculate_operational_decision`.
+
+## Publicacion Por Endpoint
+
+La frontera recomendada es que `pricing-mlops` registre el pipeline component completo
+`pricing_mlops_auth_monitoring_pipeline`. Platform no mantiene la lista de steps internos para el
+endpoint publicado; solo promueve una version registrada de ese pipeline component a un Azure ML
+Batch Endpoint.
+
+```mermaid
+flowchart TD
+  A["pricing-mlops registra pipeline component"] --> B["platform valida component version"]
+  B --> C["platform actualiza Batch Endpoint deployment"]
+  C --> D["platform invoca smoke test"]
+  D --> E["Storage artifacts"]
+```
+
+Ver `mlops/docs/batch-endpoint.md` para deploy e invocacion.

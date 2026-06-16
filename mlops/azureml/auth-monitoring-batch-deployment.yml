@@ -1,0 +1,8 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineComponentBatchDeployment.schema.json
+name: blue
+endpoint_name: pricing-auth-monitoring
+type: pipeline
+component: azureml:pricing_mlops_auth_monitoring_pipeline:0.1.1
+settings:
+  default_compute: serverless
+  continue_on_step_failure: false

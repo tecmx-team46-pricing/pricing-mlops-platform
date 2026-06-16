@@ -1,0 +1,5 @@
+{
+  "release": "auth-monitoring-0.1.1",
+  "owner_repo": "tecmx-team46-pricing/pricing-mlops",
+  "pipeline_component": "azureml:pricing_mlops_auth_monitoring_pipeline:0.1.1"
+}

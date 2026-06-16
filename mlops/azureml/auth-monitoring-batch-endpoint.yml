@@ -1,0 +1,4 @@
+$schema: https://azuremlschemas.azureedge.net/latest/batchEndpoint.schema.json
+name: pricing-auth-monitoring
+description: AUTH monitoring batch endpoint for the pricing MLOps pipeline.
+auth_mode: aad_token
