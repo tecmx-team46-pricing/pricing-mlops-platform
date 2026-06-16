@@ -3,6 +3,8 @@
 > Referencia original extraida del PDF `Diseno Tecnico_ Arquitectura MLOps.pdf`.
 >
 > Este documento debe conservarse como el plan original. No debe sobrescribirse para reflejar cambios posteriores. Si se decide cambiar la arquitectura o el alcance, crear otro documento con el estado final y mantener este archivo como referencia historica.
+>
+> Estado actual: la arquitectura operativa vigente evita Azure Function/SQL audit como runtime activo y delega componentes, pipeline endpoint y publicacion de artefactos al repo `pricing-mlops`.
 
 | Campo | Valor |
 |---|---|

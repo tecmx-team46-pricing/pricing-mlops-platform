@@ -1,5 +1,8 @@
 # Reporte de Avance - Plataforma MLOps para Pricing Intelligence
 
+!!! warning "Documento historico"
+    Este reporte conserva la narrativa del MVP anterior con Azure Function y SQL audit. No es el runbook operativo vigente. La arquitectura actual usa `pricing-mlops-platform` solo para IaC/base Azure y `pricing-mlops` para componentes, pipeline endpoint y publicacion de artefactos.
+
 **Proyecto:** Plataforma MLOps para Pricing Intelligence
 **Equipo:** Team 46
 **Materia:** MNA - Proyecto integrador (Gpo 10)
@@ -250,7 +253,6 @@ Tambien se limpiaron recursos legacy del PoC intermedio basado en Container Apps
 Se realizaron validaciones locales y de infraestructura:
 
 ```bash
-scripts/validate-mlops-contracts.py
 az bicep build --file infra/foundation/main.bicep
 az bicep build --file infra/workloads/pricing-mlops/main.bicep
 az bicep build-params --file infra/parameters/staging.bicepparam
