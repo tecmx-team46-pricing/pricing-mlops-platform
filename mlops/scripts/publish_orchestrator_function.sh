@@ -42,6 +42,7 @@ required_files=(
   "${MLOPS_ROOT}/azureml/pricing-mlops-pipeline.yml"
   "${MLOPS_ROOT}/azureml/environment.yml"
   "${MLOPS_ROOT}/azureml/conda.yml"
+  "${MLOPS_ROOT}/configs/drift_thresholds.json"
   "${MLOPS_ROOT}/components/platform_publish_outputs.py"
 )
 
@@ -168,13 +169,14 @@ for file in "${required_model_source_files[@]}"; do
   fi
 done
 
-mkdir -p "${PACKAGE_ROOT}/azureml" "${PACKAGE_ROOT}/pricing-mlops-source" "${PACKAGE_ROOT}/platform-components"
+mkdir -p "${PACKAGE_ROOT}/azureml" "${PACKAGE_ROOT}/configs" "${PACKAGE_ROOT}/pricing-mlops-source" "${PACKAGE_ROOT}/platform-components"
 cp "${MLOPS_ROOT}/functions/function_app.py" "${PACKAGE_ROOT}/function_app.py"
 cp "${MLOPS_ROOT}/functions/host.json" "${PACKAGE_ROOT}/host.json"
 cp "${MLOPS_ROOT}/functions/requirements.txt" "${PACKAGE_ROOT}/requirements.txt"
 cp "${MLOPS_ROOT}/azureml/pricing-mlops-pipeline.yml" "${PACKAGE_ROOT}/azureml/pricing-mlops-pipeline.yml"
 cp "${MLOPS_ROOT}/azureml/environment.yml" "${PACKAGE_ROOT}/azureml/environment.yml"
 cp "${MLOPS_ROOT}/azureml/conda.yml" "${PACKAGE_ROOT}/azureml/conda.yml"
+cp "${MLOPS_ROOT}/configs/drift_thresholds.json" "${PACKAGE_ROOT}/configs/drift_thresholds.json"
 cp "${MLOPS_ROOT}/components/platform_publish_outputs.py" "${PACKAGE_ROOT}/platform-components/platform_publish_outputs.py"
 python - <<'PY' "${PACKAGE_ROOT}/model_source.json" "${MODEL_SOURCE_KIND}" "${MODEL_REPO_GITHUB}" "${MODEL_REPO_REF}" "${MODEL_COMMIT_SHA}"
 import json
@@ -222,6 +224,7 @@ required_package_paths=(
   "${PACKAGE_ROOT}/azureml/pricing-mlops-pipeline.yml"
   "${PACKAGE_ROOT}/azureml/environment.yml"
   "${PACKAGE_ROOT}/azureml/conda.yml"
+  "${PACKAGE_ROOT}/configs/drift_thresholds.json"
   "${PACKAGE_ROOT}/pricing-mlops-source/pyproject.toml"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/validate_prepare.py"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/build_monitoring_inputs.py"

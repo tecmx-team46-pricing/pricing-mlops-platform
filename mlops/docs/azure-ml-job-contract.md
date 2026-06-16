@@ -35,7 +35,12 @@ trigger_type
 model_repo
 model_ref
 model_commit_sha
+monitoring_config_version
 ```
+
+`monitoring_config_version` corresponde a `mlops/configs/drift_thresholds.json`.
+El step `publish_outputs` guarda esa version y el SHA-256 del archivo en
+`model_run_log.json` para reproducibilidad de la configuracion del semaforo.
 
 Outputs funcionales esperados:
 

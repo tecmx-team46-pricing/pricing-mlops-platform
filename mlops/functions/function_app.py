@@ -26,6 +26,10 @@ MODEL_SOURCE_FILE_CANDIDATES = (
     APP_ROOT / "model_source.json",
     APP_ROOT.parent / "model_source.json",
 )
+MONITORING_CONFIG_FILE_CANDIDATES = (
+    APP_ROOT / "configs" / "drift_thresholds.json",
+    APP_ROOT.parent / "configs" / "drift_thresholds.json",
+)
 PIPELINE_JOB_FILE = next(
     (path for path in PIPELINE_JOB_FILE_CANDIDATES if path.exists()),
     PIPELINE_JOB_FILE_CANDIDATES[0],
@@ -33,6 +37,10 @@ PIPELINE_JOB_FILE = next(
 MODEL_SOURCE_FILE = next(
     (path for path in MODEL_SOURCE_FILE_CANDIDATES if path.exists()),
     MODEL_SOURCE_FILE_CANDIDATES[0],
+)
+MONITORING_CONFIG_FILE = next(
+    (path for path in MONITORING_CONFIG_FILE_CANDIDATES if path.exists()),
+    MONITORING_CONFIG_FILE_CANDIDATES[0],
 )
 JOB_FILE = PIPELINE_JOB_FILE
 
@@ -109,6 +117,7 @@ def health(req: func.HttpRequest) -> func.HttpResponse:
 
 def _orchestration_request(payload: dict[str, object]) -> dict[str, str]:
     model_source = _model_source_metadata()
+    monitoring_config = _monitoring_config_metadata()
     request = {
         "subscription_id": _required("AZURE_SUBSCRIPTION_ID", payload),
         "resource_group": _required("AZURE_RESOURCE_GROUP", payload),
@@ -123,6 +132,11 @@ def _orchestration_request(payload: dict[str, object]) -> dict[str, str]:
         "model_repo": _value("MODEL_REPO_GITHUB", payload, model_source["model_repo"]),
         "model_ref": _value("MODEL_REPO_REF", payload, model_source["model_ref"]),
         "model_commit_sha": _value("MODEL_REPO_COMMIT_SHA", payload, model_source["model_commit_sha"]),
+        "monitoring_config_version": _value(
+            "MLOPS_MONITORING_CONFIG_VERSION",
+            payload,
+            monitoring_config["monitoring_config_version"],
+        ),
     }
     request["baseline_snapshot_container"] = _value(
         "MLOPS_BASELINE_SNAPSHOT_CONTAINER",
@@ -268,6 +282,18 @@ def _model_source_metadata() -> dict[str, str]:
     }
 
 
+def _monitoring_config_metadata() -> dict[str, str]:
+    defaults = {"monitoring_config_version": "unknown"}
+    if not MONITORING_CONFIG_FILE.exists():
+        return defaults
+    try:
+        metadata = json.loads(MONITORING_CONFIG_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        logging.warning("Unable to read monitoring config metadata from %s", MONITORING_CONFIG_FILE)
+        return defaults
+    return {"monitoring_config_version": str(metadata.get("version") or defaults["monitoring_config_version"])}
+
+
 def _json_response(body: dict[str, object], status_code: int) -> func.HttpResponse:
     return func.HttpResponse(
         json.dumps(body, sort_keys=True),
@@ -302,6 +328,7 @@ def submit_azure_ml_job(request: dict[str, str]) -> dict[str, str | bool]:
         "model_repo": request["model_repo"],
         "model_ref": request["model_ref"],
         "model_commit_sha": request["model_commit_sha"],
+        "monitoring_config_version": request["monitoring_config_version"],
         "job_identity_client_id": os.getenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "").strip(),
         "sql_enabled": os.getenv("MLOPS_SQL_ENABLED", "false").strip(),
         "sql_server": os.getenv("MLOPS_SQL_SERVER", "").strip(),
@@ -382,6 +409,7 @@ def _record_run_metadata(request: dict[str, str], status: str) -> None:
         "model_repo": request["model_repo"],
         "model_ref": request["model_ref"],
         "model_commit_sha": request["model_commit_sha"],
+        "monitoring_config_version": request.get("monitoring_config_version", "unknown"),
     }
     if request.get("azure_ml_job_name"):
         entity["azure_ml_job_name"] = request["azure_ml_job_name"]

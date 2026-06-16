@@ -1,4 +1,5 @@
 import importlib.util
+import json
 from pathlib import Path
 import sys
 import types
@@ -19,6 +20,9 @@ def _load_publish_component():
 def test_platform_publish_validates_auth_monitoring_contract_before_upload(tmp_path):
     module = _load_publish_component()
     _write_required_artifacts(tmp_path, module.REQUIRED_AUTH_MONITORING_ARTIFACTS)
+    config_path = tmp_path / "configs" / "drift_thresholds.json"
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text('{"version":"2026-05-07"}\n', encoding="utf-8")
     blob_service = FakeBlobService()
 
     published = module._publish_from_dir(
@@ -30,6 +34,11 @@ def test_platform_publish_validates_auth_monitoring_contract_before_upload(tmp_p
         input_blob_path="incoming/current.csv",
         compute_target="azure-ml",
         trigger_type="manual",
+        model_repo="tecmx-team46-pricing/pricing-mlops",
+        model_ref="feature/monitoring",
+        model_commit_sha="abc123",
+        monitoring_config_version="2026-05-07",
+        monitoring_config_path=config_path,
         containers={
             "curated": "curated",
             "runs": "runs",
@@ -43,6 +52,13 @@ def test_platform_publish_validates_auth_monitoring_contract_before_upload(tmp_p
     assert "reports/auth_recommendation_validity_report.md" in published
     assert blob_service.uploads["reports"][0].endswith("/reports/auth_recommendation_validity_report.md")
     assert blob_service.uploads["runs"][0].endswith("/model_run_log.json")
+    run_log = json.loads((tmp_path / "model_run_log.json").read_text(encoding="utf-8"))
+    assert run_log["config_version"] == "2026-05-07"
+    assert run_log["monitoring_config_path"] == "configs/drift_thresholds.json"
+    assert run_log["monitoring_config_sha256"]
+    assert run_log["model_repo"] == "tecmx-team46-pricing/pricing-mlops"
+    assert run_log["model_ref"] == "feature/monitoring"
+    assert run_log["git_commit_hash"] == "abc123"
 
 
 def test_platform_publish_rejects_incomplete_auth_monitoring_contract(tmp_path):
@@ -64,6 +80,11 @@ def test_platform_publish_rejects_incomplete_auth_monitoring_contract(tmp_path):
             input_blob_path="incoming/current.csv",
             compute_target="azure-ml",
             trigger_type="manual",
+            model_repo="",
+            model_ref="",
+            model_commit_sha="",
+            monitoring_config_version="2026-05-07",
+            monitoring_config_path=None,
             containers={
                 "curated": "curated",
                 "runs": "runs",

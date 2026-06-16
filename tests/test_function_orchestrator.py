@@ -26,6 +26,8 @@ def test_pipeline_template_uses_packaged_model_source():
     job_definition = yaml.safe_load(PIPELINE_JOB_FILE.read_text(encoding="utf-8"))
 
     assert job_definition["type"] == "pipeline"
+    assert job_definition["inputs"]["monitoring_config_version"] == "2026-05-07"
+    assert job_definition["inputs"]["monitoring_config_path"] == "configs/drift_thresholds.json"
     assert set(job_definition["jobs"].keys()) == {
         "validate_prepare",
         "build_monitoring_inputs",
@@ -97,6 +99,13 @@ def test_pipeline_template_uses_packaged_model_source():
     )
     assert "component-state/${{inputs.run_id}}/operational_decision" in (
         job_definition["jobs"]["publish_outputs"]["component"]["command"]
+    )
+    publish_command = job_definition["jobs"]["publish_outputs"]["component"]["command"]
+    assert "--monitoring-config-version ${{inputs.monitoring_config_version}}" in publish_command
+    assert "--monitoring-config-path ../configs/drift_thresholds.json" in publish_command
+    assert (
+        job_definition["jobs"]["publish_outputs"]["inputs"]["monitoring_config_version"]
+        == "${{parent.inputs.monitoring_config_version}}"
     )
 
 def test_function_app_discovers_platform_job_template():
@@ -289,6 +298,7 @@ def test_apply_job_inputs_updates_loaded_pipeline_defaults(tmp_path):
             "run_id": "run-from-function",
             "trigger_type": "event-grid",
             "model_commit_sha": "abc123",
+            "monitoring_config_version": "2026-05-07",
             "job_identity_client_id": "managed-client-id",
         },
     )
@@ -296,6 +306,7 @@ def test_apply_job_inputs_updates_loaded_pipeline_defaults(tmp_path):
     assert job._to_dict()["inputs"]["run_id"] == "run-from-function"
     assert job._to_dict()["inputs"]["trigger_type"] == "event-grid"
     assert job._to_dict()["inputs"]["model_commit_sha"] == "abc123"
+    assert job._to_dict()["inputs"]["monitoring_config_version"] == "2026-05-07"
     assert job._to_dict()["inputs"]["job_identity_client_id"] == "managed-client-id"
     assert set(job._to_dict()["jobs"].keys()) == {
         "validate_prepare",

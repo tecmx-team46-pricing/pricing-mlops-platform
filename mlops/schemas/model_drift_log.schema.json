@@ -3,37 +3,32 @@
   "title": "model_drift_log",
   "type": "object",
   "required": [
-    "drift_id",
-    "run_id",
-    "baseline_version",
+    "drift_run_id",
+    "monitoring_stage",
     "variable_name",
     "variable_type",
     "drift_metric",
     "drift_value",
-    "threshold_green",
+    "p_value",
     "threshold_yellow",
     "threshold_red",
     "drift_status",
-    "revenue_weighted_impact",
-    "recommended_action"
+    "recommended_action",
+    "monitoring_scope"
   ],
   "properties": {
-    "drift_id": { "type": "string" },
-    "run_id": { "type": "string" },
-    "baseline_version": { "type": "string" },
+    "drift_run_id": { "type": "string" },
+    "monitoring_stage": { "type": "string" },
     "variable_name": { "type": "string" },
     "variable_type": { "type": "string", "enum": ["price", "quantity", "output"] },
     "drift_metric": { "type": "string" },
     "drift_value": { "type": "number" },
-    "threshold_green": { "type": "number" },
+    "p_value": { "type": "number" },
     "threshold_yellow": { "type": "number" },
     "threshold_red": { "type": "number" },
-    "drift_status": { "type": "string", "enum": ["green", "yellow", "red"] },
-    "revenue_weighted_impact": { "type": "number" },
-    "recommended_action": {
-      "type": "string",
-      "enum": ["no_action", "business_review", "recalibrate_or_retrain"]
-    }
+    "drift_status": { "type": "string", "enum": ["Green", "Yellow", "Red"] },
+    "recommended_action": { "type": "string" },
+    "monitoring_scope": { "type": "string" }
   },
   "additionalProperties": false
 }

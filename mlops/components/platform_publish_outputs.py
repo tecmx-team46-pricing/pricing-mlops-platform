@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -38,6 +40,8 @@ def main() -> int:
     parser.add_argument("--model-repo", default="")
     parser.add_argument("--model-ref", default="")
     parser.add_argument("--model-commit-sha", default="")
+    parser.add_argument("--monitoring-config-version", default="")
+    parser.add_argument("--monitoring-config-path", default="")
     parser.add_argument("--curated-container", default="curated")
     parser.add_argument("--runs-container", default="runs")
     parser.add_argument("--snapshots-container", default="snapshots")
@@ -58,6 +62,11 @@ def main() -> int:
             input_blob_path=args.input_blob_path,
             compute_target=args.compute_target,
             trigger_type=args.trigger_type,
+            model_repo=args.model_repo,
+            model_ref=args.model_ref,
+            model_commit_sha=args.model_commit_sha,
+            monitoring_config_version=args.monitoring_config_version,
+            monitoring_config_path=Path(args.monitoring_config_path) if args.monitoring_config_path else None,
             containers={
                 "curated": args.curated_container,
                 "runs": args.runs_container,
@@ -87,6 +96,11 @@ def publish_outputs(
     compute_target: str,
     trigger_type: str,
     containers: dict[str, str],
+    model_repo: str = "",
+    model_ref: str = "",
+    model_commit_sha: str = "",
+    monitoring_config_version: str = "",
+    monitoring_config_path: Path | None = None,
 ) -> dict[str, str]:
     from azure.storage.blob import BlobServiceClient
 
@@ -104,6 +118,11 @@ def publish_outputs(
             input_blob_path=input_blob_path,
             compute_target=compute_target,
             trigger_type=trigger_type,
+            model_repo=model_repo,
+            model_ref=model_ref,
+            model_commit_sha=model_commit_sha,
+            monitoring_config_version=monitoring_config_version,
+            monitoring_config_path=monitoring_config_path,
             containers=containers,
         )
     with tempfile.TemporaryDirectory(prefix="pricing-mlops-platform-publish-") as tmpdir:
@@ -123,6 +142,11 @@ def publish_outputs(
             input_blob_path=input_blob_path,
             compute_target=compute_target,
             trigger_type=trigger_type,
+            model_repo=model_repo,
+            model_ref=model_ref,
+            model_commit_sha=model_commit_sha,
+            monitoring_config_version=monitoring_config_version,
+            monitoring_config_path=monitoring_config_path,
             containers=containers,
         )
 
@@ -164,11 +188,29 @@ def _publish_from_dir(
     compute_target: str,
     trigger_type: str,
     containers: dict[str, str],
+    model_repo: str,
+    model_ref: str,
+    model_commit_sha: str,
+    monitoring_config_version: str,
+    monitoring_config_path: Path | None,
 ) -> dict[str, str]:
     run_dir = Path(run_dir)
     if not run_dir.exists():
         raise FileNotFoundError(f"run directory not found: {run_dir}")
-    _ensure_run_log(run_dir, run_id, input_blob_path)
+    _ensure_run_log(
+        run_dir,
+        run_id=run_id,
+        input_blob_path=input_blob_path,
+        environment=environment,
+        run_owner=run_owner,
+        compute_target=compute_target,
+        trigger_type=trigger_type,
+        model_repo=model_repo,
+        model_ref=model_ref,
+        model_commit_sha=model_commit_sha,
+        monitoring_config_version=monitoring_config_version,
+        monitoring_config_path=monitoring_config_path,
+    )
     _validate_auth_monitoring_artifacts(run_dir)
     prefix = _partition_prefix(
         environment=environment,
@@ -205,23 +247,93 @@ def _validate_auth_monitoring_artifacts(run_dir: Path) -> None:
         )
 
 
-def _ensure_run_log(run_dir: Path, run_id: str, input_blob_path: str) -> None:
+def _ensure_run_log(
+    run_dir: Path,
+    *,
+    run_id: str,
+    input_blob_path: str,
+    environment: str,
+    run_owner: str,
+    compute_target: str,
+    trigger_type: str,
+    model_repo: str,
+    model_ref: str,
+    model_commit_sha: str,
+    monitoring_config_version: str,
+    monitoring_config_path: Path | None,
+) -> None:
     run_log = run_dir / "model_run_log.json"
+    existing = {}
     if run_log.exists():
-        return
+        try:
+            existing = json.loads(run_log.read_text(encoding="utf-8"))
+        except ValueError:
+            existing = {}
+    config_path = _resolve_config_path(run_dir, monitoring_config_path)
+    config_metadata = _config_metadata(run_dir, config_path, monitoring_config_version)
+    payload = {
+        **existing,
+        "run_id": run_id,
+        "run_timestamp": existing.get("run_timestamp") or datetime.now(timezone.utc).isoformat(),
+        "status": existing.get("status") or "succeeded",
+        "input_blob_path": input_blob_path,
+        "environment": environment,
+        "executed_by": run_owner,
+        "compute_target": compute_target,
+        "trigger_type": trigger_type,
+        "model_repo": model_repo,
+        "model_ref": model_ref,
+        "model_commit_sha": model_commit_sha,
+        "git_commit_hash": model_commit_sha or existing.get("git_commit_hash") or "unknown",
+        "code_version": model_ref or model_commit_sha or existing.get("code_version") or "unknown",
+        "logic_version": existing.get("logic_version") or "auth-monitoring-v4-operational-decision",
+        "output_version": existing.get("output_version") or "auth-monitoring-artifacts-v1",
+        "dataset_version": existing.get("dataset_version") or input_blob_path,
+        **config_metadata,
+    }
     run_log.write_text(
-        json.dumps(
-            {
-                "run_id": run_id,
-                "status": "succeeded",
-                "input_blob_path": input_blob_path,
-            },
-            indent=2,
-            sort_keys=True,
-        )
-        + "\n",
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def _resolve_config_path(run_dir: Path, monitoring_config_path: Path | None) -> Path | None:
+    if monitoring_config_path is None:
+        candidate = run_dir / "configs" / "drift_thresholds.json"
+        return candidate if candidate.is_file() else None
+    if monitoring_config_path.is_absolute():
+        return monitoring_config_path
+    return (run_dir / monitoring_config_path).resolve()
+
+
+def _config_metadata(
+    run_dir: Path,
+    config_path: Path | None,
+    monitoring_config_version: str,
+) -> dict[str, str]:
+    metadata = {
+        "config_version": monitoring_config_version or "unknown",
+        "monitoring_config_path": "",
+        "monitoring_config_sha256": "",
+    }
+    if config_path is None or not config_path.is_file():
+        return metadata
+    content = config_path.read_bytes()
+    try:
+        relative_path = config_path.resolve().relative_to(run_dir.resolve()).as_posix()
+    except ValueError:
+        relative_path = config_path.as_posix()
+    version = monitoring_config_version
+    if not version:
+        try:
+            version = str(json.loads(content.decode("utf-8")).get("version") or "")
+        except ValueError:
+            version = ""
+    return {
+        "config_version": version or "unknown",
+        "monitoring_config_path": relative_path,
+        "monitoring_config_sha256": hashlib.sha256(content).hexdigest(),
+    }
 
 
 def _partition_prefix(

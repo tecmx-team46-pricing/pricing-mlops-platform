@@ -17,6 +17,8 @@ inputs:
   model_repo: tecmx-team46-pricing/pricing-mlops
   model_ref: feature/avance4-pipeline-abstraction
   model_commit_sha: unknown
+  monitoring_config_version: '2026-05-07'
+  monitoring_config_path: configs/drift_thresholds.json
   job_identity_client_id: ''
   sql_enabled: 'false'
   sql_server: ''
@@ -302,6 +304,8 @@ jobs:
         --model-repo ${{inputs.model_repo}}
         --model-ref ${{inputs.model_ref}}
         --model-commit-sha ${{inputs.model_commit_sha}}
+        --monitoring-config-version ${{inputs.monitoring_config_version}}
+        --monitoring-config-path ../configs/drift_thresholds.json
       environment: azureml:pricing-auth-monitoring-env:1
       inputs:
         storage_account:
@@ -322,6 +326,10 @@ jobs:
           type: string
         model_commit_sha:
           type: string
+        monitoring_config_version:
+          type: string
+        monitoring_config_path:
+          type: string
         job_identity_client_id:
           type: string
         previous_step_token:
@@ -336,6 +344,8 @@ jobs:
       model_repo: ${{parent.inputs.model_repo}}
       model_ref: ${{parent.inputs.model_ref}}
       model_commit_sha: ${{parent.inputs.model_commit_sha}}
+      monitoring_config_version: ${{parent.inputs.monitoring_config_version}}
+      monitoring_config_path: ${{parent.inputs.monitoring_config_path}}
       job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
       previous_step_token:
         type: uri_folder
