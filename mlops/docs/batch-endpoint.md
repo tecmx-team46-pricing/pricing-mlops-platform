@@ -14,6 +14,7 @@ El flujo AUTH monitoring se expone sin Azure Function mediante un Azure ML Batch
 
 - Azure ML Batch Endpoint;
 - Batch Deployment;
+- componente `pricing_mlops_platform_publish_outputs`;
 - identidad, Storage, RBAC e invocacion;
 - smoke test del endpoint publicado.
 
@@ -31,9 +32,9 @@ Formato:
 
 ```json
 {
-  "release": "auth-monitoring-0.1.1",
+  "release": "auth-monitoring-0.1.2",
   "owner_repo": "tecmx-team46-pricing/pricing-mlops",
-  "pipeline_component": "azureml:pricing_mlops_auth_monitoring_pipeline:0.1.1"
+  "pipeline_component": "azureml:pricing_mlops_auth_monitoring_pipeline:0.1.2"
 }
 ```
 
@@ -44,9 +45,20 @@ AZURE_ML_PIPELINE_COMPONENT=azureml:pricing_mlops_auth_monitoring_pipeline:0.1.2
 mlops/scripts/deploy_auth_monitoring_batch_endpoint.sh
 ```
 
-Prerequisito: `pricing-mlops` debe registrar esa version de
-`pricing_mlops_auth_monitoring_pipeline` antes de que platform la promueva. Este repo valida que el
-component exista, pero no lo crea.
+Prerequisitos:
+
+- platform debe registrar `azureml:pricing_mlops_platform_publish_outputs:0.1.1`;
+- `pricing-mlops` debe registrar esa version de `pricing_mlops_auth_monitoring_pipeline`;
+- este repo valida que el pipeline component exista antes de promoverlo, pero no lo crea.
+
+El componente de publicacion de platform se registra con:
+
+```bash
+AZURE_SUBSCRIPTION_NAME=Tecmx \
+AZURE_RESOURCE_GROUP=rg-pricing-mlops-main \
+AZURE_ML_WORKSPACE=mlw-pmlops-06152240 \
+mlops/scripts/register_platform_publish_component.sh
+```
 
 ## Deploy
 

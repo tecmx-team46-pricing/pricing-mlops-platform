@@ -7,6 +7,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 AZUREML_DIR = ROOT / "mlops" / "azureml"
 MANIFEST_FILE = ROOT / "mlops" / "manifests" / "auth-monitoring-pipeline-component.json"
+PUBLISH_MANIFEST_FILE = ROOT / "mlops" / "manifests" / "platform-publish-component.json"
 SCRIPTS_DIR = ROOT / "mlops" / "scripts"
 
 
@@ -32,6 +33,24 @@ def test_pipeline_component_manifest_is_owned_by_model_repo():
     assert manifest["owner_repo"] == "tecmx-team46-pricing/pricing-mlops"
     assert manifest["pipeline_component"].startswith("azureml:")
     assert manifest["pipeline_component"].count(":") == 2
+
+
+def test_platform_publish_component_is_registered_contract_for_model_repo():
+    component = yaml.safe_load((AZUREML_DIR / "platform-publish-outputs-component.yml").read_text())
+    manifest = json.loads(PUBLISH_MANIFEST_FILE.read_text())
+    register_script = (SCRIPTS_DIR / "register_platform_publish_component.sh").read_text()
+
+    assert component["type"] == "command"
+    assert component["name"] == "pricing_mlops_platform_publish_outputs"
+    assert component["version"] == "0.1.1"
+    assert component["code"] == "../components"
+    assert component["environment"] == "azureml:pricing-auth-monitoring-env:1"
+    assert manifest["platform_publish_component"] == "azureml:pricing_mlops_platform_publish_outputs:0.1.1"
+    assert "python platform_publish_outputs.py" in component["command"]
+    assert "--monitoring-config-path ${{inputs.monitoring_config_path}}" in component["command"]
+    assert (ROOT / "mlops" / "components" / "configs" / "drift_thresholds.json").exists()
+    assert "az ml component create" in register_script
+    assert "platform-publish-outputs-component.yml" in register_script
 
 
 def test_deploy_script_promotes_component_without_registering_internal_steps():
