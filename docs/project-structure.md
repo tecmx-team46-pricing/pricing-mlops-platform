@@ -57,7 +57,7 @@ Referencias utiles:
 | `README.md:7-25` | Resumen del flujo manual y automatico. |
 | `mlops/functions/function_app.py:48-115` | Entrypoints HTTP, Event Grid y healthcheck. |
 | `mlops/functions/function_app.py:178-222` | Validaciones y convencion de outputs por corrida. |
-| `mlops/azureml/pricing-mlops-pipeline.yml:25-235` | Los tres pasos del pipeline: validar, scorear y publicar. |
+| `mlops/azureml/pricing-mlops-pipeline.yml` | Pipeline principal AUTH monitoring de seis pasos derivado del notebook. |
 
 ## Donde Mirar Primero
 
@@ -67,7 +67,7 @@ Referencias utiles:
 | La arquitectura | `README.md:27-48`, `docs/architecture.md`, `docs/azure-services.md` |
 | La infraestructura Azure | `infra/workloads/pricing-mlops/main.bicep:49-103`, `infra/parameters/staging.bicepparam` |
 | La Function orquestadora | `mlops/functions/function_app.py:48-115` |
-| El pipeline Azure ML | `mlops/azureml/pricing-mlops-pipeline.yml:1-235` |
+| El pipeline Azure ML AUTH monitoring | `mlops/azureml/pricing-mlops-pipeline.yml`, `docs/pipeline-goal.md` |
 | Los contratos de evidencia | `mlops/schemas/`, `docs/data-contracts.md` |
 | La operacion diaria | `docs/operations.md`, `mlops/scripts/` |
 | La publicacion del sitio | `mkdocs.yml:54-79`, `.github/workflows/docs.yml:33-64` |
@@ -154,7 +154,7 @@ Para entender como corre el sistema:
 
 1. `README.md:7-25`
 2. `mlops/functions/function_app.py:48-115`
-3. `mlops/azureml/pricing-mlops-pipeline.yml:25-235`
+3. `mlops/azureml/pricing-mlops-pipeline.yml`
 4. `docs/operations.md`
 
 Para entender que se despliega:

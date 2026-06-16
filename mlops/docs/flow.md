@@ -52,3 +52,21 @@ flowchart TD
 - Corrida staging bajo demanda.
 - Generacion de artefactos de evidencia.
 - Upload opcional de artefactos a Storage.
+
+## Flujo AUTH Monitoring
+
+El pipeline activo no ejecuta el notebook operacional completo como una caja negra.
+El notebook queda como referencia del analista y la logica operacional se materializa en pasos visibles:
+
+```mermaid
+flowchart TD
+  A["validate_prepare"] --> B["build_monitoring_inputs"]
+  B --> C["calculate_recommendation_validity"]
+  C --> D["calculate_auth_history_drift"]
+  D --> E["calculate_operational_decision"]
+  E --> F["publish_outputs"]
+```
+
+Cada paso funcional escribe artefactos acumulados en `component-state/<run_id>/...`.
+`publish_outputs` pertenece a `pricing-mlops-platform` y publica el arbol final producido por
+`calculate_operational_decision`.

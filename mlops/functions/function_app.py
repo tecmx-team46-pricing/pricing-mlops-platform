@@ -18,10 +18,6 @@ SAFE_OWNER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 SAFE_BLOB_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_./=-]{0,255}$")
 MAX_PAYLOAD_BYTES = 4096
 APP_ROOT = Path(__file__).resolve().parent
-COMMAND_JOB_FILE_CANDIDATES = (
-    APP_ROOT / "azureml" / "pricing-mlops-job.yml",
-    APP_ROOT.parent / "azureml" / "pricing-mlops-job.yml",
-)
 PIPELINE_JOB_FILE_CANDIDATES = (
     APP_ROOT / "azureml" / "pricing-mlops-pipeline.yml",
     APP_ROOT.parent / "azureml" / "pricing-mlops-pipeline.yml",
@@ -30,9 +26,9 @@ MODEL_SOURCE_FILE_CANDIDATES = (
     APP_ROOT / "model_source.json",
     APP_ROOT.parent / "model_source.json",
 )
-COMMAND_JOB_FILE = next(
-    (path for path in COMMAND_JOB_FILE_CANDIDATES if path.exists()),
-    COMMAND_JOB_FILE_CANDIDATES[0],
+MONITORING_CONFIG_FILE_CANDIDATES = (
+    APP_ROOT / "configs" / "drift_thresholds.json",
+    APP_ROOT.parent / "configs" / "drift_thresholds.json",
 )
 PIPELINE_JOB_FILE = next(
     (path for path in PIPELINE_JOB_FILE_CANDIDATES if path.exists()),
@@ -42,7 +38,11 @@ MODEL_SOURCE_FILE = next(
     (path for path in MODEL_SOURCE_FILE_CANDIDATES if path.exists()),
     MODEL_SOURCE_FILE_CANDIDATES[0],
 )
-JOB_FILE = PIPELINE_JOB_FILE if os.getenv("MLOPS_USE_AML_PIPELINE", "true").lower() == "true" else COMMAND_JOB_FILE
+MONITORING_CONFIG_FILE = next(
+    (path for path in MONITORING_CONFIG_FILE_CANDIDATES if path.exists()),
+    MONITORING_CONFIG_FILE_CANDIDATES[0],
+)
+JOB_FILE = PIPELINE_JOB_FILE
 
 
 @app.function_name(name="model-flow")
@@ -72,14 +72,14 @@ def model_flow(req: func.HttpRequest) -> func.HttpResponse:
         result = submit_azure_ml_job(request)
     except Exception as exc:
         logging.exception("AML job submission failed correlation_id=%s", correlation_id)
-        return _json_response(
-            {
-                "accepted": False,
-                "error": "failed to submit Azure ML job",
-                "correlation_id": correlation_id,
-            },
-            500,
-        )
+        body = {
+            "accepted": False,
+            "error": "failed to submit Azure ML job",
+            "correlation_id": correlation_id,
+        }
+        if os.getenv("MLOPS_DEBUG_ERRORS", "false").lower() == "true":
+            body["exception"] = f"{type(exc).__name__}: {exc}"
+        return _json_response(body, 500)
 
     result["correlation_id"] = correlation_id
     return _json_response(result, 202)
@@ -117,6 +117,7 @@ def health(req: func.HttpRequest) -> func.HttpResponse:
 
 def _orchestration_request(payload: dict[str, object]) -> dict[str, str]:
     model_source = _model_source_metadata()
+    monitoring_config = _monitoring_config_metadata()
     request = {
         "subscription_id": _required("AZURE_SUBSCRIPTION_ID", payload),
         "resource_group": _required("AZURE_RESOURCE_GROUP", payload),
@@ -131,7 +132,28 @@ def _orchestration_request(payload: dict[str, object]) -> dict[str, str]:
         "model_repo": _value("MODEL_REPO_GITHUB", payload, model_source["model_repo"]),
         "model_ref": _value("MODEL_REPO_REF", payload, model_source["model_ref"]),
         "model_commit_sha": _value("MODEL_REPO_COMMIT_SHA", payload, model_source["model_commit_sha"]),
+        "monitoring_config_version": _value(
+            "MLOPS_MONITORING_CONFIG_VERSION",
+            payload,
+            monitoring_config["monitoring_config_version"],
+        ),
     }
+    request["baseline_snapshot_container"] = _value(
+        "MLOPS_BASELINE_SNAPSHOT_CONTAINER",
+        payload,
+        os.getenv("MLOPS_CONTAINER_ARTIFACTS", "artifacts"),
+    )
+    request["baseline_snapshot_blob_path"] = _value("MLOPS_BASELINE_SNAPSHOT_BLOB_PATH", payload, "")
+    request["current_history_container"] = _value(
+        "MLOPS_CURRENT_HISTORY_CONTAINER",
+        payload,
+        request["input_container"],
+    )
+    request["current_history_blob_path"] = _value(
+        "MLOPS_CURRENT_AUTH_HISTORY_BLOB_PATH",
+        payload,
+        request["input_blob_path"],
+    )
     _validate_request(request)
     request["run_id"] = _value("MLOPS_RUN_ID", payload, _new_run_id())
     request["expected_output_prefix"] = _expected_output_prefix(request)
@@ -260,6 +282,18 @@ def _model_source_metadata() -> dict[str, str]:
     }
 
 
+def _monitoring_config_metadata() -> dict[str, str]:
+    defaults = {"monitoring_config_version": "unknown"}
+    if not MONITORING_CONFIG_FILE.exists():
+        return defaults
+    try:
+        metadata = json.loads(MONITORING_CONFIG_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        logging.warning("Unable to read monitoring config metadata from %s", MONITORING_CONFIG_FILE)
+        return defaults
+    return {"monitoring_config_version": str(metadata.get("version") or defaults["monitoring_config_version"])}
+
+
 def _json_response(body: dict[str, object], status_code: int) -> func.HttpResponse:
     return func.HttpResponse(
         json.dumps(body, sort_keys=True),
@@ -286,10 +320,15 @@ def submit_azure_ml_job(request: dict[str, str]) -> dict[str, str | bool]:
         "run_owner": request["run_owner"],
         "run_id": request["run_id"],
         "input_blob_path": request["input_blob_path"],
+        "baseline_snapshot_container": request["baseline_snapshot_container"],
+        "baseline_snapshot_blob_path": request["baseline_snapshot_blob_path"],
+        "current_history_container": request["current_history_container"],
+        "current_history_blob_path": request["current_history_blob_path"],
         "trigger_type": request["trigger_type"],
         "model_repo": request["model_repo"],
         "model_ref": request["model_ref"],
         "model_commit_sha": request["model_commit_sha"],
+        "monitoring_config_version": request["monitoring_config_version"],
         "job_identity_client_id": os.getenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "").strip(),
         "sql_enabled": os.getenv("MLOPS_SQL_ENABLED", "false").strip(),
         "sql_server": os.getenv("MLOPS_SQL_SERVER", "").strip(),
@@ -329,6 +368,13 @@ def _apply_job_inputs(job, values: dict[str, str]) -> None:
 
 def _apply_job_identity(job) -> None:
     if os.getenv("MLOPS_USE_MANAGED_JOB_IDENTITY", "false").lower() != "true":
+        if not getattr(job, "jobs", None):
+            if hasattr(job, "identity"):
+                job.identity = None
+            return
+        for node in job.jobs.values():
+            if hasattr(node, "identity"):
+                node.identity = None
         return
 
     job_identity_client_id = os.getenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "").strip()
@@ -363,6 +409,7 @@ def _record_run_metadata(request: dict[str, str], status: str) -> None:
         "model_repo": request["model_repo"],
         "model_ref": request["model_ref"],
         "model_commit_sha": request["model_commit_sha"],
+        "monitoring_config_version": request.get("monitoring_config_version", "unknown"),
     }
     if request.get("azure_ml_job_name"):
         entity["azure_ml_job_name"] = request["azure_ml_job_name"]

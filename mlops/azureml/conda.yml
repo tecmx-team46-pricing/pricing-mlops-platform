@@ -1,0 +1,10 @@
+name: pricing-auth-monitoring-env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - azure-ai-ml>=1.32.0
+      - azure-identity>=1.17.0
+      - azure-storage-blob>=12.20.0

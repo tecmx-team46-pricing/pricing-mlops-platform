@@ -42,7 +42,9 @@ El repo esta organizado por responsabilidad, no por tecnologia aislada. Cada cap
 | Runtime MLOps | `mlops/functions/`, `mlops/azureml/`, `mlops/scripts/` | Codigo de Azure Function, definicion del pipeline/job AML, publicacion y operacion del flujo remoto. |
 | Contratos MLOps | `mlops/configs/`, `mlops/schemas/`, `mlops/docs/` | Schemas, thresholds, storage layout y documentacion del flujo. No contiene IaC. |
 
-`pricing-mlops` queda como repo funcional/data science alineado con Cookiecutter Data Science. El script de publicacion de plataforma empaqueta un snapshot de ese repo en `pricing-mlops-source/`; el pipeline `mlops/azureml/pricing-mlops-pipeline.yml` usa `code: ../pricing-mlops-source` y muestra tres nodos: `validate_prepare`, `score_evaluate` y `publish_outputs`. El command job `mlops/azureml/pricing-mlops-job.yml` queda como fallback.
+`pricing-mlops` queda como repo funcional/data science alineado con Cookiecutter Data Science. El script de publicacion de plataforma empaqueta un snapshot de ese repo en `pricing-mlops-source/`; el pipeline `mlops/azureml/pricing-mlops-pipeline.yml` usa `code: ../pricing-mlops-source` y muestra validacion, componentes de monitoreo AUTH y publicacion final.
+
+La ruta AUTH monitoring expone pasos intermedios para vigencia de recomendaciones, drift AUTH y decision operacional. No ejecuta el notebook completo como artifact operacional.
 
 ## Ambientes
 

@@ -96,7 +96,7 @@ param enableBlobCreatedEventTrigger bool = true
 param enableFunctionManagedIdentityOperator bool = true
 
 @description('Model repo ref packaged and recorded by the MLOps runtime.')
-param modelRepoRef string = 'PoC/model-flow-template'
+param modelRepoRef string = 'feature/avance4-pipeline-abstraction'
 
 @description('Deploy Azure SQL Serverless audit metadata spine for Pricing MLOps.')
 param enableSqlAudit bool = false

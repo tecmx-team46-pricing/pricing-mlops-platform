@@ -91,13 +91,17 @@ mlops/scripts/publish_orchestrator_function.sh staging
 mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
 ```
 
-El publish prepara un paquete temporal con el entrypoint de Azure Functions, `mlops/azureml/pricing-mlops-pipeline.yml`, fallback `mlops/azureml/pricing-mlops-job.yml` y un snapshot del repo `pricing-mlops` bajo `pricing-mlops-source/`. Para `staging` y `validation`, ese snapshot se resuelve desde `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` durante el empaquetado; usar un commit SHA o tag es la ruta mas reproducible. Un branch funciona, pero puede moverse. `MODEL_REPO_PATH` queda solo como fallback local/dev con `ALLOW_LOCAL_MODEL_SOURCE=true`. La Function no clona GitHub por evento.
+El publish prepara un paquete temporal con el entrypoint de Azure Functions, `mlops/azureml/pricing-mlops-pipeline.yml` y un snapshot del repo `pricing-mlops` bajo `pricing-mlops-source/`. Para `staging` y `validation`, ese snapshot se resuelve desde `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` durante el empaquetado; usar un commit SHA o tag es la ruta mas reproducible. Un branch funciona, pero puede moverse. `MODEL_REPO_PATH` queda solo como fallback local/dev con `ALLOW_LOCAL_MODEL_SOURCE=true`. La Function no clona GitHub por evento.
 
-El pipeline activo muestra tres nodos en Azure ML:
+El pipeline activo muestra los pasos de monitoreo en Azure ML:
 
 ```text
-validate_prepare -> score_evaluate -> publish_outputs
+validate_prepare -> build_monitoring_inputs -> calculate_recommendation_validity -> calculate_auth_history_drift -> calculate_operational_decision -> publish_outputs
 ```
+
+`mlops/azureml/pricing-mlops-pipeline.yml` es el template principal. Ninguna ruta ejecuta el notebook completo como caja negra.
+
+El goal actualizado esta documentado en [`docs/pipeline-goal.md`](docs/pipeline-goal.md).
 
 ## Storage
 

@@ -1,28 +1,22 @@
 # Azure ML Pipeline/Job Contract
 
-La ruta preferida se define en `mlops/azureml/pricing-mlops-pipeline.yml`. El fallback command job se conserva en `mlops/azureml/pricing-mlops-job.yml`.
+La ruta AUTH monitoring principal se define en `mlops/azureml/pricing-mlops-pipeline.yml`.
 
-El pipeline activo tiene tres nodos visibles:
+El pipeline activo expone los pasos derivados del notebook de monitoreo:
 
 | Nodo | Entrypoint | Contrato |
 |---|---|---|
 | `validate_prepare` | `scripts/components/validate_prepare.py` | Lee `raw-masked/<input_blob_path>`, valida y produce `curated_input.csv` + `validation_metadata.json`. |
-| `score_evaluate` | `scripts/components/score_evaluate.py` | Lee el intermedio, scorea, calcula drift y escribe los cinco artefactos funcionales locales. |
-| `publish_outputs` | `scripts/components/publish_outputs.py` | Publica los seis outputs funcionales al Storage MLOps. |
+| `build_monitoring_inputs` | `scripts/components/build_monitoring_inputs.py` | Prepara snapshots normalizados para monitoreo. |
+| `calculate_recommendation_validity` | `scripts/components/calculate_recommendation_validity.py` | Calcula validez de recomendacion y summaries. |
+| `calculate_auth_history_drift` | `scripts/components/calculate_auth_history_drift.py` | Calcula drift de AUTH history contra baseline. |
+| `calculate_operational_decision` | `scripts/components/calculate_operational_decision.py` | Genera semaforo operacional y manifest final. |
+| `publish_outputs` | `mlops/components/platform_publish_outputs.py` | Publica los outputs funcionales al Storage MLOps. |
 
 Los componentes usan:
 
 ```yaml
 code: ../pricing-mlops-source
-```
-
-El fallback command job usa:
-
-```yaml
-code: ../pricing-mlops-source
-command: >-
-  python -m pip install -e . &&
-  python scripts/run_azure_ml_flow.py
 ```
 
 `../pricing-mlops-source` existe dentro del paquete de Azure Functions preparado por `mlops/scripts/publish_orchestrator_function.sh`. Azure ML v2 no trata `code:` como un repo GitHub vivo; `code:` apunta a esa carpeta local y el SDK sube ese snapshot al someter el pipeline/job. Esa carpeta es un snapshot del repo `pricing-mlops`, que mantiene el codigo data science alineado con Cookiecutter Data Science.
@@ -41,7 +35,12 @@ trigger_type
 model_repo
 model_ref
 model_commit_sha
+monitoring_config_version
 ```
+
+`monitoring_config_version` corresponde a `mlops/configs/drift_thresholds.json`.
+El step `publish_outputs` guarda esa version y el SHA-256 del archivo en
+`model_run_log.json` para reproducibilidad de la configuracion del semaforo.
 
 Outputs funcionales esperados:
 

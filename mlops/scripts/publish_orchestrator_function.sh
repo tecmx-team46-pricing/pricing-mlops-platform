@@ -3,7 +3,7 @@ set -euo pipefail
 
 ENVIRONMENT="${1:-staging}"
 EXPECTED_SUBSCRIPTION_NAME="${AZURE_SUBSCRIPTION_NAME:-<azure-subscription-name>}"
-RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-rg-pricing-mlops-${ENVIRONMENT}}"
+RESOURCE_GROUP="${AZURE_RESOURCE_GROUP:-}"
 FUNCTION_APP="${AZURE_FUNCTION_APP:-}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MLOPS_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -16,6 +16,12 @@ ALLOW_LOCAL_MODEL_SOURCE="${ALLOW_LOCAL_MODEL_SOURCE:-false}"
 ALLOW_DIRTY_LOCAL_MODEL_SOURCE="${ALLOW_DIRTY_LOCAL_MODEL_SOURCE:-false}"
 DRY_RUN="${DRY_RUN:-false}"
 KEEP_PACKAGE="${KEEP_PACKAGE:-false}"
+FUNCTION_PACKAGE_MODE="${FUNCTION_PACKAGE_MODE:-remote-build}"
+SKIP_FUNCTION_DEPENDENCY_INSTALL="${SKIP_FUNCTION_DEPENDENCY_INSTALL:-false}"
+FUNCTION_DEPENDENCY_PYTHON_VERSION="${FUNCTION_DEPENDENCY_PYTHON_VERSION:-3.11}"
+FUNCTION_DEPENDENCY_PLATFORM="${FUNCTION_DEPENDENCY_PLATFORM:-manylinux2014_x86_64}"
+FUNCTION_DEPENDENCY_IMPLEMENTATION="${FUNCTION_DEPENDENCY_IMPLEMENTATION:-cp}"
+FUNCTION_DEPENDENCY_ABI="${FUNCTION_DEPENDENCY_ABI:-cp311}"
 
 if [[ "${ENVIRONMENT}" != "staging" && "${ENVIRONMENT}" != "validation" ]]; then
   echo "Unsupported environment for Function publish: ${ENVIRONMENT}" >&2
@@ -23,13 +29,21 @@ if [[ "${ENVIRONMENT}" != "staging" && "${ENVIRONMENT}" != "validation" ]]; then
   exit 1
 fi
 
+if [[ "${FUNCTION_PACKAGE_MODE}" != "remote-build" && "${FUNCTION_PACKAGE_MODE}" != "vendored" ]]; then
+  echo "Unsupported Function package mode: ${FUNCTION_PACKAGE_MODE}" >&2
+  echo "Allowed modes: remote-build, vendored" >&2
+  exit 1
+fi
+
 required_files=(
   "${MLOPS_ROOT}/functions/function_app.py"
   "${MLOPS_ROOT}/functions/host.json"
   "${MLOPS_ROOT}/functions/requirements.txt"
-  "${MLOPS_ROOT}/azureml/pricing-mlops-job.yml"
   "${MLOPS_ROOT}/azureml/pricing-mlops-pipeline.yml"
   "${MLOPS_ROOT}/azureml/environment.yml"
+  "${MLOPS_ROOT}/azureml/conda.yml"
+  "${MLOPS_ROOT}/configs/drift_thresholds.json"
+  "${MLOPS_ROOT}/components/platform_publish_outputs.py"
 )
 
 for file in "${required_files[@]}"; do
@@ -40,6 +54,11 @@ for file in "${required_files[@]}"; do
 done
 
 if [[ "${DRY_RUN}" != "true" ]]; then
+  if [[ -z "${RESOURCE_GROUP}" ]]; then
+    echo "AZURE_RESOURCE_GROUP is required. Use the single principal Resource Group for this environment." >&2
+    exit 1
+  fi
+
   if [[ -z "${FUNCTION_APP}" ]]; then
     FUNCTION_APP="$(az resource list \
       --resource-group "${RESOURCE_GROUP}" \
@@ -135,10 +154,11 @@ fi
 
 required_model_source_files=(
   "${MODEL_SOURCE_DIR}/pyproject.toml"
-  "${MODEL_SOURCE_DIR}/scripts/run_azure_ml_flow.py"
   "${MODEL_SOURCE_DIR}/scripts/components/validate_prepare.py"
-  "${MODEL_SOURCE_DIR}/scripts/components/score_evaluate.py"
-  "${MODEL_SOURCE_DIR}/scripts/components/publish_outputs.py"
+  "${MODEL_SOURCE_DIR}/scripts/components/build_monitoring_inputs.py"
+  "${MODEL_SOURCE_DIR}/scripts/components/calculate_recommendation_validity.py"
+  "${MODEL_SOURCE_DIR}/scripts/components/calculate_auth_history_drift.py"
+  "${MODEL_SOURCE_DIR}/scripts/components/calculate_operational_decision.py"
   "${MODEL_SOURCE_DIR}/src/pricing_mlops/__init__.py"
 )
 
@@ -149,13 +169,16 @@ for file in "${required_model_source_files[@]}"; do
   fi
 done
 
-mkdir -p "${PACKAGE_ROOT}/azureml" "${PACKAGE_ROOT}/pricing-mlops-source"
+mkdir -p "${PACKAGE_ROOT}/azureml" "${PACKAGE_ROOT}/configs" "${PACKAGE_ROOT}/pricing-mlops-source" "${PACKAGE_ROOT}/platform-components/configs"
 cp "${MLOPS_ROOT}/functions/function_app.py" "${PACKAGE_ROOT}/function_app.py"
 cp "${MLOPS_ROOT}/functions/host.json" "${PACKAGE_ROOT}/host.json"
 cp "${MLOPS_ROOT}/functions/requirements.txt" "${PACKAGE_ROOT}/requirements.txt"
-cp "${MLOPS_ROOT}/azureml/pricing-mlops-job.yml" "${PACKAGE_ROOT}/azureml/pricing-mlops-job.yml"
 cp "${MLOPS_ROOT}/azureml/pricing-mlops-pipeline.yml" "${PACKAGE_ROOT}/azureml/pricing-mlops-pipeline.yml"
 cp "${MLOPS_ROOT}/azureml/environment.yml" "${PACKAGE_ROOT}/azureml/environment.yml"
+cp "${MLOPS_ROOT}/azureml/conda.yml" "${PACKAGE_ROOT}/azureml/conda.yml"
+cp "${MLOPS_ROOT}/configs/drift_thresholds.json" "${PACKAGE_ROOT}/configs/drift_thresholds.json"
+cp "${MLOPS_ROOT}/components/platform_publish_outputs.py" "${PACKAGE_ROOT}/platform-components/platform_publish_outputs.py"
+cp "${MLOPS_ROOT}/configs/drift_thresholds.json" "${PACKAGE_ROOT}/platform-components/configs/drift_thresholds.json"
 python - <<'PY' "${PACKAGE_ROOT}/model_source.json" "${MODEL_SOURCE_KIND}" "${MODEL_REPO_GITHUB}" "${MODEL_REPO_REF}" "${MODEL_COMMIT_SHA}"
 import json
 import sys
@@ -200,11 +223,17 @@ required_package_paths=(
   "${PACKAGE_ROOT}/host.json"
   "${PACKAGE_ROOT}/requirements.txt"
   "${PACKAGE_ROOT}/azureml/pricing-mlops-pipeline.yml"
-  "${PACKAGE_ROOT}/azureml/pricing-mlops-job.yml"
+  "${PACKAGE_ROOT}/azureml/environment.yml"
+  "${PACKAGE_ROOT}/azureml/conda.yml"
+  "${PACKAGE_ROOT}/configs/drift_thresholds.json"
+  "${PACKAGE_ROOT}/platform-components/configs/drift_thresholds.json"
   "${PACKAGE_ROOT}/pricing-mlops-source/pyproject.toml"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/validate_prepare.py"
-  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/score_evaluate.py"
-  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/publish_outputs.py"
+  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/build_monitoring_inputs.py"
+  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/calculate_recommendation_validity.py"
+  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/calculate_auth_history_drift.py"
+  "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/calculate_operational_decision.py"
+  "${PACKAGE_ROOT}/platform-components/platform_publish_outputs.py"
   "${PACKAGE_ROOT}/pricing-mlops-source/src/pricing_mlops/__init__.py"
   "${PACKAGE_ROOT}/model_source.json"
 )
@@ -216,6 +245,26 @@ for path in "${required_package_paths[@]}"; do
   fi
 done
 
+if [[ "${FUNCTION_PACKAGE_MODE}" == "vendored" ]]; then
+  SITE_PACKAGES_DIR="${PACKAGE_ROOT}/.python_packages/lib/site-packages"
+  mkdir -p "${SITE_PACKAGES_DIR}"
+  if [[ "${SKIP_FUNCTION_DEPENDENCY_INSTALL}" == "true" ]]; then
+    touch "${SITE_PACKAGES_DIR}/.dependency-install-skipped"
+  else
+    python -m pip install \
+      --disable-pip-version-check \
+      --platform "${FUNCTION_DEPENDENCY_PLATFORM}" \
+      --python-version "${FUNCTION_DEPENDENCY_PYTHON_VERSION}" \
+      --implementation "${FUNCTION_DEPENDENCY_IMPLEMENTATION}" \
+      --abi "${FUNCTION_DEPENDENCY_ABI}" \
+      --only-binary=:all: \
+      --ignore-installed \
+      --no-warn-conflicts \
+      --target "${SITE_PACKAGES_DIR}" \
+      -r "${PACKAGE_ROOT}/requirements.txt"
+  fi
+fi
+
 (cd "${PACKAGE_ROOT}" && zip -qr "${PACKAGE_PATH}" .)
 
 if [[ "${DRY_RUN}" == "true" ]]; then
@@ -223,16 +272,34 @@ if [[ "${DRY_RUN}" == "true" ]]; then
   echo "Model repo: ${MODEL_REPO_GITHUB}"
   echo "Model ref: ${MODEL_REPO_REF}"
   echo "Model commit: ${MODEL_COMMIT_SHA}"
+  echo "Function package mode: ${FUNCTION_PACKAGE_MODE}"
   echo "Package prepared: ${PACKAGE_PATH}"
   echo "Package root: ${PACKAGE_ROOT}"
   unzip -Z1 "${PACKAGE_PATH}" | sort
   exit 0
 fi
 
-az functionapp deployment source config-zip \
-  --resource-group "${RESOURCE_GROUP}" \
-  --name "${FUNCTION_APP}" \
-  --src "${PACKAGE_PATH}" \
-  --build-remote true
+if [[ "${FUNCTION_PACKAGE_MODE}" == "vendored" ]]; then
+  az functionapp config appsettings set \
+    --resource-group "${RESOURCE_GROUP}" \
+    --name "${FUNCTION_APP}" \
+    --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
+
+  az functionapp deployment source config-zip \
+    --resource-group "${RESOURCE_GROUP}" \
+    --name "${FUNCTION_APP}" \
+    --src "${PACKAGE_PATH}"
+else
+  az functionapp config appsettings set \
+    --resource-group "${RESOURCE_GROUP}" \
+    --name "${FUNCTION_APP}" \
+    --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+
+  az functionapp deployment source config-zip \
+    --resource-group "${RESOURCE_GROUP}" \
+    --name "${FUNCTION_APP}" \
+    --src "${PACKAGE_PATH}" \
+    --build-remote true
+fi
 
 echo "Published Function App: ${FUNCTION_APP}"

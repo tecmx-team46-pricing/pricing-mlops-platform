@@ -20,6 +20,12 @@ Campos principales:
 | `environment` | `sandbox`, `staging`, `validation` o `prod` futuro |
 | `status` | `started`, `succeeded` o `failed` |
 
+La publicacion de plataforma enriquece este archivo con:
+
+- `monitoring_config_path` y `monitoring_config_sha256`, para auditar que archivo de semaforo se uso;
+- `model_repo`, `model_ref` y `model_commit_sha`, para reproducibilidad del repo de notebooks/componentes;
+- `compute_target` y `trigger_type`, para separar corridas manuales, Event Grid y futuras programadas.
+
 ## model_output_snapshot
 
 Snapshot de recomendaciones generadas para una corrida.
@@ -38,6 +44,5 @@ Debe incluir:
 
 - metrica usada;
 - valor calculado;
-- umbrales green/yellow/red;
-- impacto ponderado por revenue;
+- umbrales yellow/red versionados;
 - accion recomendada.

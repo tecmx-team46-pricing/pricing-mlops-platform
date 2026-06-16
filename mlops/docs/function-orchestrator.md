@@ -13,9 +13,26 @@ Endpoints:
 El paquete de despliegue se arma con:
 
 ```bash
+AZURE_SUBSCRIPTION_ID=<subscription-id> \
+AZURE_RESOURCE_GROUP=<resource-group> \
+AZURE_ML_WORKSPACE=<workspace-name> \
+mlops/scripts/register_azureml_environment.sh
+
 MODEL_REPO_REF=<commit-sha-or-tag> \
 mlops/scripts/publish_orchestrator_function.sh staging
 ```
+
+El registro del Azure ML Environment crea/actualiza `pricing-auth-monitoring-env:1`. Ese environment no mantiene compute prendido; solo guarda la definicion de runtime e imagen para que los jobs serverless no instalen dependencias en cada step.
+
+Por default el script usa `FUNCTION_PACKAGE_MODE=remote-build`, que delega la instalacion de dependencias a Kudu/Oryx. Para despliegues reproducibles o cuando remote build no instala `azure-ai-ml`, se puede generar un paquete vendorizado para Linux Python 3.11:
+
+```bash
+FUNCTION_PACKAGE_MODE=vendored \
+MODEL_REPO_REF=<commit-sha-or-tag> \
+mlops/scripts/publish_orchestrator_function.sh staging
+```
+
+El modo `vendored` instala las dependencias en `.python_packages/lib/site-packages` antes de crear el ZIP y publica con `SCM_DO_BUILD_DURING_DEPLOYMENT=false`.
 
 El script copia `function_app.py`, `host.json`, `requirements.txt`, `mlops/azureml/` y un snapshot del repo `pricing-mlops` bajo `pricing-mlops-source/`. Para operacion de `staging` y `validation`, resuelve `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` antes de empaquetar y escribe el commit real en `model_source.json`. `MODEL_REPO_PATH` solo se usa como fallback local con `ALLOW_LOCAL_MODEL_SOURCE=true`. No hace deploy real si se ejecuta con `DRY_RUN=true`.
 

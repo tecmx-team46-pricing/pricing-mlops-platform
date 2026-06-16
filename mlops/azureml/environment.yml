@@ -1,6 +1,6 @@
-name: pricing-mlops-azureml
-channels:
-  - conda-forge
-dependencies:
-  - python=3.11
-  - pip
+$schema: https://azuremlschemas.azureedge.net/latest/environment.schema.json
+name: pricing-auth-monitoring-env
+version: 1
+description: Versioned runtime for Pricing MLOps AUTH monitoring pipeline steps.
+image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+conda_file: conda.yml

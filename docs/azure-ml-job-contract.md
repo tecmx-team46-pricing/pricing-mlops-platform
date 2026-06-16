@@ -10,20 +10,17 @@ La ruta preferida del flujo esta definida en:
 mlops/azureml/pricing-mlops-pipeline.yml
 ```
 
-El fallback operativo queda en:
-
-```text
-mlops/azureml/pricing-mlops-job.yml
-```
-
 ## Pipeline
 
-El pipeline activo muestra tres nodos:
+El pipeline activo muestra los pasos derivados del notebook de monitoreo:
 
 | Nodo | Responsabilidad |
 |---|---|
 | `validate_prepare` | Lee input masked, valida y prepara datos intermedios. |
-| `score_evaluate` | Ejecuta scoring controlado, evaluacion y drift basico. |
+| `build_monitoring_inputs` | Prepara snapshots normalizados para monitoreo. |
+| `calculate_recommendation_validity` | Calcula validez de recomendacion. |
+| `calculate_auth_history_drift` | Calcula drift AUTH history contra baseline. |
+| `calculate_operational_decision` | Genera semaforo operacional y manifest final. |
 | `publish_outputs` | Publica outputs funcionales al Storage MLOps. |
 
 ## Snapshot Del Repo Funcional
