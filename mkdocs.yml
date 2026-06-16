@@ -63,6 +63,7 @@ nav:
       - Servicios Azure: architecture/azure-services.md
       - Decisiones Azure ML: architecture/azure-ml.md
   - MLOps:
+      - Flujo end to end: operations/end-to-end-flow.md
       - Operacion de plataforma: operations/index.md
       - Separacion plataforma-modelo: reference/platform-model-contract.md
       - Recursos Azure ML: architecture/azure-ml.md

@@ -42,7 +42,8 @@ Platform ya no contiene Azure Functions, SQL audit, YAML del pipeline operaciona
 3. [Arquitectura](architecture/overview.md)
 4. [Estructura del repo](architecture/repo-structure.md)
 5. [Separacion plataforma-modelo](reference/platform-model-contract.md)
-6. [Servicios Azure](architecture/azure-services.md)
+6. [Flujo end to end](operations/end-to-end-flow.md)
+7. [Servicios Azure](architecture/azure-services.md)
 
 ## Limites Actuales
 

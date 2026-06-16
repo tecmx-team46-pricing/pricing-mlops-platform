@@ -54,3 +54,7 @@ azureml:pricing_mlops_auth_monitoring_pipeline:<version>
 ```
 
 Platform no referencia versiones concretas de componentes operativos. Esa version vive en el manifest de `pricing-mlops`.
+
+## Lectura Recomendada
+
+Para ver la secuencia completa de registro, endpoint, invoke y evidencia, consulta [Flujo end to end](../operations/end-to-end-flow.md).

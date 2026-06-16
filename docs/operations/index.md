@@ -57,6 +57,8 @@ scripts/invoke_auth_monitoring_batch_endpoint.sh
 
 Platform no contiene scripts de endpoint ni componentes Azure ML operativos.
 
+Para entender el flujo completo entre ambos repos, ver [Flujo end to end](end-to-end-flow.md).
+
 ## Portal
 
 | Necesidad | Ruta |
