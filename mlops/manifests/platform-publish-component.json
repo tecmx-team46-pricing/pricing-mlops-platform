@@ -1,5 +1,0 @@
-{
-  "release": "platform-publish-0.1.1",
-  "owner_repo": "tecmx-team46-pricing/pricing-mlops-platform",
-  "platform_publish_component": "azureml:pricing_mlops_platform_publish_outputs:0.1.1"
-}

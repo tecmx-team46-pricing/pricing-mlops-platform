@@ -1,65 +1,15 @@
 # Contratos De Datos
 
-Los contratos de datos definen que evidencia minima debe dejar una corrida para poder auditarla. No son solo archivos de salida: son la forma de responder que se ejecuto, con que version, sobre que input y donde quedaron los resultados.
+La definicion tecnica de artefactos vive en `pricing-mlops`, porque ese repo produce y publica los outputs del pipeline.
 
-## `model_run_log`
+Platform mantiene solamente el contrato de contenedores y permisos:
 
-Un registro por corrida. Responde que se ejecuto, con que version y donde quedo la evidencia.
-
-Schema:
-
-```text
-mlops/schemas/model_run_log.schema.json
-```
-
-Campos principales:
-
-| Campo | Uso |
+| Container | Tipo de evidencia |
 |---|---|
-| `run_id` | Identificador unico de la corrida. |
-| `run_timestamp` | Fecha/hora UTC. |
-| `git_commit_hash` | Version exacta del repo funcional. |
-| `config_version` | Version de thresholds o reglas. |
-| `dataset_version` | Snapshot o version de dataset. |
-| `environment` | Ambiente de ejecucion. |
-| `status` | Estado de la corrida. |
+| `runs` | `model_run_log.json` y summaries. |
+| `snapshots` | Baseline/current snapshots. |
+| `drift-logs` | Logs de validity y drift. |
+| `reports` | Reportes operativos. |
+| `artifacts` | Manifests y artefactos auxiliares. |
 
-## `model_output_snapshot`
-
-Snapshot de recomendaciones generadas para una corrida.
-
-Schema:
-
-```text
-mlops/schemas/model_output_snapshot.schema.json
-```
-
-Para el MVP, CSV o JSONL se mantiene como formato pequeno y legible.
-
-## `model_drift_log`
-
-Metricas de drift por variable evaluada.
-
-Schema:
-
-```text
-mlops/schemas/model_drift_log.schema.json
-```
-
-Debe incluir:
-
-- metrica usada;
-- valor calculado;
-- umbrales green/yellow/red;
-- impacto ponderado por revenue;
-- accion recomendada.
-
-## Referencia Operativa
-
-La fuente tecnica viva se mantiene en:
-
-```text
-mlops/docs/data-contracts.md
-```
-
-Siguiente lectura recomendada: [Evidencia del MVP](../project/evidencia.md), para ver como estos contratos aparecen en una corrida validada.
+Para cambiar columnas, schemas, thresholds o reglas del semaforo, actualizar `pricing-mlops` y registrar una nueva version del pipeline component.

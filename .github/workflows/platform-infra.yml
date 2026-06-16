@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - "infra/**"
-      - "mlops/**"
       - "tests/**"
       - "scripts/deploy.sh"
       - "scripts/what-if.sh"
@@ -37,11 +36,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install MLOps runtime test dependencies
-        run: python -m pip install -r mlops/functions/requirements.txt pytest pyyaml
       - name: Build Bicep template
         run: |
           az bicep build --file infra/foundation/main.bicep
@@ -52,8 +46,6 @@ jobs:
           az bicep build-params --file infra/parameters/sandbox-local.bicepparam
           az bicep build-params --file infra/parameters/validation.bicepparam
           az bicep build-params --file infra/parameters/data-lab.bicepparam
-      - name: Run MLOps runtime tests
-        run: python -m pytest tests/test_function_orchestrator.py
 
   what-if:
     if: github.event_name == 'workflow_dispatch' && (inputs.operation == 'what-if' || inputs.operation == 'deploy')

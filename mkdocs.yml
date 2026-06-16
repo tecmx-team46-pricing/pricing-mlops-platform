@@ -63,15 +63,13 @@ nav:
       - Servicios Azure: architecture/azure-services.md
       - Decisiones Azure ML: architecture/azure-ml.md
   - MLOps:
-      - Flujo operativo: operations/index.md
-      - Contrato plataforma-modelo: reference/platform-model-contract.md
-      - Function orchestrator: reference/function-orchestrator.md
-      - Pipeline Azure ML: reference/azure-ml-pipeline.md
+      - Operacion de plataforma: operations/index.md
+      - Separacion plataforma-modelo: reference/platform-model-contract.md
+      - Recursos Azure ML: architecture/azure-ml.md
       - Contratos de datos: reference/data-contracts.md
   - Gobierno y evidencia:
       - Evidencia del MVP: project/evidencia.md
       - Gobierno de datos: governance/data-governance.md
-      - Auditoria SQL: operations/sql-audit.md
       - GitHub Actions: operations/github-actions.md
       - Inventario legacy: operations/legacy-resources.md
   - Cierre:

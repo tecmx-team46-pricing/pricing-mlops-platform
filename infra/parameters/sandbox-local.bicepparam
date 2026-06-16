@@ -18,7 +18,6 @@ param enableGithubActionsIdentity = false
 param modelGithubRepository = ''
 param modelGithubEnvironment = 'sandbox-local'
 param enableModelGithubActionsIdentity = false
-param enableFunctionOrchestrator = false
 
 param storageContainers = [
   'input'

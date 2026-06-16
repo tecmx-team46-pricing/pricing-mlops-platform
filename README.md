@@ -1,26 +1,26 @@
 # pricing-mlops-platform
 
-Plataforma Azure para operar y auditar el flujo MLOps de Pricing Intelligence. Este repo contiene IaC, Azure Function, template de Azure ML, scripts operativos, contratos y documentacion.
+Plataforma Azure base para Pricing MLOps. Este repo contiene IaC, identidades, RBAC, Storage, Azure ML Workspace y documentacion de plataforma.
 
-El codigo funcional/data science vive en `pricing-mlops`; este repo orquesta la ejecucion, registra metadata y publica evidencia.
+El flujo ML operacional vive en `pricing-mlops`: ahi se registran componentes Azure ML, se publica el pipeline component, se despliega el batch pipeline endpoint y se ejecutan smoke tests.
 
-## Flujo Activo
+## Flujo De Ownership
 
 ```text
-manual / Event Grid
--> Azure Function
--> Azure ML pipeline
--> Storage MLOps
--> Azure SQL audit
+pricing-mlops-platform
+-> Azure base: Storage, AML workspace, identities, RBAC
+
+pricing-mlops
+-> AML components, pipeline component, endpoint/deployment, invoke, artifacts
 ```
 
-GitHub Actions valida y despliega infraestructura bajo `workflow_dispatch`; no opera el flujo ML.
+GitHub Actions de platform valida y despliega infraestructura bajo `workflow_dispatch`; no opera el flujo ML.
 
 ## Ambientes
 
 | Scope | Uso |
 |---|---|
-| `staging` | Ambiente operativo del MVP. |
+| `staging` | Ambiente operativo compartido. |
 | `validation` | No-prod controlado futuro. |
 | `data-lab` | Landing restringido para unmasked/masking. |
 | `sandbox-local` | Pruebas locales/admin. |
@@ -36,10 +36,9 @@ Validar documentacion:
 python -m mkdocs build --strict
 ```
 
-Validar contratos e IaC:
+Validar IaC:
 
 ```bash
-scripts/validate-mlops-contracts.py
 az bicep build --file infra/foundation/main.bicep
 az bicep build --file infra/workloads/pricing-mlops/main.bicep
 az bicep build-params --file infra/parameters/staging.bicepparam
@@ -57,16 +56,14 @@ scripts/what-if.sh staging
 scripts/deploy.sh staging
 ```
 
-Publicar y ejecutar el flujo ML:
+Operar ML:
 
 ```bash
-MODEL_REPO_REF=<commit-sha-or-tag> \
-mlops/scripts/publish_orchestrator_function.sh staging
-
-mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
+cd ../pricing-mlops
+scripts/register_azureml_components.sh
+scripts/deploy_auth_monitoring_batch_endpoint.sh
+scripts/invoke_auth_monitoring_batch_endpoint.sh
 ```
-
-`MODEL_REPO_REF` queda registrado en `model_source.json`; la ejecucion funcional usa componentes Azure ML registrados desde `pricing-mlops`.
 
 ## Documentacion
 
@@ -79,13 +76,6 @@ Lecturas principales:
 
 1. [Inicio](docs/index.md)
 2. [Arquitectura](docs/architecture/overview.md)
-3. [Operacion](docs/operations/index.md)
-4. [Pipeline Azure ML](docs/reference/azure-ml-pipeline.md)
-5. [Evidencia](docs/project/evidencia.md)
-
-## Fuera De Alcance
-
-- Produccion real.
-- ADF, Private Endpoints, Hub-Spoke y endpoints online de Azure ML.
-- Datos `raw-unmasked` en `sandbox-local`, `staging` o `validation`.
-- Account keys, connection strings o secretos versionados.
+3. [Estructura del repo](docs/architecture/repo-structure.md)
+4. [Separacion plataforma-modelo](docs/reference/platform-model-contract.md)
+5. [Servicios Azure](docs/architecture/azure-services.md)

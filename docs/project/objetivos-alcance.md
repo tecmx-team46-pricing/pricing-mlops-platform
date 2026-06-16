@@ -8,12 +8,10 @@ Disenar e implementar una plataforma MLOps base en Azure que permita ejecutar, r
 
 ## Objetivos Especificos
 
-- Separar infraestructura, orquestacion y codigo funcional/data science.
+- Separar infraestructura base y codigo funcional/data science.
 - Definir infraestructura reproducible con Bicep.
-- Orquestar corridas mediante Azure Function.
 - Ejecutar el flujo tecnico en Azure ML.
 - Publicar evidencia versionada en Storage/ADLS.
-- Registrar metadata consultable en Azure SQL audit.
 - Evitar datos `raw-unmasked` en ambientes operativos.
 - Mantener GitHub Actions como CI/CD, no como compute ML.
 - Documentar arquitectura, operacion y evidencia para revision academica.
@@ -22,11 +20,10 @@ Disenar e implementar una plataforma MLOps base en Azure que permita ejecutar, r
 
 | Area | Implementacion actual |
 |---|---|
-| Infraestructura | Capa foundation y workload con Resource Groups, Storage, Azure ML, Function, SQL audit, identidades y permisos base. |
-| Orquestacion | Endpoint `POST /api/model-flow` y trigger Event Grid para `raw-masked/incoming/*.csv`. |
-| Ejecucion ML | Pipeline Azure ML con `validate_prepare`, componentes de monitoreo AUTH y `publish_outputs`. |
+| Infraestructura | Capa foundation y workload con Resource Groups, Storage, Azure ML, identidades y permisos base. |
+| Orquestacion | Batch pipeline endpoint administrado desde `pricing-mlops`. |
+| Ejecucion ML | Pipeline Azure ML con componentes de monitoreo AUTH y `publish_outputs` en `pricing-mlops`. |
 | Evidencia | Outputs versionados en `runs`, `snapshots`, `drift-logs`, `reports`, `artifacts` y `curated`. |
-| Auditoria | Azure SQL metadata-only para consultar corridas y snapshots sin almacenar datasets completos. |
 | Gobierno | Separacion de datos masked/unmasked y rechazo de `raw-unmasked` en ambientes operativos. |
 
 ## Fuera De Alcance

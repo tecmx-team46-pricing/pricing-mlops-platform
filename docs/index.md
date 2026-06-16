@@ -1,64 +1,49 @@
 # Plataforma MLOps Para Pricing Intelligence
 
-Esta documentacion explica como se construyo una base MLOps en Azure para operar y auditar un flujo de Pricing Intelligence con datos masked.
+Este repo contiene la base Azure del proyecto Team 46. Su responsabilidad actual es preparar infraestructura, identidades, RBAC, Storage y Azure ML para que el repo `pricing-mlops` opere el flujo AUTH monitoring.
 
-La respuesta del MVP fue construir una base MLOps en Azure:
+La ruta operativa queda asi:
 
 ```text
-Evento o solicitud manual
--> Azure Function
--> Azure ML Pipeline
--> Storage/ADLS
--> Azure SQL audit
+pricing-mlops-platform
+-> provisiona Azure base
+-> expone workspace, storage, identidades y permisos
+
+pricing-mlops
+-> registra componentes Azure ML
+-> publica el pipeline component
+-> despliega/invoca el batch pipeline endpoint
+-> publica artefactos funcionales en Storage
 ```
 
-La Function no calcula precios. Orquesta. Azure ML ejecuta el flujo funcional. Storage conserva los artefactos. SQL guarda metadata consultable. GitHub Actions valida y despliega de forma controlada, pero no opera el modelo.
+Platform ya no contiene Azure Functions, SQL audit, YAML del pipeline operacional ni componentes Azure ML propios. Esa complejidad se movio al repo funcional para que el equipo que cambia el notebook/componentes tambien cambie y publique el endpoint.
 
 ## Que Cubre El Proyecto
 
-Este avance no presenta una plataforma productiva. Presenta un MVP que cubre:
-
 - infraestructura Azure reproducible con Bicep;
-- separacion entre plataforma y codigo data science;
-- corrida end-to-end con datos masked;
-- outputs versionados en Storage;
-- metadata auditable en Azure SQL;
-- controles para no operar `raw-unmasked` en `staging`;
-- un roadmap para integrar controles y componentes adicionales.
-
-## Como Leer La Documentacion
-
-Para entender el proyecto en orden:
-
-1. [Contexto y problema](project/contexto-problema.md)
-2. [Objetivos y alcance](project/objetivos-alcance.md)
-3. [Reporte de avance](project/reporte-avance-proyecto-integrador.md)
-4. [Arquitectura](architecture/overview.md)
-5. [Estructura del repo](architecture/repo-structure.md)
-6. [Evidencia del MVP](project/evidencia.md)
-7. [Gobierno de datos](governance/data-governance.md)
-8. [Roadmap](project/roadmap.md)
-
-Si necesitas operar o revisar detalles tecnicos, salta a:
-
-| Necesidad | Documento |
-|---|---|
-| Entender servicios Azure | [Servicios Azure](architecture/azure-services.md) |
-| Ejecutar o diagnosticar el flujo | [Operacion](operations/index.md) |
-| Revisar contrato plataforma-modelo | [Contrato plataforma-modelo](reference/platform-model-contract.md) |
-| Revisar Function y pipeline | [Function orchestrator](reference/function-orchestrator.md), [Pipeline Azure ML](reference/azure-ml-pipeline.md) |
-| Consultar auditoria | [Auditoria SQL](operations/sql-audit.md) |
+- separacion clara entre plataforma y codigo data science;
+- Storage/ADLS para inputs masked y artefactos versionados;
+- Azure ML Workspace y Managed Identity para jobs;
+- OIDC/RBAC para GitHub Actions de `pricing-mlops-platform` y `pricing-mlops`;
+- documentacion de recursos y limites operativos.
 
 ## Repositorios Del Proyecto
 
 | Repo | Rol |
 |---|---|
-| `pricing-mlops-platform` | Plataforma Azure, IaC, RBAC/OIDC, Storage, Azure ML, Function, runtime MLOps y documentacion operativa. |
-| `pricing-mlops` | Codigo funcional/data science: validacion, curated, scoring, drift y reportes. |
-| `pricing-mlops-eda` | Referencia historica y analisis exploratorio. No es repo operativo. |
+| `pricing-mlops-platform` | IaC/base Azure: resource groups, storage, Azure ML, identidades, RBAC, budget y documentacion de plataforma. |
+| `pricing-mlops` | Operacion ML: componentes, pipeline component, batch endpoint/deployment, smoke test y publicacion de artefactos. |
+| `pricing-mlops-eda` | Referencia historica y notebooks exploratorios. No es repo operativo. |
 
-## Limites Del MVP
+## Como Leer La Documentacion
 
-El MVP no contiene produccion real ni un modelo productivo definitivo. Tampoco incluye ADF, endpoints online de Azure ML, Private Endpoints o Hub-Spoke. La etapa actual se limita a operar el flujo, guardar evidencia y dejar preparada la integracion posterior de un modelo formal.
+1. [Contexto y problema](project/contexto-problema.md)
+2. [Objetivos y alcance](project/objetivos-alcance.md)
+3. [Arquitectura](architecture/overview.md)
+4. [Estructura del repo](architecture/repo-structure.md)
+5. [Separacion plataforma-modelo](reference/platform-model-contract.md)
+6. [Servicios Azure](architecture/azure-services.md)
 
-Siguiente lectura recomendada: [Contexto y problema](project/contexto-problema.md).
+## Limites Actuales
+
+No hay ambiente `prod`, Private Endpoints, ADF, Azure Functions operativas, SQL audit ni endpoints online. El endpoint usado por el flujo es un Azure ML batch pipeline endpoint administrado desde `pricing-mlops`.

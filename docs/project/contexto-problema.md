@@ -19,14 +19,16 @@ Para este proyecto, esos riesgos afectan la revision del trabajo. No basta con m
 El equipo eligio una arquitectura acotada y de bajo costo para validar la base operativa:
 
 ```text
-Evento o solicitud manual
--> Azure Function
--> Azure ML Pipeline
--> Storage/ADLS
--> Azure SQL audit
+Platform
+-> Azure base
+-> Storage/ADLS y Azure ML
+
+pricing-mlops
+-> Azure ML pipeline endpoint
+-> artefactos versionados en Storage
 ```
 
-La Function recibe solicitudes o eventos y valida el contexto. Azure ML ejecuta el flujo funcional. Storage conserva inputs masked y artefactos versionados. Azure SQL guarda metadata para consulta. GitHub Actions valida y despliega infraestructura, pero no ejecuta el modelo.
+Azure ML ejecuta el flujo funcional. Storage conserva inputs masked y artefactos versionados. GitHub Actions valida y despliega infraestructura, pero no ejecuta el modelo desde platform.
 
 ## Que Permite Esta Base
 
@@ -36,7 +38,7 @@ El MVP permite validar capacidades basicas antes de invertir en piezas mas costo
 - operar con datos masked en `staging`;
 - publicar outputs con una convencion de rutas;
 - conservar evidencia de corridas;
-- consultar metadata sin guardar datasets completos en SQL;
+- conservar metadata y artefactos sin guardar datasets completos en servicios externos innecesarios;
 - preparar la integracion posterior de un modelo real.
 
 ## Lectura Siguiente

@@ -21,18 +21,10 @@ param enableGithubSubscriptionContributor = false
 param modelGithubRepository = 'tecmx-team46-pricing/pricing-mlops'
 param modelGithubEnvironment = 'staging'
 param enableModelGithubActionsIdentity = true
-param enableFunctionOrchestrator = true
-param enableFunctionManagedIdentityOperator = false
-param functionLocation = 'centralus'
 param enableAzureMl = true
 param useAzureMlWorkspaceV2 = true
 param azureMlWorkspaceV2Name = ''
 param azureMlContainerRegistryName = ''
-param enableSqlAudit = true
-param sqlAuditLocation = 'centralus'
-param sqlAuditServerName = ''
-param sqlEntraAdministratorLogin = readEnvironmentVariable('SQL_ENTRA_ADMINISTRATOR_LOGIN', '')
-param sqlEntraAdministratorObjectId = readEnvironmentVariable('SQL_ENTRA_ADMINISTRATOR_OBJECT_ID', '')
 
 // Staging uses the included 200 USD Azure credit in "<azure-subscription-name>".
 // Keep the budget below the full credit to leave operating margin.

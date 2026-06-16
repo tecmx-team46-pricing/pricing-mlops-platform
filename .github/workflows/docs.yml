@@ -7,7 +7,6 @@ on:
       - master
     paths:
       - "docs/**"
-      - "mlops/docs/**"
       - "mkdocs.yml"
       - "requirements-docs.txt"
       - ".github/workflows/docs.yml"
@@ -17,7 +16,6 @@ on:
       - master
     paths:
       - "docs/**"
-      - "mlops/docs/**"
       - "mkdocs.yml"
       - "requirements-docs.txt"
       - ".github/workflows/docs.yml"

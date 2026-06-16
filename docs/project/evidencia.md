@@ -1,34 +1,13 @@
 # Evidencia Del MVP
 
-La evidencia del MVP responde una pregunta: si el flujo puede ejecutarse en Azure y dejar rastros revisables.
+La evidencia de esta etapa se divide por ownership:
 
-La corrida registrada cubre la cadena principal:
-
-```text
-Azure Function
--> Azure ML pipeline
--> Storage MLOps
--> Azure SQL audit
-```
-
-## Corrida Validada
-
-| Campo | Valor |
+| Repo | Evidencia |
 |---|---|
-| Azure ML job | `dreamy_vase_3dkv4c7m1f` |
-| Run id | `20260518T040339Z-function` |
-| Entrada | `raw-masked/samples/sample_pricing_v1.csv` |
-| Orquestador | Azure Function |
-| Compute ML | Azure ML pipeline |
-| Persistencia | Storage MLOps y Azure SQL audit |
+| `pricing-mlops-platform` | Bicep compila, parametros compilan, recursos base existen en Azure. |
+| `pricing-mlops` | Componentes/pipeline endpoint se registran, se invoca un job y se publican artefactos. |
 
-Esta corrida valida tres comportamientos:
-
-- la Function puede iniciar el flujo remoto;
-- Azure ML puede ejecutar los componentes funcionales registrados;
-- la plataforma conserva metadata y artefactos para auditoria posterior.
-
-## Que Artefactos Deben Existir
+## Evidencia Que Debe Producir El Flujo ML
 
 Una corrida valida publica evidencia en rutas versionadas:
 
@@ -49,35 +28,13 @@ La convencion funcional de ruta es:
 environment=<env>/compute=azure-ml/trigger=<trigger>/owner=<owner>/run_date=<yyyymmdd>/run_id=<run_id>/
 ```
 
-Esa convencion permite comparar corridas sin depender solo del portal de Azure ML.
-
-## Que Se Puede Auditar
-
-La plataforma captura metadata para explicar una corrida:
-
-- ambiente y owner;
-- `run_id`;
-- input usado;
-- trigger manual o Event Grid;
-- repo funcional y referencia publicada;
-- commit real registrado en `model_source.json`;
-- ubicacion de outputs;
-- status de la corrida.
-
-SQL no guarda datasets completos. Sirve para consultar metadata y ubicar evidencia; los datos y artefactos funcionales siguen en Storage.
-
 ## Como Leer La Evidencia
 
-Para revisar el MVP, usa este orden:
-
-1. [Reporte de avance](reporte-avance-proyecto-integrador.md) para la narrativa academica.
-2. [Arquitectura](../architecture/overview.md) para entender servicios y responsabilidades.
-3. [Operacion](../operations/index.md) para comandos, portal y verificacion.
-4. [Auditoria SQL](../operations/sql-audit.md) para consultas de metadata.
-5. [Contratos de datos](../reference/data-contracts.md) para schemas y evidencia minima.
+1. [Arquitectura](../architecture/overview.md) para entender responsabilidades.
+2. [Operacion](../operations/index.md) para validar infraestructura.
+3. `pricing-mlops` para registrar/invocar el endpoint y revisar artefactos.
+4. [Contratos de datos](../reference/data-contracts.md) para contenedores esperados.
 
 ## Limitacion Del Resultado
 
-La evidencia valida el flujo operativo del MVP. No prueba que exista un modelo productivo final ni un ciclo formal de entrenamiento, promocion y rollback. Esa integracion queda para una etapa posterior.
-
-Siguiente lectura recomendada: [Roadmap](roadmap.md).
+La evidencia valida una primera base operativa. No prueba produccion real, entrenamiento formal, promocion de modelos ni rollback productivo.

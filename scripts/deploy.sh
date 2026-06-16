@@ -21,10 +21,6 @@ if [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
   EXTRA_PARAMETERS+=(enableGithubActionsIdentity=false)
 fi
 
-if [[ -n "${ENABLE_FUNCTION_ORCHESTRATOR:-}" && "${ENVIRONMENT}" != "data-lab" ]]; then
-  EXTRA_PARAMETERS+=(enableFunctionOrchestrator="${ENABLE_FUNCTION_ORCHESTRATOR}")
-fi
-
 case "${ENVIRONMENT}" in
   staging|sandbox-local|validation|data-lab) ;;
   *)
@@ -33,10 +29,6 @@ case "${ENVIRONMENT}" in
     exit 1
     ;;
 esac
-
-if [[ "${ENVIRONMENT}" == "data-lab" ]]; then
-  EXTRA_PARAMETERS+=(enableFunctionOrchestrator=false)
-fi
 
 if [[ ! -f "${PARAMETER_FILE}" ]]; then
   echo "Parameter file not found: ${PARAMETER_FILE}" >&2

@@ -11,8 +11,6 @@ Este documento separa recursos activos, legacy conservados y recursos legacy eli
 | `mlw-pricing-mlops-stg-v2-<suffix>` | Azure ML Workspace | Existe | Workspace activo para command jobs. |
 | `<mlops-storage-account>` | Storage Account | Existe | Storage MLOps funcional: inputs masked y outputs versionados. |
 | `stamlpmlopsstg<suffix>` | Storage Account | Existe | Storage runtime del workspace Azure ML activo. |
-| `stfn<generated-suffix>` | Storage Account | Existe | Host state de Azure Functions. |
-| `func-pricing-mlops-staging-<suffix>` | Function App | Existe | Orquestador `POST /api/model-flow`. |
 | `` | Azure Container Registry | Existe | ACR asociado al runtime interno de Azure ML; no es ACR legacy de Container Apps. |
 
 ## Legacy Conservado
@@ -20,6 +18,8 @@ Este documento separa recursos activos, legacy conservados y recursos legacy eli
 | Recurso | Tipo | Estado | Referencia | Borrado |
 |---|---|---|---|---|
 | `mlw-pricing-mlops-staging-<suffix>` | Azure ML Workspace | Existe | Workspace anterior. Conserva datastores/artifacts internos en `<mlops-storage-account>`. | Requiere aprobacion explicita despues de confirmar que no se necesita rollback. |
+| `func-pricing-mlops-staging-<suffix>` | Function App | Puede existir | Orquestador anterior. Ya no se despliega desde IaC activo. | Requiere aprobacion explicita despues de confirmar que el batch pipeline endpoint cubre la operacion. |
+| `stfn<generated-suffix>` | Storage Account | Puede existir | Host state de la Function anterior. Ya no se despliega desde IaC activo. | Requiere aprobacion explicita junto con la Function. |
 
 ## Legacy Eliminado
 
