@@ -32,36 +32,7 @@ jobs:
   validate_prepare:
     type: command
     compute: azureml:serverless
-    component:
-      type: command
-      name: pricing_mlops_validate_prepare
-      display_name: validate_prepare
-      code: ../pricing-mlops-source
-      command: >-
-        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
-        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
-        python scripts/components/validate_prepare.py
-        --storage-account ${{inputs.storage_account}}
-        --input-container raw-masked
-        --input-blob-path ${{inputs.input_blob_path}}
-        --output-dir outputs/prepared_data
-        --prepared-container artifacts
-        --prepared-prefix component-state/${{inputs.run_id}}/prepared &&
-        mkdir -p ${{outputs.flow_token}} &&
-        echo validate_prepare > ${{outputs.flow_token}}/done.txt
-      environment: azureml:pricing-auth-monitoring-env:1
-      inputs:
-        storage_account:
-          type: string
-        input_blob_path:
-          type: string
-        run_id:
-          type: string
-        job_identity_client_id:
-          type: string
-      outputs:
-        flow_token:
-          type: uri_folder
+    component: azureml:pricing_mlops_validate_prepare:0.1.1
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       input_blob_path: ${{parent.inputs.input_blob_path}}
@@ -75,50 +46,7 @@ jobs:
   build_monitoring_inputs:
     type: command
     compute: azureml:serverless
-    component:
-      type: command
-      name: pricing_mlops_build_monitoring_inputs
-      display_name: build_monitoring_inputs
-      code: ../pricing-mlops-source
-      command: >-
-        test -f ${{inputs.previous_step_token}}/done.txt &&
-        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
-        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
-        python scripts/components/build_monitoring_inputs.py
-        --baseline-snapshot-path outputs/_downloaded/baseline_recommendation_snapshot.csv
-        --current-history-path outputs/_downloaded/current_auth_history_snapshot_real.csv
-        --output-dir outputs/monitoring_inputs
-        --run-id ${{inputs.run_id}}
-        --storage-account ${{inputs.storage_account}}
-        --baseline-snapshot-container ${{inputs.baseline_snapshot_container}}
-        --baseline-snapshot-blob-path ${{inputs.baseline_snapshot_blob_path}}
-        --current-history-container ${{inputs.current_history_container}}
-        --current-history-blob-path ${{inputs.current_history_blob_path}}
-        --monitoring-inputs-container artifacts
-        --monitoring-inputs-prefix component-state/${{inputs.run_id}}/monitoring_inputs &&
-        mkdir -p ${{outputs.flow_token}} &&
-        echo build_monitoring_inputs > ${{outputs.flow_token}}/done.txt
-      environment: azureml:pricing-auth-monitoring-env:1
-      inputs:
-        storage_account:
-          type: string
-        run_id:
-          type: string
-        baseline_snapshot_container:
-          type: string
-        baseline_snapshot_blob_path:
-          type: string
-        current_history_container:
-          type: string
-        current_history_blob_path:
-          type: string
-        job_identity_client_id:
-          type: string
-        previous_step_token:
-          type: uri_folder
-      outputs:
-        flow_token:
-          type: uri_folder
+    component: azureml:pricing_mlops_build_monitoring_inputs:0.1.1
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
@@ -138,38 +66,7 @@ jobs:
   calculate_recommendation_validity:
     type: command
     compute: azureml:serverless
-    component:
-      type: command
-      name: pricing_mlops_calculate_recommendation_validity
-      display_name: calculate_recommendation_validity
-      code: ../pricing-mlops-source
-      command: >-
-        test -f ${{inputs.previous_step_token}}/done.txt &&
-        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
-        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
-        python scripts/components/calculate_recommendation_validity.py
-        --input-dir outputs/monitoring_inputs
-        --output-dir outputs/recommendation_validity
-        --storage-account ${{inputs.storage_account}}
-        --monitoring-inputs-container artifacts
-        --monitoring-inputs-prefix component-state/${{inputs.run_id}}/monitoring_inputs
-        --validity-container artifacts
-        --validity-prefix component-state/${{inputs.run_id}}/recommendation_validity &&
-        mkdir -p ${{outputs.flow_token}} &&
-        echo calculate_recommendation_validity > ${{outputs.flow_token}}/done.txt
-      environment: azureml:pricing-auth-monitoring-env:1
-      inputs:
-        storage_account:
-          type: string
-        run_id:
-          type: string
-        job_identity_client_id:
-          type: string
-        previous_step_token:
-          type: uri_folder
-      outputs:
-        flow_token:
-          type: uri_folder
+    component: azureml:pricing_mlops_calculate_recommendation_validity:0.1.1
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
@@ -185,39 +82,7 @@ jobs:
   calculate_auth_history_drift:
     type: command
     compute: azureml:serverless
-    component:
-      type: command
-      name: pricing_mlops_calculate_auth_history_drift
-      display_name: calculate_auth_history_drift
-      code: ../pricing-mlops-source
-      command: >-
-        test -f ${{inputs.previous_step_token}}/done.txt &&
-        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
-        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
-        python scripts/components/calculate_auth_history_drift.py
-        --input-dir outputs/recommendation_validity
-        --output-dir outputs/auth_history_drift
-        --run-id ${{inputs.run_id}}
-        --storage-account ${{inputs.storage_account}}
-        --validity-container artifacts
-        --validity-prefix component-state/${{inputs.run_id}}/recommendation_validity
-        --drift-container artifacts
-        --drift-prefix component-state/${{inputs.run_id}}/auth_history_drift &&
-        mkdir -p ${{outputs.flow_token}} &&
-        echo calculate_auth_history_drift > ${{outputs.flow_token}}/done.txt
-      environment: azureml:pricing-auth-monitoring-env:1
-      inputs:
-        storage_account:
-          type: string
-        run_id:
-          type: string
-        job_identity_client_id:
-          type: string
-        previous_step_token:
-          type: uri_folder
-      outputs:
-        flow_token:
-          type: uri_folder
+    component: azureml:pricing_mlops_calculate_auth_history_drift:0.1.1
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
@@ -233,39 +98,7 @@ jobs:
   calculate_operational_decision:
     type: command
     compute: azureml:serverless
-    component:
-      type: command
-      name: pricing_mlops_calculate_operational_decision
-      display_name: calculate_operational_decision
-      code: ../pricing-mlops-source
-      command: >-
-        test -f ${{inputs.previous_step_token}}/done.txt &&
-        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
-        AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
-        python scripts/components/calculate_operational_decision.py
-        --input-dir outputs/auth_history_drift
-        --output-dir outputs/operational_decision
-        --run-id ${{inputs.run_id}}
-        --storage-account ${{inputs.storage_account}}
-        --validity-container artifacts
-        --validity-prefix component-state/${{inputs.run_id}}/auth_history_drift
-        --decision-container artifacts
-        --decision-prefix component-state/${{inputs.run_id}}/operational_decision &&
-        mkdir -p ${{outputs.flow_token}} &&
-        echo calculate_operational_decision > ${{outputs.flow_token}}/done.txt
-      environment: azureml:pricing-auth-monitoring-env:1
-      inputs:
-        storage_account:
-          type: string
-        run_id:
-          type: string
-        job_identity_client_id:
-          type: string
-        previous_step_token:
-          type: uri_folder
-      outputs:
-        flow_token:
-          type: uri_folder
+    component: azureml:pricing_mlops_calculate_operational_decision:0.1.1
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}

@@ -72,47 +72,7 @@ def test_publish_allows_clean_local_model_source_with_flag(tmp_path):
         package_root / "platform-components" / "configs" / "drift_thresholds.json"
     ).is_file()
     assert (package_root / "platform-components" / "platform_publish_outputs.py").is_file()
-    assert (package_root / "pricing-mlops-source" / "pyproject.toml").is_file()
-    assert (
-        package_root
-        / "pricing-mlops-source"
-        / "scripts"
-        / "components"
-        / "validate_prepare.py"
-    ).is_file()
-    assert (
-        package_root
-        / "pricing-mlops-source"
-        / "scripts"
-        / "components"
-        / "build_monitoring_inputs.py"
-    ).is_file()
-    assert (
-        package_root
-        / "pricing-mlops-source"
-        / "scripts"
-        / "components"
-        / "calculate_recommendation_validity.py"
-    ).is_file()
-    assert (
-        package_root
-        / "pricing-mlops-source"
-        / "scripts"
-        / "components"
-        / "calculate_auth_history_drift.py"
-    ).is_file()
-    assert (
-        package_root
-        / "pricing-mlops-source"
-        / "scripts"
-        / "components"
-        / "calculate_operational_decision.py"
-    ).is_file()
-    assert not (package_root / "pricing-mlops-source" / "notebooks").exists()
-    assert (package_root / "pricing-mlops-source" / "src" / "pricing_mlops").is_dir()
-    assert not (package_root / "pricing-mlops-source" / "docs").exists()
-    assert not (package_root / "pricing-mlops-source" / "tests").exists()
-    assert not (package_root / "pricing-mlops-source" / "data" / "samples" / "unmasked").exists()
+    assert not (package_root / "pricing-mlops-source").exists()
 
 
 def test_publish_can_prepare_vendored_function_package(tmp_path):
