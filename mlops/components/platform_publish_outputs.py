@@ -88,17 +88,11 @@ def publish_outputs(
     trigger_type: str,
     containers: dict[str, str],
 ) -> dict[str, str]:
-    from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
     from azure.storage.blob import BlobServiceClient
 
-    credential = (
-        ManagedIdentityCredential()
-        if _truthy_env("MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL")
-        else DefaultAzureCredential(exclude_interactive_browser_credential=True)
-    )
     blob_service = BlobServiceClient(
         account_url=f"https://{storage_account}.blob.core.windows.net",
-        credential=credential,
+        credential=_azure_credential(),
     )
     if run_dir is not None:
         return _publish_from_dir(
@@ -268,6 +262,19 @@ def _truthy_env(name: str) -> bool:
     import os
 
     return os.getenv(name, "").strip().lower() in {"1", "true", "yes"}
+
+
+def _azure_credential():
+    import os
+
+    if _truthy_env("MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL"):
+        from azure.identity import ManagedIdentityCredential
+
+        return ManagedIdentityCredential(client_id=os.getenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID") or None)
+
+    from azure.identity import DefaultAzureCredential
+
+    return DefaultAzureCredential(exclude_interactive_browser_credential=True)
 
 
 if __name__ == "__main__":

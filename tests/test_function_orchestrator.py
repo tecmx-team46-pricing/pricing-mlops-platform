@@ -44,6 +44,7 @@ def test_pipeline_template_uses_packaged_model_source():
         assert job_definition["jobs"][job_name]["compute"] == "azureml:serverless"
     assert job_definition["jobs"]["publish_outputs"]["component"]["code"] == "../platform-components"
     assert job_definition["jobs"]["publish_outputs"]["compute"] == "azureml:serverless"
+    assert "job_identity_client_id" in job_definition["inputs"]
     assert "scripts/components/validate_prepare.py" in (
         job_definition["jobs"]["validate_prepare"]["component"]["command"]
     )
@@ -62,6 +63,12 @@ def test_pipeline_template_uses_packaged_model_source():
     assert "python platform_publish_outputs.py" in (
         job_definition["jobs"]["publish_outputs"]["component"]["command"]
     )
+    for job in job_definition["jobs"].values():
+        command = job["component"]["command"]
+        assert "MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true" in command
+        assert "AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}" in command
+        assert "job_identity_client_id" in job["component"]["inputs"]
+        assert job["inputs"]["job_identity_client_id"] == "${{parent.inputs.job_identity_client_id}}"
     expected_flow = {
         "build_monitoring_inputs": "${{parent.jobs.validate_prepare.outputs.flow_token}}",
         "calculate_recommendation_validity": "${{parent.jobs.build_monitoring_inputs.outputs.flow_token}}",
@@ -164,6 +171,52 @@ def test_model_flow_submits_aml_job(monkeypatch):
     assert submitted["current_history_blob_path"] == "samples/sample_pricing_v1.csv"
 
 
+def test_model_flow_hides_submit_exception_by_default(monkeypatch):
+    function_app = _load_function_app()
+    _set_required_env(monkeypatch)
+
+    def fake_submit(_request):
+        raise RuntimeError("specific failure")
+
+    monkeypatch.setattr(function_app, "submit_azure_ml_job", fake_submit)
+    request = func.HttpRequest(
+        method="POST",
+        url="/api/model-flow",
+        body=json.dumps({"environment": "staging", "run_owner": "team46"}).encode(),
+        headers={"content-type": "application/json"},
+    )
+
+    response = function_app.model_flow(request)
+    body = json.loads(response.get_body())
+
+    assert response.status_code == 500
+    assert body["error"] == "failed to submit Azure ML job"
+    assert "exception" not in body
+
+
+def test_model_flow_includes_submit_exception_when_debug_enabled(monkeypatch):
+    function_app = _load_function_app()
+    _set_required_env(monkeypatch)
+    monkeypatch.setenv("MLOPS_DEBUG_ERRORS", "true")
+
+    def fake_submit(_request):
+        raise RuntimeError("specific failure")
+
+    monkeypatch.setattr(function_app, "submit_azure_ml_job", fake_submit)
+    request = func.HttpRequest(
+        method="POST",
+        url="/api/model-flow",
+        body=json.dumps({"environment": "staging", "run_owner": "team46"}).encode(),
+        headers={"content-type": "application/json"},
+    )
+
+    response = function_app.model_flow(request)
+    body = json.loads(response.get_body())
+
+    assert response.status_code == 500
+    assert body["exception"] == "RuntimeError: specific failure"
+
+
 def test_event_grid_request_accepts_incoming_csv(monkeypatch):
     function_app = _load_function_app()
     _set_required_env(monkeypatch)
@@ -233,12 +286,14 @@ def test_apply_job_inputs_updates_loaded_pipeline_defaults(tmp_path):
             "run_id": "run-from-function",
             "trigger_type": "event-grid",
             "model_commit_sha": "abc123",
+            "job_identity_client_id": "managed-client-id",
         },
     )
 
     assert job._to_dict()["inputs"]["run_id"] == "run-from-function"
     assert job._to_dict()["inputs"]["trigger_type"] == "event-grid"
     assert job._to_dict()["inputs"]["model_commit_sha"] == "abc123"
+    assert job._to_dict()["inputs"]["job_identity_client_id"] == "managed-client-id"
     assert set(job._to_dict()["jobs"].keys()) == {
         "validate_prepare",
         "build_monitoring_inputs",
@@ -264,7 +319,7 @@ def test_apply_job_identity_sets_managed_identity_on_pipeline_nodes(tmp_path, mo
         }
 
 
-def test_apply_job_identity_keeps_user_identity_by_default(tmp_path, monkeypatch):
+def test_apply_job_identity_removes_user_identity_by_default(tmp_path, monkeypatch):
     function_app = _load_function_app()
     job = load_job(source=_copy_pipeline_package(tmp_path))
     monkeypatch.setenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "managed-client-id")
@@ -273,7 +328,7 @@ def test_apply_job_identity_keeps_user_identity_by_default(tmp_path, monkeypatch
     function_app._apply_job_identity(job)
 
     for node in job._to_dict()["jobs"].values():
-        assert node["identity"] == {"type": "user_identity"}
+        assert "identity" not in node
 
 
 def _copy_pipeline_package(tmp_path):

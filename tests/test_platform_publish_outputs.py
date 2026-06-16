@@ -1,5 +1,7 @@
 import importlib.util
 from pathlib import Path
+import sys
+import types
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -75,6 +77,35 @@ def test_platform_publish_rejects_incomplete_auth_monitoring_contract(tmp_path):
         assert "reports/auth_recommendation_validity_report.md" in str(exc)
     else:
         raise AssertionError("Incomplete artifact contract should fail before upload")
+
+
+def test_platform_publish_uses_managed_identity_client_id(monkeypatch):
+    module = _load_publish_component()
+    captured = {}
+
+    class FakeManagedIdentityCredential:
+        def __init__(self, *, client_id=None):
+            captured["client_id"] = client_id
+
+    class FakeDefaultAzureCredential:
+        def __init__(self, **kwargs):
+            captured["default_kwargs"] = kwargs
+
+    monkeypatch.setitem(
+        sys.modules,
+        "azure.identity",
+        types.SimpleNamespace(
+            ManagedIdentityCredential=FakeManagedIdentityCredential,
+            DefaultAzureCredential=FakeDefaultAzureCredential,
+        ),
+    )
+    monkeypatch.setenv("MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL", "true")
+    monkeypatch.setenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "managed-client-id")
+
+    credential = module._azure_credential()
+
+    assert isinstance(credential, FakeManagedIdentityCredential)
+    assert captured["client_id"] == "managed-client-id"
 
 
 def _write_required_artifacts(root: Path, relative_paths) -> None:

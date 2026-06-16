@@ -64,14 +64,14 @@ def model_flow(req: func.HttpRequest) -> func.HttpResponse:
         result = submit_azure_ml_job(request)
     except Exception as exc:
         logging.exception("AML job submission failed correlation_id=%s", correlation_id)
-        return _json_response(
-            {
-                "accepted": False,
-                "error": "failed to submit Azure ML job",
-                "correlation_id": correlation_id,
-            },
-            500,
-        )
+        body = {
+            "accepted": False,
+            "error": "failed to submit Azure ML job",
+            "correlation_id": correlation_id,
+        }
+        if os.getenv("MLOPS_DEBUG_ERRORS", "false").lower() == "true":
+            body["exception"] = f"{type(exc).__name__}: {exc}"
+        return _json_response(body, 500)
 
     result["correlation_id"] = correlation_id
     return _json_response(result, 202)
@@ -341,6 +341,13 @@ def _apply_job_inputs(job, values: dict[str, str]) -> None:
 
 def _apply_job_identity(job) -> None:
     if os.getenv("MLOPS_USE_MANAGED_JOB_IDENTITY", "false").lower() != "true":
+        if not getattr(job, "jobs", None):
+            if hasattr(job, "identity"):
+                job.identity = None
+            return
+        for node in job.jobs.values():
+            if hasattr(node, "identity"):
+                node.identity = None
         return
 
     job_identity_client_id = os.getenv("AZURE_ML_JOB_IDENTITY_CLIENT_ID", "").strip()
