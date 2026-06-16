@@ -208,7 +208,7 @@ Event Grid trigger & Entrada automatica por llegada de CSV masked. & Acepta solo
 
 \section*{Integracion actual con Azure ML Pipeline}
 
-La integracion actual con Azure ML ya representa un avance importante frente a ejecutar todo en una Function o en un script local. El pipeline aparece en Azure ML Studio con tres nodos visibles: \code{validate\_prepare}, \code{score\_evaluate} y \code{publish\_outputs}. Esto permite separar responsabilidades, observar cada etapa y mantener a Azure ML como compute principal del flujo.
+La integracion actual con Azure ML ya representa un avance importante frente a ejecutar todo en una Function o en un script local. El pipeline aparece en Azure ML Studio con pasos visibles de validacion, monitoreo AUTH y publicacion. Esto permite separar responsabilidades, observar cada etapa y mantener a Azure ML como compute principal del flujo.
 
 Sin embargo, la version actual todavia no es un DAG de datos completo. Los nodos se ejecutan en secuencia mediante \code{depends\_on}, pero una parte del estado intermedio se pasa por Blob Storage bajo \code{artifacts/component-state/<run\_id>/}. Esto es robusto e idempotente para el MVP, pero Azure ML no interpreta esos blobs como dependencias nativas de datos entre componentes.
 
@@ -231,9 +231,9 @@ La oportunidad de mejora es evolucionar el pipeline a un DAG real de datos con A
 
 \begin{verbatim}
 validate_prepare.outputs.prepared_data
-  -> score_evaluate.inputs.prepared_data
+  -> build_monitoring_inputs
 
-score_evaluate.outputs.run_artifacts
+calculate_operational_decision.outputs.run_artifacts
   -> publish_outputs.inputs.run_artifacts
 \end{verbatim}
 
@@ -296,7 +296,7 @@ SQL audit & \code{dbo.model\_run\_log} & Indice consultable para auditoria y rep
 \midrule
 \endhead
 Orquestacion & Azure Functions y Azure Data Factory (ADF) para coordinar ingesta y flujo. & Azure Functions ya opera HTTP y Event Grid; ADF se pospuso. & \estado{verdeOk}{Parcial}\\
-Compute ML & Azure ML para validacion, entrenamiento y scoring. & Azure ML ejecuta pipeline de 3 componentes. & \estado{verdeOk}{MVP}\\
+Compute ML & Azure ML para validacion, monitoreo y decision operacional. & Azure ML ejecuta pipeline AUTH monitoring de seis componentes visibles. & \estado{verdeOk}{MVP}\\
 Storage/ADLS & Capas raw, curated y snapshots. & Containers funcionales para raw-masked, curated, runs, snapshots, drift-logs, reports y artifacts. & \estado{verdeOk}{MVP}\\
 Azure SQL & Espina dorsal de auditoria. & Tablas \code{model\_run\_log}, \code{model\_output\_snapshot\_metadata} y \code{data\_quality\_log}. & \estado{verdeOk}{MVP}\\
 Drift & PSI, KS y semaforos por impacto de negocio. & Drift basico; semaforo registrado en la corrida auditada. & \estado{ambar}{Parcial}\\
@@ -436,7 +436,7 @@ La interpretacion correcta es:
 \begin{itemize}[leftmargin=*]
   \item IaC organizada en foundation, workloads y parameter files por ambiente.
   \item Ambiente \code{staging} activo con Storage, Azure ML, Function, Event Grid y SQL audit.
-  \item Pipeline Azure ML visible con tres nodos: \code{validate\_prepare}, \code{score\_evaluate} y \code{publish\_outputs}.
+  \item Pipeline Azure ML visible con validacion, componentes de monitoreo AUTH y publicacion final.
   \item Flujo remoto ejecutado sin usar GitHub Actions como compute operativo.
   \item Seis outputs funcionales publicados en Storage para una corrida auditada.
   \item Base SQL con metadata de corrida y snapshot.
@@ -468,7 +468,7 @@ Reporte academico & El avance queda documentado con evidencia. & Este documento 
 Auditoria SQL de URIs & SQL registra la corrida, pero \code{snapshot\_uri} y \code{artifact\_manifest\_uri} aparecen como rutas temporales locales \code{/tmp/...}. & Guardar las rutas Blob finales para que SQL sea evidencia auditable directa.\\
 Drift estadistico & La corrida registra \code{red}, pero el motor aun es basico. & Implementar PSI, KS y Z-test por metricas de negocio, con umbrales aprobados.\\
 Calidad de datos & \code{data\_quality\_log} existe pero no tiene registros. & Persistir checks por run: nulos, unicidad, monotonicidad y margen minimo.\\
-Pipeline AML como DAG real & Hay tres nodos visibles con \code{depends\_on}; parte del estado intermedio vive en Blob y no como edge nativo de datos. & Evolucionar a SDK v2 DSL con componentes registrados, datastore explicito e inputs/outputs \code{uri\_folder}.\\
+Pipeline AML como DAG real & Hay seis nodos visibles con \code{depends\_on}; parte del estado intermedio vive en Blob y no como edge nativo de datos. & Evolucionar a SDK v2 DSL con componentes registrados, datastore explicito e inputs/outputs \code{uri\_folder}.\\
 Modelo real & El flujo usa baseline/scoring controlado. & Integrar modelo real como paquete, componente AML o adaptador estable.\\
 Seguridad endpoint & Function key funciona como control temporal. & Migrar a Entra ID/Easy Auth o API Management.\\
 Retencion & Existen outputs funcionales y artifacts runtime. & Definir reglas de lifecycle por clase de datos y evidencia academica.\\

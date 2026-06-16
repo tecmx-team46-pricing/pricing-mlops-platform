@@ -68,7 +68,39 @@ AZURE_ML_WORKSPACE=mlw-pricing-mlops-stg-v2-<suffix> \
 mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
 ```
 
-Ese script llama la Function, espera el job AML por ARM/REST y verifica metadata de los seis outputs. No usa GitHub Actions ni `az ml`. En Azure ML > Jobs, el pipeline debe mostrar tres nodos: `validate_prepare`, `score_evaluate` y `publish_outputs`.
+Ese script llama la Function, espera el job AML por ARM/REST y verifica metadata de los outputs. No usa GitHub Actions ni `az ml`. En Azure ML > Jobs, el pipeline debe mostrar los nodos `validate_prepare`, `build_monitoring_inputs`, `calculate_recommendation_validity`, `calculate_auth_history_drift`, `calculate_operational_decision` y `publish_outputs`.
+
+## Operacion AUTH Monitoring Avance 4
+
+La ruta Avance 4 no corre el notebook completo. Usa componentes extraidos del notebook y deja el notebook como referencia del analista.
+
+Preflight con blobs requeridos:
+
+```bash
+MLOPS_BASELINE_SNAPSHOT_BLOB_PATH=<baseline-snapshot.csv> \
+MLOPS_CURRENT_AUTH_HISTORY_BLOB_PATH=<current-auth-history.csv> \
+mlops/scripts/preflight_notebook_pipeline_e2e.sh staging
+```
+
+Submit directo a Azure ML para validar los seis nodos antes de pasar por Function:
+
+```bash
+MLOPS_JOB_TEMPLATE=notebook \
+MLOPS_BASELINE_SNAPSHOT_BLOB_PATH=<baseline-snapshot.csv> \
+MLOPS_CURRENT_AUTH_HISTORY_BLOB_PATH=<current-auth-history.csv> \
+mlops/scripts/submit_notebook_pipeline_job.sh staging team46 <current-auth-history.csv>
+```
+
+`MLOPS_JOB_TEMPLATE=notebook` conserva el alias `pricing-mlops-notebook-pipeline.yml`. La ruta principal usa `pricing-mlops-pipeline.yml` y debe mostrar los mismos seis nodos:
+
+```text
+validate_prepare
+build_monitoring_inputs
+calculate_recommendation_validity
+calculate_auth_history_drift
+calculate_operational_decision
+publish_outputs
+```
 
 El trigger automatico se habilita por Event Grid sobre `raw-masked/incoming/*.csv`. Para probarlo:
 

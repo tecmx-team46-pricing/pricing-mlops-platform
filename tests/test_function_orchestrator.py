@@ -37,10 +37,19 @@ def test_pipeline_template_uses_packaged_model_source():
     assert job_definition["type"] == "pipeline"
     assert set(job_definition["jobs"].keys()) == {
         "validate_prepare",
-        "score_evaluate",
+        "build_monitoring_inputs",
+        "calculate_recommendation_validity",
+        "calculate_auth_history_drift",
+        "calculate_operational_decision",
         "publish_outputs",
     }
-    for job_name in ("validate_prepare", "score_evaluate"):
+    for job_name in (
+        "validate_prepare",
+        "build_monitoring_inputs",
+        "calculate_recommendation_validity",
+        "calculate_auth_history_drift",
+        "calculate_operational_decision",
+    ):
         assert job_definition["jobs"][job_name]["component"]["code"] == "../pricing-mlops-source"
         assert job_definition["jobs"][job_name]["compute"] == "azureml:serverless"
     assert job_definition["jobs"]["publish_outputs"]["component"]["code"] == "../platform-components"
@@ -48,21 +57,34 @@ def test_pipeline_template_uses_packaged_model_source():
     assert "scripts/components/validate_prepare.py" in (
         job_definition["jobs"]["validate_prepare"]["component"]["command"]
     )
-    assert "--trigger-type ${{inputs.trigger_type}}" in (
-        job_definition["jobs"]["score_evaluate"]["component"]["command"]
+    assert "scripts/components/build_monitoring_inputs.py" in (
+        job_definition["jobs"]["build_monitoring_inputs"]["component"]["command"]
     )
-    assert "--model-commit-sha ${{inputs.model_commit_sha}}" in (
-        job_definition["jobs"]["score_evaluate"]["component"]["command"]
+    assert "scripts/components/calculate_recommendation_validity.py" in (
+        job_definition["jobs"]["calculate_recommendation_validity"]["component"]["command"]
+    )
+    assert "scripts/components/calculate_auth_history_drift.py" in (
+        job_definition["jobs"]["calculate_auth_history_drift"]["component"]["command"]
+    )
+    assert "scripts/components/calculate_operational_decision.py" in (
+        job_definition["jobs"]["calculate_operational_decision"]["component"]["command"]
     )
     assert "python platform_publish_outputs.py" in (
         job_definition["jobs"]["publish_outputs"]["component"]["command"]
     )
-    assert job_definition["jobs"]["score_evaluate"]["depends_on"] == ["validate_prepare"]
-    assert job_definition["jobs"]["publish_outputs"]["depends_on"] == ["score_evaluate"]
-    assert "component-state/${{inputs.run_id}}/prepared" in (
-        job_definition["jobs"]["score_evaluate"]["component"]["command"]
+    assert job_definition["jobs"]["build_monitoring_inputs"]["depends_on"] == ["validate_prepare"]
+    assert job_definition["jobs"]["calculate_recommendation_validity"]["depends_on"] == ["build_monitoring_inputs"]
+    assert job_definition["jobs"]["calculate_auth_history_drift"]["depends_on"] == [
+        "calculate_recommendation_validity"
+    ]
+    assert job_definition["jobs"]["calculate_operational_decision"]["depends_on"] == [
+        "calculate_auth_history_drift"
+    ]
+    assert job_definition["jobs"]["publish_outputs"]["depends_on"] == ["calculate_operational_decision"]
+    assert "component-state/${{inputs.run_id}}/monitoring_inputs" in (
+        job_definition["jobs"]["build_monitoring_inputs"]["component"]["command"]
     )
-    assert "component-state/${{inputs.run_id}}/run_artifacts" in (
+    assert "component-state/${{inputs.run_id}}/operational_decision" in (
         job_definition["jobs"]["publish_outputs"]["component"]["command"]
     )
 
@@ -293,7 +315,10 @@ def test_apply_job_inputs_updates_loaded_pipeline_defaults(tmp_path):
     assert job._to_dict()["inputs"]["model_commit_sha"] == "abc123"
     assert set(job._to_dict()["jobs"].keys()) == {
         "validate_prepare",
-        "score_evaluate",
+        "build_monitoring_inputs",
+        "calculate_recommendation_validity",
+        "calculate_auth_history_drift",
+        "calculate_operational_decision",
         "publish_outputs",
     }
 

@@ -24,7 +24,7 @@ Disenar e implementar una plataforma MLOps base en Azure que permita ejecutar, r
 |---|---|
 | Infraestructura | Capa foundation y workload con Resource Groups, Storage, Azure ML, Function, SQL audit, identidades y permisos base. |
 | Orquestacion | Endpoint `POST /api/model-flow` y trigger Event Grid para `raw-masked/incoming/*.csv`. |
-| Ejecucion ML | Pipeline Azure ML con pasos `validate_prepare`, `score_evaluate` y `publish_outputs`. |
+| Ejecucion ML | Pipeline Azure ML con `validate_prepare`, componentes de monitoreo AUTH y `publish_outputs`. |
 | Evidencia | Outputs versionados en `runs`, `snapshots`, `drift-logs`, `reports`, `artifacts` y `curated`. |
 | Auditoria | Azure SQL metadata-only para consultar corridas y snapshots sin almacenar datasets completos. |
 | Gobierno | Separacion de datos masked/unmasked y rechazo de `raw-unmasked` en ambientes operativos. |

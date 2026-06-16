@@ -9,6 +9,7 @@ El MVP deja una base inicial: infraestructura reproducible, una Function que orq
 | Foundation | Resource Groups, Key Vault, Log Analytics, identidades OIDC y tags. |
 | Workload `staging` | Storage/ADLS, Azure ML Workspace, Function y SQL audit. |
 | Flujo E2E | Function -> Azure ML -> Storage con dataset masked compartido. |
+| Avance 4 AUTH monitoring | Template multi-step con logica del notebook abstraida en componentes visibles. |
 | Seguridad base | Sin account keys para datos MLOps, sin `raw-unmasked` en `staging`, sin prod. |
 | Limpieza legacy | Retiro de recursos Container Apps/ACR del PoC anterior en IaC y Azure `staging`. |
 
@@ -23,13 +24,14 @@ La siguiente etapa propuesta es reducir las brechas principales del MVP:
 5. Definir lifecycle cleanup para outputs funcionales y artifacts runtime, con aprobacion explicita antes de borrar historicos.
 6. Preparar `validation` cuando `staging` sea estable.
 7. Reemplazar el baseline controlado por un modelo real o baseline formal aprobado.
+8. Validar AUTH monitoring end-to-end con blobs reales de baseline/current history y comparar contra la copia transicional del notebook.
 
 ## Pipeline Azure ML Como DAG Real
 
 El pipeline actual funciona con tres command components:
 
 ```text
-validate_prepare -> score_evaluate -> publish_outputs
+validate_prepare -> build_monitoring_inputs -> calculate_recommendation_validity -> calculate_auth_history_drift -> calculate_operational_decision -> publish_outputs
 ```
 
 Hoy la coordinacion usa estado intermedio en Blob bajo `artifacts/component-state/<run_id>/`. Funciona para el MVP, pero Azure ML no entiende esos blobs como dependencias de datos nativas.
@@ -38,9 +40,9 @@ La evolucion recomendada es declarar dependencias de datos nativas:
 
 ```text
 validate_prepare.outputs.prepared_data
-  -> score_evaluate.inputs.prepared_data
+  -> build_monitoring_inputs
 
-score_evaluate.outputs.run_artifacts
+calculate_operational_decision.outputs.run_artifacts
   -> publish_outputs.inputs.run_artifacts
 ```
 

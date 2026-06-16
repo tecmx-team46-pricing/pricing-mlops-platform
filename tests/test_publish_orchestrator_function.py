@@ -80,13 +80,6 @@ def test_publish_allows_clean_local_model_source_with_flag(tmp_path):
         / "pricing-mlops-source"
         / "scripts"
         / "components"
-        / "score_evaluate.py"
-    ).is_file()
-    assert (
-        package_root
-        / "pricing-mlops-source"
-        / "scripts"
-        / "components"
         / "build_monitoring_inputs.py"
     ).is_file()
     assert (
@@ -158,7 +151,6 @@ def _minimal_model_repo(tmp_path: Path) -> Path:
     )
     for filename in (
         "validate_prepare.py",
-        "score_evaluate.py",
         "build_monitoring_inputs.py",
         "calculate_recommendation_validity.py",
         "calculate_auth_history_drift.py",

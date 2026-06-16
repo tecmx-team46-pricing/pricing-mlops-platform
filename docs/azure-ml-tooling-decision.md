@@ -2,10 +2,10 @@
 
 ## Decision
 
-La ruta activa adopta Azure ML Pipeline YAML con tres command components visibles:
+La ruta activa adopta Azure ML Pipeline YAML con command components visibles:
 
 ```text
-validate_prepare -> score_evaluate -> publish_outputs
+validate_prepare -> build_monitoring_inputs -> calculate_recommendation_validity -> calculate_auth_history_drift -> calculate_operational_decision -> publish_outputs
 ```
 
 Se conserva `pricing-mlops-job.yml` como fallback operativo de un solo job para reducir riesgo si el pipeline multi-componente falla.
@@ -14,7 +14,7 @@ Se conserva `pricing-mlops-job.yml` como fallback operativo de un solo job para 
 
 | Herramienta | Decision | Razon |
 |---|---|---|
-| Azure ML Pipeline/component job | Adoptado | Representa validacion/preparacion, scoring/evaluacion y publicacion como nodos separados sin mover logica ML a la Function. |
+| Azure ML Pipeline/component job | Adoptado | Representa validacion, monitoreo AUTH y publicacion como nodos separados sin mover logica ML a la Function. |
 | Azure ML Designer v2 | No manual | Puede visualizar pipelines, pero no sera la referencia operativa ni paso manual de operacion. |
 | Data Assets | Preparado | Utiles para baseline/input versionado, pero no bloquean el MVP event-driven. |
 | Model Monitoring | Futuro | Requiere mas historial y politicas; el MVP conserva drift logs propios. |

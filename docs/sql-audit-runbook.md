@@ -20,7 +20,7 @@ flowchart TD
   BlobEvent["BlobCreated<br/>raw-masked/incoming/*.csv"] --> EventGrid["Event Grid"]
   EventGrid --> Function
 
-  Function --> AML["Azure ML pipeline<br/>validate_prepare -> score_evaluate -> publish_outputs"]
+  Function --> AML["Azure ML pipeline<br/>validate_prepare -> monitoring steps -> publish_outputs"]
   AML --> BlobStorage["Storage MLOps<br/>runs / snapshots / drift-logs / reports / artifacts / curated"]
   AML --> SqlAudit["Azure SQL audit<br/>pricing_mlops_audit"]
 

@@ -1,14 +1,21 @@
 # Azure ML Pipeline/Job Contract
 
-La ruta preferida se define en `mlops/azureml/pricing-mlops-pipeline.yml`. El fallback command job se conserva en `mlops/azureml/pricing-mlops-job.yml`.
+La ruta AUTH monitoring principal se define en `mlops/azureml/pricing-mlops-pipeline.yml`. El fallback command job se conserva en `mlops/azureml/pricing-mlops-job.yml`.
 
-El pipeline activo tiene tres nodos visibles:
+El pipeline activo expone los pasos derivados del notebook de monitoreo:
 
 | Nodo | Entrypoint | Contrato |
 |---|---|---|
 | `validate_prepare` | `scripts/components/validate_prepare.py` | Lee `raw-masked/<input_blob_path>`, valida y produce `curated_input.csv` + `validation_metadata.json`. |
-| `score_evaluate` | `scripts/components/score_evaluate.py` | Lee el intermedio, scorea, calcula drift y escribe los cinco artefactos funcionales locales. |
-| `publish_outputs` | `scripts/components/publish_outputs.py` | Publica los seis outputs funcionales al Storage MLOps. |
+| `build_monitoring_inputs` | `scripts/components/build_monitoring_inputs.py` | Prepara snapshots normalizados para monitoreo. |
+| `calculate_recommendation_validity` | `scripts/components/calculate_recommendation_validity.py` | Calcula validez de recomendacion y summaries. |
+| `calculate_auth_history_drift` | `scripts/components/calculate_auth_history_drift.py` | Calcula drift de AUTH history contra baseline. |
+| `calculate_operational_decision` | `scripts/components/calculate_operational_decision.py` | Genera semaforo operacional y manifest final. |
+| `publish_outputs` | `mlops/components/platform_publish_outputs.py` | Publica los outputs funcionales al Storage MLOps. |
+
+`mlops/azureml/pricing-mlops-notebook-pipeline.yml` conserva un alias temporal para
+`MLOPS_JOB_TEMPLATE=notebook`; debe mantenerse equivalente al pipeline principal mientras
+se completa el cambio operativo.
 
 Los componentes usan:
 

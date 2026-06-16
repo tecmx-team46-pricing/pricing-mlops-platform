@@ -312,10 +312,10 @@ El avance actual se puede entender como una primera etapa dentro de la ruta haci
 
 ## 15.1 Azure ML Pipeline Como DAG Real
 
-La integracion actual con Azure ML ya muestra tres nodos visibles:
+La integracion actual con Azure ML ya muestra pasos visibles de validacion, monitoreo y publicacion:
 
 ```text
-validate_prepare -> score_evaluate -> publish_outputs
+validate_prepare -> build_monitoring_inputs -> calculate_recommendation_validity -> calculate_auth_history_drift -> calculate_operational_decision -> publish_outputs
 ```
 
 Esto es un avance porque Azure ML ya opera como compute principal y la Function no ejecuta el modelo. Sin embargo, el pipeline actual todavia no es un DAG de datos completo. Los nodos usan `depends_on` para conservar el orden, pero parte del estado intermedio se comparte por Blob Storage bajo:
@@ -328,9 +328,9 @@ Esto funciona para el MVP, pero Azure ML no interpreta esos blobs como dependenc
 
 ```text
 validate_prepare.outputs.prepared_data
-  -> score_evaluate.inputs.prepared_data
+  -> build_monitoring_inputs
 
-score_evaluate.outputs.run_artifacts
+calculate_operational_decision.outputs.run_artifacts
   -> publish_outputs.inputs.run_artifacts
 ```
 
