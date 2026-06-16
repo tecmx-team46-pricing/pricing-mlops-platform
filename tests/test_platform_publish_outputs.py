@@ -129,6 +129,22 @@ def test_platform_publish_uses_managed_identity_client_id(monkeypatch):
     assert captured["client_id"] == "managed-client-id"
 
 
+def test_platform_publish_resolves_config_path_relative_to_component_working_dir(tmp_path, monkeypatch):
+    module = _load_publish_component()
+    run_dir = tmp_path / "downloaded" / "run"
+    component_dir = tmp_path / "package" / "platform-components"
+    config_path = tmp_path / "package" / "configs" / "drift_thresholds.json"
+    run_dir.mkdir(parents=True)
+    component_dir.mkdir(parents=True)
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text('{"version":"2026-05-07"}\n', encoding="utf-8")
+    monkeypatch.chdir(component_dir)
+
+    resolved = module._resolve_config_path(run_dir, Path("../configs/drift_thresholds.json"))
+
+    assert resolved == config_path.resolve()
+
+
 def _write_required_artifacts(root: Path, relative_paths) -> None:
     for relative_path in relative_paths:
         path = root / relative_path

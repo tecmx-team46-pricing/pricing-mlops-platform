@@ -303,6 +303,15 @@ def _resolve_config_path(run_dir: Path, monitoring_config_path: Path | None) -> 
         return candidate if candidate.is_file() else None
     if monitoring_config_path.is_absolute():
         return monitoring_config_path
+    candidates = (
+        run_dir / monitoring_config_path,
+        Path.cwd() / monitoring_config_path,
+        Path(__file__).resolve().parent / monitoring_config_path,
+    )
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved.is_file():
+            return resolved
     return (run_dir / monitoring_config_path).resolve()
 
 
