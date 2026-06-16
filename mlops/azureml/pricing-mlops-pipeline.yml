@@ -342,22 +342,6 @@ jobs:
           type: string
         job_identity_client_id:
           type: string
-        sql_enabled:
-          type: string
-        sql_server:
-          type: string
-        sql_database:
-          type: string
-        sql_schema:
-          type: string
-        sql_run_log_table:
-          type: string
-        sql_snapshot_table:
-          type: string
-        artifact_sinks:
-          type: string
-        optional_artifact_sinks:
-          type: string
         previous_step_token:
           type: uri_folder
     inputs:
@@ -371,14 +355,6 @@ jobs:
       model_ref: ${{parent.inputs.model_ref}}
       model_commit_sha: ${{parent.inputs.model_commit_sha}}
       job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
-      sql_enabled: ${{parent.inputs.sql_enabled}}
-      sql_server: ${{parent.inputs.sql_server}}
-      sql_database: ${{parent.inputs.sql_database}}
-      sql_schema: ${{parent.inputs.sql_schema}}
-      sql_run_log_table: ${{parent.inputs.sql_run_log_table}}
-      sql_snapshot_table: ${{parent.inputs.sql_snapshot_table}}
-      artifact_sinks: ${{parent.inputs.artifact_sinks}}
-      optional_artifact_sinks: ${{parent.inputs.optional_artifact_sinks}}
       previous_step_token:
         type: uri_folder
         path: ${{parent.jobs.calculate_operational_decision.outputs.flow_token}}
