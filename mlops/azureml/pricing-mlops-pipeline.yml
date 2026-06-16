@@ -37,7 +37,7 @@ jobs:
       code: ../pricing-mlops-source
       command: >-
         python -m pip install -e . &&
-        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        MLOPS_FORCE_DEFAULT_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/validate_prepare.py
         --storage-account ${{inputs.storage_account}}
@@ -84,7 +84,7 @@ jobs:
       command: >-
         python -m pip install -e . &&
         test -f ${{inputs.previous_step_token}}/done.txt &&
-        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        MLOPS_FORCE_DEFAULT_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/build_monitoring_inputs.py
         --baseline-snapshot-path outputs/_downloaded/baseline_recommendation_snapshot.csv
@@ -150,7 +150,7 @@ jobs:
       command: >-
         python -m pip install -e . &&
         test -f ${{inputs.previous_step_token}}/done.txt &&
-        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        MLOPS_FORCE_DEFAULT_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/calculate_recommendation_validity.py
         --input-dir outputs/monitoring_inputs
@@ -200,7 +200,7 @@ jobs:
       command: >-
         python -m pip install -e . &&
         test -f ${{inputs.previous_step_token}}/done.txt &&
-        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        MLOPS_FORCE_DEFAULT_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/calculate_auth_history_drift.py
         --input-dir outputs/recommendation_validity
@@ -251,7 +251,7 @@ jobs:
       command: >-
         python -m pip install -e . &&
         test -f ${{inputs.previous_step_token}}/done.txt &&
-        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        MLOPS_FORCE_DEFAULT_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/calculate_operational_decision.py
         --input-dir outputs/auth_history_drift
@@ -302,7 +302,7 @@ jobs:
       command: >-
         python -m pip install azure-identity azure-storage-blob &&
         test -f ${{inputs.previous_step_token}}/done.txt &&
-        MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+        MLOPS_FORCE_DEFAULT_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python platform_publish_outputs.py
         --storage-account ${{inputs.storage_account}}
