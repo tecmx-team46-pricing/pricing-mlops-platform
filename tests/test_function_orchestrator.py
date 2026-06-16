@@ -102,7 +102,7 @@ def test_pipeline_template_uses_packaged_model_source():
     )
     publish_command = job_definition["jobs"]["publish_outputs"]["component"]["command"]
     assert "--monitoring-config-version ${{inputs.monitoring_config_version}}" in publish_command
-    assert "--monitoring-config-path ../configs/drift_thresholds.json" in publish_command
+    assert "--monitoring-config-path configs/drift_thresholds.json" in publish_command
     assert (
         job_definition["jobs"]["publish_outputs"]["inputs"]["monitoring_config_version"]
         == "${{parent.inputs.monitoring_config_version}}"

@@ -305,7 +305,7 @@ jobs:
         --model-ref ${{inputs.model_ref}}
         --model-commit-sha ${{inputs.model_commit_sha}}
         --monitoring-config-version ${{inputs.monitoring_config_version}}
-        --monitoring-config-path ../configs/drift_thresholds.json
+        --monitoring-config-path configs/drift_thresholds.json
       environment: azureml:pricing-auth-monitoring-env:1
       inputs:
         storage_account:
