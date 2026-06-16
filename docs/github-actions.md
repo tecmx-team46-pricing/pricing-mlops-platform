@@ -10,7 +10,7 @@ GitHub Actions se usa para:
 - ejecutar `what-if` o deploy manual controlado de infraestructura;
 - publicar o probar integraciones cuando se solicite.
 
-## Workflows Activos En Este Repo
+## Workflow Activo En Este Repo
 
 `.github/workflows/platform-infra.yml`
 
@@ -20,13 +20,6 @@ GitHub Actions se usa para:
 | `workflow_dispatch`, `operation=validate` | Valida IaC y runtime MLOps. | No |
 | `workflow_dispatch`, `operation=what-if` | Ejecuta `scripts/what-if.sh`. | Si |
 | `workflow_dispatch`, `operation=deploy` | Ejecuta what-if y deploy. | Si |
-
-`.github/workflows/azureml-components.yml`
-
-| Trigger | Accion | Azure login |
-|---|---|---|
-| `push` a `main` con cambios en `mlops/azureml/components/**`, environment, pipeline o scripts de registro | Registra el Azure ML Environment y los componentes versionados que usa el pipeline. | Si |
-| `workflow_dispatch` | Re-registra manualmente Environment y componentes. | Si |
 
 Opciones manuales permitidas:
 
@@ -45,13 +38,9 @@ Para plataforma:
 AZURE_CLIENT_ID
 AZURE_TENANT_ID
 AZURE_SUBSCRIPTION_ID
-AZURE_RESOURCE_GROUP
-AZURE_ML_WORKSPACE
 ```
 
-Para registrar componentes, el workflow hace checkout de `tecmx-team46-pricing/pricing-mlops` en `mlops/azureml/pricing-mlops-source`. Si ese repo es privado y el `GITHUB_TOKEN` no tiene acceso, configurar el secret `PRICING_MLOPS_READ_TOKEN` con permisos de lectura. La variable opcional `MODEL_REPO_REF` permite fijar branch, tag o SHA del repo modelo; si no existe, usa `main`.
-
-La identidad federada de GitHub necesita permisos sobre el Resource Group principal para registrar assets de Azure ML. La identidad del repo modelo no debe recibir `Owner` ni `Contributor` de subscription.
+Los componentes de Azure ML se registran desde el repo `pricing-mlops`, porque ahi vive el codigo de los entrypoints del modelo. Este repo solo orquesta y referencia esos assets registrados desde `mlops/azureml/pricing-mlops-pipeline.yml`.
 
 ## PR Seguro
 

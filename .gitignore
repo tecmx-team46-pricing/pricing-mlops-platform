@@ -30,5 +30,3 @@ tmp/
 outputs/
 *.pyc
 __pycache__/
-
-mlops/azureml/pricing-mlops-source/

@@ -11,7 +11,6 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 FUNCTION_APP_PATH = ROOT / "mlops" / "functions" / "function_app.py"
 PIPELINE_JOB_FILE = ROOT / "mlops" / "azureml" / "pricing-mlops-pipeline.yml"
-COMPONENTS_DIR = ROOT / "mlops" / "azureml" / "components"
 PIPELINE_ENVIRONMENT = "azureml:pricing-auth-monitoring-env:1"
 FUNCTIONAL_COMPONENT_VERSION = "0.1.1"
 FUNCTIONAL_COMPONENTS = {
@@ -20,13 +19,6 @@ FUNCTIONAL_COMPONENTS = {
     "calculate_recommendation_validity": "pricing_mlops_calculate_recommendation_validity",
     "calculate_auth_history_drift": "pricing_mlops_calculate_auth_history_drift",
     "calculate_operational_decision": "pricing_mlops_calculate_operational_decision",
-}
-FUNCTIONAL_COMPONENT_FILES = {
-    "pricing_mlops_validate_prepare": "validate_prepare.yml",
-    "pricing_mlops_build_monitoring_inputs": "build_monitoring_inputs.yml",
-    "pricing_mlops_calculate_recommendation_validity": "calculate_recommendation_validity.yml",
-    "pricing_mlops_calculate_auth_history_drift": "calculate_auth_history_drift.yml",
-    "pricing_mlops_calculate_operational_decision": "calculate_operational_decision.yml",
 }
 
 
@@ -108,28 +100,6 @@ def test_pipeline_template_uses_packaged_model_source():
         job_definition["jobs"]["publish_outputs"]["inputs"]["monitoring_config_version"]
         == "${{parent.inputs.monitoring_config_version}}"
     )
-
-
-def test_registered_component_specs_match_pipeline_component_references():
-    job_definition = yaml.safe_load(PIPELINE_JOB_FILE.read_text(encoding="utf-8"))
-
-    for job_name, component_name in FUNCTIONAL_COMPONENTS.items():
-        component_file = COMPONENTS_DIR / FUNCTIONAL_COMPONENT_FILES[component_name]
-        component_spec = yaml.safe_load(component_file.read_text(encoding="utf-8"))
-
-        assert component_spec["type"] == "command"
-        assert component_spec["name"] == component_name
-        assert component_spec["version"] == FUNCTIONAL_COMPONENT_VERSION
-        assert component_spec["code"] == "../pricing-mlops-source"
-        assert component_spec["environment"] == PIPELINE_ENVIRONMENT
-        assert job_definition["jobs"][job_name]["component"] == (
-            f"azureml:{component_name}:{component_spec['version']}"
-        )
-        assert "MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true" in component_spec["command"]
-        assert "AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}" in (
-            component_spec["command"]
-        )
-        assert "flow_token" in component_spec["outputs"]
 
 
 def test_function_app_discovers_platform_job_template():
