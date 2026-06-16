@@ -13,9 +13,16 @@ Endpoints:
 El paquete de despliegue se arma con:
 
 ```bash
+AZURE_SUBSCRIPTION_ID=<subscription-id> \
+AZURE_RESOURCE_GROUP=<resource-group> \
+AZURE_ML_WORKSPACE=<workspace-name> \
+mlops/scripts/register_azureml_environment.sh
+
 MODEL_REPO_REF=<commit-sha-or-tag> \
 mlops/scripts/publish_orchestrator_function.sh staging
 ```
+
+El registro del Azure ML Environment crea/actualiza `pricing-auth-monitoring-env:1`. Ese environment no mantiene compute prendido; solo guarda la definicion de runtime e imagen para que los jobs serverless no instalen dependencias en cada step.
 
 Por default el script usa `FUNCTION_PACKAGE_MODE=remote-build`, que delega la instalacion de dependencias a Kudu/Oryx. Para despliegues reproducibles o cuando remote build no instala `azure-ai-ml`, se puede generar un paquete vendorizado para Linux Python 3.11:
 

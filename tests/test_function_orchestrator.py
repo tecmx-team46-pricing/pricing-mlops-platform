@@ -11,6 +11,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 FUNCTION_APP_PATH = ROOT / "mlops" / "functions" / "function_app.py"
 PIPELINE_JOB_FILE = ROOT / "mlops" / "azureml" / "pricing-mlops-pipeline.yml"
+PIPELINE_ENVIRONMENT = "azureml:pricing-auth-monitoring-env:1"
 
 
 def _load_function_app():
@@ -65,6 +66,8 @@ def test_pipeline_template_uses_packaged_model_source():
     )
     for job in job_definition["jobs"].values():
         command = job["component"]["command"]
+        assert "pip install" not in command
+        assert job["component"]["environment"] == PIPELINE_ENVIRONMENT
         assert "MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true" in command
         assert "AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}" in command
         assert "job_identity_client_id" in job["component"]["inputs"]
