@@ -65,7 +65,6 @@ def test_publish_allows_clean_local_model_source_with_flag(tmp_path):
     assert (package_root / "host.json").is_file()
     assert (package_root / "requirements.txt").is_file()
     assert (package_root / "azureml" / "pricing-mlops-pipeline.yml").is_file()
-    assert (package_root / "azureml" / "pricing-mlops-job.yml").is_file()
     assert (package_root / "platform-components" / "platform_publish_outputs.py").is_file()
     assert (package_root / "pricing-mlops-source" / "pyproject.toml").is_file()
     assert (
@@ -143,10 +142,6 @@ def _minimal_model_repo(tmp_path: Path) -> Path:
     (model_repo / "tests").mkdir()
     (model_repo / "pyproject.toml").write_text(
         "[project]\nname = \"pricing-mlops\"\nversion = \"0.1.0\"\n",
-        encoding="utf-8",
-    )
-    (model_repo / "scripts" / "run_azure_ml_flow.py").write_text(
-        "print('run')\n",
         encoding="utf-8",
     )
     for filename in (

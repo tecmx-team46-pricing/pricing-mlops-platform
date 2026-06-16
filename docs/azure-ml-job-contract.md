@@ -10,12 +10,6 @@ La ruta preferida del flujo esta definida en:
 mlops/azureml/pricing-mlops-pipeline.yml
 ```
 
-El fallback operativo queda en:
-
-```text
-mlops/azureml/pricing-mlops-job.yml
-```
-
 ## Pipeline
 
 El pipeline activo muestra los pasos derivados del notebook de monitoreo:

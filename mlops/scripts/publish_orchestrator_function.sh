@@ -27,9 +27,7 @@ required_files=(
   "${MLOPS_ROOT}/functions/function_app.py"
   "${MLOPS_ROOT}/functions/host.json"
   "${MLOPS_ROOT}/functions/requirements.txt"
-  "${MLOPS_ROOT}/azureml/pricing-mlops-job.yml"
   "${MLOPS_ROOT}/azureml/pricing-mlops-pipeline.yml"
-  "${MLOPS_ROOT}/azureml/pricing-mlops-notebook-pipeline.yml"
   "${MLOPS_ROOT}/azureml/environment.yml"
   "${MLOPS_ROOT}/components/platform_publish_outputs.py"
 )
@@ -142,7 +140,6 @@ fi
 
 required_model_source_files=(
   "${MODEL_SOURCE_DIR}/pyproject.toml"
-  "${MODEL_SOURCE_DIR}/scripts/run_azure_ml_flow.py"
   "${MODEL_SOURCE_DIR}/scripts/components/validate_prepare.py"
   "${MODEL_SOURCE_DIR}/scripts/components/build_monitoring_inputs.py"
   "${MODEL_SOURCE_DIR}/scripts/components/calculate_recommendation_validity.py"
@@ -162,9 +159,7 @@ mkdir -p "${PACKAGE_ROOT}/azureml" "${PACKAGE_ROOT}/pricing-mlops-source" "${PAC
 cp "${MLOPS_ROOT}/functions/function_app.py" "${PACKAGE_ROOT}/function_app.py"
 cp "${MLOPS_ROOT}/functions/host.json" "${PACKAGE_ROOT}/host.json"
 cp "${MLOPS_ROOT}/functions/requirements.txt" "${PACKAGE_ROOT}/requirements.txt"
-cp "${MLOPS_ROOT}/azureml/pricing-mlops-job.yml" "${PACKAGE_ROOT}/azureml/pricing-mlops-job.yml"
 cp "${MLOPS_ROOT}/azureml/pricing-mlops-pipeline.yml" "${PACKAGE_ROOT}/azureml/pricing-mlops-pipeline.yml"
-cp "${MLOPS_ROOT}/azureml/pricing-mlops-notebook-pipeline.yml" "${PACKAGE_ROOT}/azureml/pricing-mlops-notebook-pipeline.yml"
 cp "${MLOPS_ROOT}/azureml/environment.yml" "${PACKAGE_ROOT}/azureml/environment.yml"
 cp "${MLOPS_ROOT}/components/platform_publish_outputs.py" "${PACKAGE_ROOT}/platform-components/platform_publish_outputs.py"
 python - <<'PY' "${PACKAGE_ROOT}/model_source.json" "${MODEL_SOURCE_KIND}" "${MODEL_REPO_GITHUB}" "${MODEL_REPO_REF}" "${MODEL_COMMIT_SHA}"
@@ -211,8 +206,6 @@ required_package_paths=(
   "${PACKAGE_ROOT}/host.json"
   "${PACKAGE_ROOT}/requirements.txt"
   "${PACKAGE_ROOT}/azureml/pricing-mlops-pipeline.yml"
-  "${PACKAGE_ROOT}/azureml/pricing-mlops-notebook-pipeline.yml"
-  "${PACKAGE_ROOT}/azureml/pricing-mlops-job.yml"
   "${PACKAGE_ROOT}/pricing-mlops-source/pyproject.toml"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/validate_prepare.py"
   "${PACKAGE_ROOT}/pricing-mlops-source/scripts/components/build_monitoring_inputs.py"

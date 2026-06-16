@@ -18,46 +18,23 @@ SAFE_OWNER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 SAFE_BLOB_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_./=-]{0,255}$")
 MAX_PAYLOAD_BYTES = 4096
 APP_ROOT = Path(__file__).resolve().parent
-COMMAND_JOB_FILE_CANDIDATES = (
-    APP_ROOT / "azureml" / "pricing-mlops-job.yml",
-    APP_ROOT.parent / "azureml" / "pricing-mlops-job.yml",
-)
 PIPELINE_JOB_FILE_CANDIDATES = (
     APP_ROOT / "azureml" / "pricing-mlops-pipeline.yml",
     APP_ROOT.parent / "azureml" / "pricing-mlops-pipeline.yml",
-)
-NOTEBOOK_PIPELINE_JOB_FILE_CANDIDATES = (
-    APP_ROOT / "azureml" / "pricing-mlops-notebook-pipeline.yml",
-    APP_ROOT.parent / "azureml" / "pricing-mlops-notebook-pipeline.yml",
 )
 MODEL_SOURCE_FILE_CANDIDATES = (
     APP_ROOT / "model_source.json",
     APP_ROOT.parent / "model_source.json",
 )
-COMMAND_JOB_FILE = next(
-    (path for path in COMMAND_JOB_FILE_CANDIDATES if path.exists()),
-    COMMAND_JOB_FILE_CANDIDATES[0],
-)
 PIPELINE_JOB_FILE = next(
     (path for path in PIPELINE_JOB_FILE_CANDIDATES if path.exists()),
     PIPELINE_JOB_FILE_CANDIDATES[0],
-)
-NOTEBOOK_PIPELINE_JOB_FILE = next(
-    (path for path in NOTEBOOK_PIPELINE_JOB_FILE_CANDIDATES if path.exists()),
-    NOTEBOOK_PIPELINE_JOB_FILE_CANDIDATES[0],
 )
 MODEL_SOURCE_FILE = next(
     (path for path in MODEL_SOURCE_FILE_CANDIDATES if path.exists()),
     MODEL_SOURCE_FILE_CANDIDATES[0],
 )
-JOB_TEMPLATE = os.getenv("MLOPS_JOB_TEMPLATE", "baseline").lower().strip()
-JOB_FILE = (
-    COMMAND_JOB_FILE
-    if os.getenv("MLOPS_USE_AML_PIPELINE", "true").lower() != "true"
-    else NOTEBOOK_PIPELINE_JOB_FILE
-    if JOB_TEMPLATE == "notebook"
-    else PIPELINE_JOB_FILE
-)
+JOB_FILE = PIPELINE_JOB_FILE
 
 
 @app.function_name(name="model-flow")

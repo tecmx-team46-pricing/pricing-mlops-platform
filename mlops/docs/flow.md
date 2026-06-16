@@ -55,8 +55,7 @@ flowchart TD
 
 ## Flujo AUTH Monitoring
 
-El pipeline `pricing-mlops-notebook-pipeline.yml` mantiene compatibilidad con el selector historico
-`MLOPS_JOB_TEMPLATE=notebook`, pero ya no ejecuta el notebook operacional completo como una caja negra.
+El pipeline activo no ejecuta el notebook operacional completo como una caja negra.
 El notebook queda como referencia del analista y la logica operacional se materializa en pasos visibles:
 
 ```mermaid

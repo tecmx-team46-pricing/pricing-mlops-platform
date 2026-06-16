@@ -201,11 +201,13 @@ done
 echo "Verifying output blobs:"
 for item in \
   "runs:${EXPECTED_OUTPUT_PREFIX}/model_run_log.json" \
-  "snapshots:${EXPECTED_OUTPUT_PREFIX}/model_output_snapshot.csv" \
-  "drift-logs:${EXPECTED_OUTPUT_PREFIX}/model_drift_log.json" \
-  "reports:${EXPECTED_OUTPUT_PREFIX}/report.md" \
-  "artifacts:${EXPECTED_OUTPUT_PREFIX}/curated_pricing.csv" \
-  "curated:${EXPECTED_OUTPUT_PREFIX}/curated_pricing.csv"; do
+  "runs:${EXPECTED_OUTPUT_PREFIX}/summaries/operational_decision_summary.csv" \
+  "snapshots:${EXPECTED_OUTPUT_PREFIX}/snapshots/baseline_recommendation_snapshot.csv" \
+  "snapshots:${EXPECTED_OUTPUT_PREFIX}/snapshots/current_auth_history_snapshot_real.csv" \
+  "drift-logs:${EXPECTED_OUTPUT_PREFIX}/logs/auth_recommendation_validity_log.csv" \
+  "drift-logs:${EXPECTED_OUTPUT_PREFIX}/logs/auth_history_drift_log.csv" \
+  "reports:${EXPECTED_OUTPUT_PREFIX}/reports/auth_recommendation_validity_report.md" \
+  "artifacts:${EXPECTED_OUTPUT_PREFIX}/manifest/artifact_manifest.json"; do
   container="${item%%:*}"
   blob="${item#*:}"
   az storage blob show \

@@ -186,11 +186,13 @@ Outputs verificados:
 
 ```text
 runs/.../model_run_log.json
-snapshots/.../model_output_snapshot.csv
-drift-logs/.../model_drift_log.json
-reports/.../report.md
-artifacts/.../curated_pricing.csv
-curated/.../curated_pricing.csv
+runs/.../summaries/operational_decision_summary.csv
+snapshots/.../snapshots/baseline_recommendation_snapshot.csv
+snapshots/.../snapshots/current_auth_history_snapshot_real.csv
+drift-logs/.../logs/auth_recommendation_validity_log.csv
+drift-logs/.../logs/auth_history_drift_log.csv
+reports/.../reports/auth_recommendation_validity_report.md
+artifacts/.../manifest/artifact_manifest.json
 ```
 
 Esto demuestra que la Function puede iniciar el job, que Azure ML ejecuta el flujo y que Storage conserva la evidencia versionada.

@@ -1,6 +1,6 @@
 # Azure ML Pipeline/Job Contract
 
-La ruta AUTH monitoring principal se define en `mlops/azureml/pricing-mlops-pipeline.yml`. El fallback command job se conserva en `mlops/azureml/pricing-mlops-job.yml`.
+La ruta AUTH monitoring principal se define en `mlops/azureml/pricing-mlops-pipeline.yml`.
 
 El pipeline activo expone los pasos derivados del notebook de monitoreo:
 
@@ -13,23 +13,10 @@ El pipeline activo expone los pasos derivados del notebook de monitoreo:
 | `calculate_operational_decision` | `scripts/components/calculate_operational_decision.py` | Genera semaforo operacional y manifest final. |
 | `publish_outputs` | `mlops/components/platform_publish_outputs.py` | Publica los outputs funcionales al Storage MLOps. |
 
-`mlops/azureml/pricing-mlops-notebook-pipeline.yml` conserva un alias temporal para
-`MLOPS_JOB_TEMPLATE=notebook`; debe mantenerse equivalente al pipeline principal mientras
-se completa el cambio operativo.
-
 Los componentes usan:
 
 ```yaml
 code: ../pricing-mlops-source
-```
-
-El fallback command job usa:
-
-```yaml
-code: ../pricing-mlops-source
-command: >-
-  python -m pip install -e . &&
-  python scripts/run_azure_ml_flow.py
 ```
 
 `../pricing-mlops-source` existe dentro del paquete de Azure Functions preparado por `mlops/scripts/publish_orchestrator_function.sh`. Azure ML v2 no trata `code:` como un repo GitHub vivo; `code:` apunta a esa carpeta local y el SDK sube ese snapshot al someter el pipeline/job. Esa carpeta es un snapshot del repo `pricing-mlops`, que mantiene el codigo data science alineado con Cookiecutter Data Science.

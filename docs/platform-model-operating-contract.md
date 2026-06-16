@@ -34,7 +34,6 @@ MLOPS_ALLOWED_EVENT_CONTAINER=raw-masked
 MLOPS_ALLOWED_EVENT_PREFIX=incoming/
 MLOPS_DEFAULT_OWNER=team46
 MLOPS_RUN_INDEX_TABLE=mlopsruns
-MLOPS_USE_AML_PIPELINE=true
 MLOPS_ARTIFACT_SINKS=azure_blob,sql_metadata
 MLOPS_OPTIONAL_ARTIFACT_SINKS=azure_ml
 MLOPS_SQL_ENABLED=true
@@ -109,11 +108,13 @@ Artefactos esperados:
 | Container | Archivo |
 |---|---|
 | `runs` | `model_run_log.json` |
-| `snapshots` | `model_output_snapshot.csv` |
-| `drift-logs` | `model_drift_log.json` |
-| `reports` | `report.md` |
-| `artifacts` | `curated_pricing.csv` |
-| `curated` | `curated_pricing.csv` |
+| `runs` | `summaries/operational_decision_summary.csv` |
+| `snapshots` | `snapshots/baseline_recommendation_snapshot.csv` |
+| `snapshots` | `snapshots/current_auth_history_snapshot_real.csv` |
+| `drift-logs` | `logs/auth_recommendation_validity_log.csv` |
+| `drift-logs` | `logs/auth_history_drift_log.csv` |
+| `reports` | `reports/auth_recommendation_validity_report.md` |
+| `artifacts` | `manifest/artifact_manifest.json` |
 
 Azure ML puede generar snapshots de codigo, logs, environments y artifacts runtime fuera de este layout. Esos artifacts internos no son outputs funcionales del modelo y no forman parte del contrato entre plataforma y repo modelo.
 

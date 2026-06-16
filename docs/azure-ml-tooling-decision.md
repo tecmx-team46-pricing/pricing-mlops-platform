@@ -8,7 +8,7 @@ La ruta activa adopta Azure ML Pipeline YAML con command components visibles:
 validate_prepare -> build_monitoring_inputs -> calculate_recommendation_validity -> calculate_auth_history_drift -> calculate_operational_decision -> publish_outputs
 ```
 
-Se conserva `pricing-mlops-job.yml` como fallback operativo de un solo job para reducir riesgo si el pipeline multi-componente falla.
+El template operativo es `mlops/azureml/pricing-mlops-pipeline.yml`.
 
 ## Tooling
 

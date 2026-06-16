@@ -79,19 +79,18 @@ Preflight con blobs requeridos:
 ```bash
 MLOPS_BASELINE_SNAPSHOT_BLOB_PATH=<baseline-snapshot.csv> \
 MLOPS_CURRENT_AUTH_HISTORY_BLOB_PATH=<current-auth-history.csv> \
-mlops/scripts/preflight_notebook_pipeline_e2e.sh staging
+mlops/scripts/preflight_pipeline_e2e.sh staging
 ```
 
-Submit directo a Azure ML para validar los seis nodos antes de pasar por Function:
+Ejecutar por Function:
 
 ```bash
-MLOPS_JOB_TEMPLATE=notebook \
 MLOPS_BASELINE_SNAPSHOT_BLOB_PATH=<baseline-snapshot.csv> \
 MLOPS_CURRENT_AUTH_HISTORY_BLOB_PATH=<current-auth-history.csv> \
-mlops/scripts/submit_notebook_pipeline_job.sh staging team46 <current-auth-history.csv>
+mlops/scripts/run_model_flow_function.sh staging team46 <current-auth-history.csv>
 ```
 
-`MLOPS_JOB_TEMPLATE=notebook` conserva el alias `pricing-mlops-notebook-pipeline.yml`. La ruta principal usa `pricing-mlops-pipeline.yml` y debe mostrar los mismos seis nodos:
+La ruta principal usa `pricing-mlops-pipeline.yml` y debe mostrar estos seis nodos:
 
 ```text
 validate_prepare
