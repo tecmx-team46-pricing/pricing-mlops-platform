@@ -1,0 +1,60 @@
+name: azureml-components
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "mlops/azureml/components/**"
+      - "mlops/azureml/environment.yml"
+      - "mlops/azureml/conda.yml"
+      - "mlops/azureml/pricing-mlops-pipeline.yml"
+      - "mlops/scripts/register_azureml_components.sh"
+      - "mlops/scripts/register_azureml_environment.sh"
+      - ".github/workflows/azureml-components.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  register-components:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout platform repo
+        uses: actions/checkout@v4
+
+      - name: Checkout model components source
+        uses: actions/checkout@v4
+        with:
+          repository: tecmx-team46-pricing/pricing-mlops
+          ref: ${{ vars.MODEL_REPO_REF || 'main' }}
+          path: mlops/azureml/pricing-mlops-source
+          token: ${{ secrets.PRICING_MLOPS_READ_TOKEN || github.token }}
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install Azure ML CLI extension
+        run: |
+          az extension add --name ml --yes || az extension update --name ml
+
+      - name: Register Azure ML runtime environment
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_ML_WORKSPACE: ${{ vars.AZURE_ML_WORKSPACE }}
+        run: mlops/scripts/register_azureml_environment.sh
+
+      - name: Register Azure ML components
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_ML_WORKSPACE: ${{ vars.AZURE_ML_WORKSPACE }}
+        run: mlops/scripts/register_azureml_components.sh

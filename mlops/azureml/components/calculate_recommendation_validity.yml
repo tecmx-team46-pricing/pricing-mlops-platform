@@ -1,0 +1,33 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+name: pricing_mlops_calculate_recommendation_validity
+display_name: calculate_recommendation_validity
+version: 0.1.1
+code: ../pricing-mlops-source
+command: >-
+  test -f ${{inputs.previous_step_token}}/done.txt &&
+  MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
+  AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
+  python scripts/components/calculate_recommendation_validity.py
+  --input-dir outputs/monitoring_inputs
+  --output-dir outputs/recommendation_validity
+  --storage-account ${{inputs.storage_account}}
+  --monitoring-inputs-container artifacts
+  --monitoring-inputs-prefix component-state/${{inputs.run_id}}/monitoring_inputs
+  --validity-container artifacts
+  --validity-prefix component-state/${{inputs.run_id}}/recommendation_validity &&
+  mkdir -p ${{outputs.flow_token}} &&
+  echo calculate_recommendation_validity > ${{outputs.flow_token}}/done.txt
+environment: azureml:pricing-auth-monitoring-env:1
+inputs:
+  storage_account:
+    type: string
+  run_id:
+    type: string
+  job_identity_client_id:
+    type: string
+  previous_step_token:
+    type: uri_folder
+outputs:
+  flow_token:
+    type: uri_folder

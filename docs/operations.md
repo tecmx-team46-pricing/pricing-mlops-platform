@@ -74,6 +74,18 @@ Ese script llama la Function, espera el job AML por ARM/REST y verifica metadata
 
 La ruta Avance 4 no corre el notebook completo. Usa componentes extraidos del notebook y deja el notebook como referencia del analista.
 
+Registrar localmente los componentes que usa el pipeline:
+
+```bash
+AZURE_SUBSCRIPTION_ID=<subscription-id> \
+AZURE_RESOURCE_GROUP=<resource-group> \
+AZURE_ML_WORKSPACE=<workspace-name> \
+MODEL_REPO_PATH=../pricing-mlops \
+mlops/scripts/register_azureml_components.sh
+```
+
+En GitHub, `.github/workflows/azureml-components.yml` hace lo mismo automaticamente en `push` a `main` cuando cambian los YAML de componentes, el Environment o el pipeline.
+
 Preflight con blobs requeridos:
 
 ```bash
