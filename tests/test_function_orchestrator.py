@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FUNCTION_APP_PATH = ROOT / "mlops" / "functions" / "function_app.py"
 PIPELINE_JOB_FILE = ROOT / "mlops" / "azureml" / "pricing-mlops-pipeline.yml"
 PIPELINE_ENVIRONMENT = "azureml:pricing-auth-monitoring-env:1"
-FUNCTIONAL_COMPONENT_VERSION = "0.1.1"
+FUNCTIONAL_COMPONENT_VERSION = "0.1.2"
 FUNCTIONAL_COMPONENTS = {
     "validate_prepare": "pricing_mlops_validate_prepare",
     "build_monitoring_inputs": "pricing_mlops_build_monitoring_inputs",
