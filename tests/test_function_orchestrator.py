@@ -12,6 +12,14 @@ ROOT = Path(__file__).resolve().parents[1]
 FUNCTION_APP_PATH = ROOT / "mlops" / "functions" / "function_app.py"
 PIPELINE_JOB_FILE = ROOT / "mlops" / "azureml" / "pricing-mlops-pipeline.yml"
 PIPELINE_ENVIRONMENT = "azureml:pricing-auth-monitoring-env:1"
+FUNCTIONAL_COMPONENT_VERSION = "0.1.1"
+FUNCTIONAL_COMPONENTS = {
+    "validate_prepare": "pricing_mlops_validate_prepare",
+    "build_monitoring_inputs": "pricing_mlops_build_monitoring_inputs",
+    "calculate_recommendation_validity": "pricing_mlops_calculate_recommendation_validity",
+    "calculate_auth_history_drift": "pricing_mlops_calculate_auth_history_drift",
+    "calculate_operational_decision": "pricing_mlops_calculate_operational_decision",
+}
 
 
 def _load_function_app():
@@ -34,43 +42,31 @@ def test_pipeline_template_uses_packaged_model_source():
         "calculate_operational_decision",
         "publish_outputs",
     }
-    for job_name in (
-        "validate_prepare",
-        "build_monitoring_inputs",
-        "calculate_recommendation_validity",
-        "calculate_auth_history_drift",
-        "calculate_operational_decision",
-    ):
-        assert job_definition["jobs"][job_name]["component"]["code"] == "../pricing-mlops-source"
+    for job_name, component_name in FUNCTIONAL_COMPONENTS.items():
+        assert job_definition["jobs"][job_name]["component"] == (
+            f"azureml:{component_name}:{FUNCTIONAL_COMPONENT_VERSION}"
+        )
         assert job_definition["jobs"][job_name]["compute"] == "azureml:serverless"
     assert job_definition["jobs"]["publish_outputs"]["component"]["code"] == "../platform-components"
     assert job_definition["jobs"]["publish_outputs"]["compute"] == "azureml:serverless"
     assert "job_identity_client_id" in job_definition["inputs"]
-    assert "scripts/components/validate_prepare.py" in (
-        job_definition["jobs"]["validate_prepare"]["component"]["command"]
-    )
-    assert "scripts/components/build_monitoring_inputs.py" in (
-        job_definition["jobs"]["build_monitoring_inputs"]["component"]["command"]
-    )
-    assert "scripts/components/calculate_recommendation_validity.py" in (
-        job_definition["jobs"]["calculate_recommendation_validity"]["component"]["command"]
-    )
-    assert "scripts/components/calculate_auth_history_drift.py" in (
-        job_definition["jobs"]["calculate_auth_history_drift"]["component"]["command"]
-    )
-    assert "scripts/components/calculate_operational_decision.py" in (
-        job_definition["jobs"]["calculate_operational_decision"]["component"]["command"]
-    )
     assert "python platform_publish_outputs.py" in (
         job_definition["jobs"]["publish_outputs"]["component"]["command"]
     )
+    for job_name in FUNCTIONAL_COMPONENTS:
+        job = job_definition["jobs"][job_name]
+        assert "command" not in job
+        assert "code" not in job
+    publish_job = job_definition["jobs"]["publish_outputs"]
+    command = publish_job["component"]["command"]
+    assert "pip install" not in command
+    assert publish_job["component"]["environment"] == PIPELINE_ENVIRONMENT
+    assert "MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true" in command
+    assert "AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}" in command
+    assert "job_identity_client_id" in publish_job["component"]["inputs"]
+    assert publish_job["inputs"]["job_identity_client_id"] == "${{parent.inputs.job_identity_client_id}}"
     for job in job_definition["jobs"].values():
-        command = job["component"]["command"]
         assert "pip install" not in command
-        assert job["component"]["environment"] == PIPELINE_ENVIRONMENT
-        assert "MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true" in command
-        assert "AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}" in command
-        assert "job_identity_client_id" in job["component"]["inputs"]
         assert job["inputs"]["job_identity_client_id"] == "${{parent.inputs.job_identity_client_id}}"
     expected_flow = {
         "build_monitoring_inputs": "${{parent.jobs.validate_prepare.outputs.flow_token}}",
@@ -92,9 +88,6 @@ def test_pipeline_template_uses_packaged_model_source():
         assert job["identity"] == {"type": "user_identity"}
 
     assert "flow_token" in job_definition["jobs"]["validate_prepare"]["outputs"]
-    assert "component-state/${{inputs.run_id}}/monitoring_inputs" in (
-        job_definition["jobs"]["build_monitoring_inputs"]["component"]["command"]
-    )
     assert "component-state/${{inputs.run_id}}/operational_decision" in (
         job_definition["jobs"]["publish_outputs"]["component"]["command"]
     )
