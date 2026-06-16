@@ -54,27 +54,26 @@ markdown_extensions:
 nav:
   - Inicio: index.md
   - Proyecto:
-      - Contexto y problema: contexto-problema.md
-      - Objetivos y alcance: objetivos-alcance.md
-      - Reporte de avance: reporte-avance-proyecto-integrador.md
+      - Contexto y problema: project/contexto-problema.md
+      - Objetivos y alcance: project/objetivos-alcance.md
+      - Reporte de avance: project/reporte-avance-proyecto-integrador.md
   - Arquitectura:
-      - Vista general: architecture.md
-      - Estructura del repo: project-structure.md
-      - Servicios Azure: azure-services.md
-      - Decisiones Azure ML: azure-ml-tooling-decision.md
+      - Vista general: architecture/overview.md
+      - Estructura del repo: architecture/repo-structure.md
+      - Servicios Azure: architecture/azure-services.md
+      - Decisiones Azure ML: architecture/azure-ml.md
   - MLOps:
-      - Flujo operativo: operations.md
-      - Goal pipeline AUTH monitoring: pipeline-goal.md
-      - Contrato plataforma-modelo: platform-model-operating-contract.md
-      - Function orchestrator: function-orchestrator.md
-      - Pipeline Azure ML: azure-ml-job-contract.md
-      - Contratos de datos: data-contracts.md
+      - Flujo operativo: operations/index.md
+      - Contrato plataforma-modelo: reference/platform-model-contract.md
+      - Function orchestrator: reference/function-orchestrator.md
+      - Pipeline Azure ML: reference/azure-ml-pipeline.md
+      - Contratos de datos: reference/data-contracts.md
   - Gobierno y evidencia:
-      - Evidencia del MVP: evidencia.md
-      - Gobierno de datos: data-governance-plan.md
-      - Auditoria SQL: sql-audit-runbook.md
-      - GitHub Actions: github-actions.md
-      - Inventario legacy: legacy-resource-inventory.md
+      - Evidencia del MVP: project/evidencia.md
+      - Gobierno de datos: governance/data-governance.md
+      - Auditoria SQL: operations/sql-audit.md
+      - GitHub Actions: operations/github-actions.md
+      - Inventario legacy: operations/legacy-resources.md
   - Cierre:
-      - Roadmap: roadmap.md
-      - Diseno original: original/technical-design-original.md
+      - Roadmap: project/roadmap.md
+      - Diseno original: reference/original-technical-design.md

@@ -13,7 +13,7 @@ Manual: Azure Function HTTP -> Azure ML pipeline job -> Storage/ADLS
 Automatico: BlobCreated raw-masked/incoming/*.csv -> Event Grid -> Azure Function -> Azure ML pipeline job -> Storage/ADLS
 ```
 
-Azure Functions orquesta y valida el request o evento. Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de outputs desde el snapshot del repo `pricing-mlops`. Storage/ADLS conserva inputs masked y evidencia versionada. Azure Table `mlopsruns` y Azure SQL audit guardan metadata consultable de corridas.
+Azure Functions orquesta y valida el request o evento. Azure ML ejecuta validacion, curated/features, scoring minimo, drift/semaforo y escritura de outputs con componentes registrados desde `pricing-mlops`. Storage/ADLS conserva inputs masked y evidencia versionada. Azure Table `mlopsruns` y Azure SQL audit guardan metadata consultable de corridas.
 
 Esta division evita que un solo componente haga demasiado: la Function no ejecuta el modelo, Azure ML no gobierna la infraestructura, SQL no reemplaza Storage y GitHub Actions no opera el flujo ML.
 
@@ -42,7 +42,7 @@ El repo esta organizado por responsabilidad, no por tecnologia aislada. Cada cap
 | Runtime MLOps | `mlops/functions/`, `mlops/azureml/`, `mlops/scripts/` | Codigo de Azure Function, definicion del pipeline/job AML, publicacion y operacion del flujo remoto. |
 | Contratos MLOps | `mlops/configs/`, `mlops/schemas/`, `mlops/docs/` | Schemas, thresholds, storage layout y documentacion del flujo. No contiene IaC. |
 
-`pricing-mlops` queda como repo funcional/data science alineado con Cookiecutter Data Science. El script de publicacion de plataforma empaqueta un snapshot de ese repo en `pricing-mlops-source/`; el pipeline `mlops/azureml/pricing-mlops-pipeline.yml` usa `code: ../pricing-mlops-source` y muestra validacion, componentes de monitoreo AUTH y publicacion final.
+`pricing-mlops` queda como repo funcional/data science alineado con Cookiecutter Data Science y registra los componentes `pricing_mlops_*`. El script de publicacion de plataforma resuelve la version del repo modelo para metadata; el pipeline `mlops/azureml/pricing-mlops-pipeline.yml` referencia esos componentes registrados y mantiene la publicacion final en plataforma.
 
 La ruta AUTH monitoring expone pasos intermedios para vigencia de recomendaciones, drift AUTH y decision operacional. No ejecuta el notebook completo como artifact operacional.
 

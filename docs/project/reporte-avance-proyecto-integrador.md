@@ -320,13 +320,13 @@ La integracion actual con Azure ML ya muestra pasos visibles de validacion, moni
 validate_prepare -> build_monitoring_inputs -> calculate_recommendation_validity -> calculate_auth_history_drift -> calculate_operational_decision -> publish_outputs
 ```
 
-Esto es un avance porque Azure ML ya opera como compute principal y la Function no ejecuta el modelo. Sin embargo, el pipeline actual todavia no es un DAG de datos completo. Los nodos usan `depends_on` para conservar el orden, pero parte del estado intermedio se comparte por Blob Storage bajo:
+Esto es un avance porque Azure ML ya opera como compute principal y la Function no ejecuta el modelo. Sin embargo, el pipeline actual todavia no es un DAG de datos completo. Los nodos se conectan con `flow_token`, pero parte del estado intermedio se comparte por Blob Storage bajo:
 
 ```text
 artifacts/component-state/<run_id>/
 ```
 
-Esto funciona para el MVP, pero Azure ML no interpreta esos blobs como dependencias nativas entre componentes. La oportunidad de mejora es evolucionar a SDK v2 DSL con componentes registrados, datastore explicito e inputs/outputs `uri_folder`:
+Esto funciona para el MVP, pero Azure ML no interpreta esos blobs como dependencias nativas entre componentes. La oportunidad de mejora es evolucionar a SDK v2 DSL con datastore explicito e inputs/outputs `uri_folder`:
 
 ```text
 validate_prepare.outputs.prepared_data
@@ -359,7 +359,7 @@ Los principales pendientes son:
 - Definir si el modelo sera entregado como paquete, API, artefacto de Azure ML o adaptador.
 - Implementar drift estadistico mas robusto: PSI, KS, Z-test, detalle por metrica y explicacion del semaforo.
 - Formalizar registro de modelos, versionamiento, promocion y rollback.
-- Evolucionar el pipeline Azure ML a un DAG real con SDK v2 DSL, componentes registrados, datastore explicito e inputs/outputs `uri_folder`.
+- Evolucionar el pipeline Azure ML a un DAG real con SDK v2 DSL, datastore explicito e inputs/outputs `uri_folder`.
 - Fortalecer autenticacion del endpoint de Function con Entra ID o API Management.
 - Limpiar o archivar particiones historicas de Storage generadas por PoCs anteriores, por ejemplo `compute=container-job` o rutas antiguas sin `compute=azure-ml`.
 - Decidir si se crea un workspace Azure ML nuevo para que los artifacts internos de Azure ML usen el Storage runtime separado.

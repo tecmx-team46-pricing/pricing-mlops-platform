@@ -218,7 +218,7 @@ Sin embargo, la version actual todavia no es un DAG de datos completo. Los nodos
 \midrule
 \endhead
 Definicion del pipeline & YAML \code{pricing-mlops-pipeline.yml}. & Menos expresivo para contratos de datos complejos que SDK v2 DSL.\\
-Secuencia de nodos & \code{depends\_on} fuerza orden de ejecucion. & El orden existe, pero no modela datos como edges nativos.\\
+Secuencia de nodos & \code{flow\_token} conecta los steps. & El grafo existe, pero no modela todos los datos como edges nativos.\\
 Estado intermedio & Blobs bajo \code{component-state/<run\_id>}. & Azure ML Studio no puede inferir plenamente lineage de inputs/outputs.\\
 Outputs finales & Se publican al layout funcional de Storage MLOps. & Correcto para auditoria, pero separado de outputs nativos de componentes AML.\\
 Datastore & Uso operativo del storage funcional por identidad. & Falta formalizar un datastore AML explicito para dependencias intermedias.\\
@@ -227,7 +227,7 @@ Datastore & Uso operativo del storage funcional por identidad. & Falta formaliza
 
 \section*{Oportunidad: Pipeline Azure ML como DAG real}
 
-La oportunidad de mejora es evolucionar el pipeline a un DAG real de datos con Azure ML SDK v2 DSL, componentes registrados y contratos explicitos de entrada/salida. En vez de coordinar el estado intermedio por convencion de blobs, cada componente expondria outputs nativos tipo \code{uri\_folder} que el siguiente componente consumiría directamente.
+La oportunidad de mejora es evolucionar el pipeline a un DAG real de datos con Azure ML SDK v2 DSL, datastore explicito y contratos nativos de entrada/salida. En vez de coordinar el estado intermedio por convencion de blobs, cada componente expondria outputs nativos tipo \code{uri\_folder} que el siguiente componente consumiría directamente.
 
 \begin{verbatim}
 validate_prepare.outputs.prepared_data
@@ -468,7 +468,7 @@ Reporte academico & El avance queda documentado con evidencia. & Este documento 
 Auditoria SQL de URIs & SQL registra la corrida, pero \code{snapshot\_uri} y \code{artifact\_manifest\_uri} aparecen como rutas temporales locales \code{/tmp/...}. & Guardar las rutas Blob finales para que SQL sea evidencia auditable directa.\\
 Drift estadistico & La corrida registra \code{red}, pero el motor aun es basico. & Implementar PSI, KS y Z-test por metricas de negocio, con umbrales aprobados.\\
 Calidad de datos & \code{data\_quality\_log} existe pero no tiene registros. & Persistir checks por run: nulos, unicidad, monotonicidad y margen minimo.\\
-Pipeline AML como DAG real & Hay seis nodos visibles con \code{depends\_on}; parte del estado intermedio vive en Blob y no como edge nativo de datos. & Evolucionar a SDK v2 DSL con componentes registrados, datastore explicito e inputs/outputs \code{uri\_folder}.\\
+Pipeline AML como DAG real & Hay seis nodos visibles conectados con \code{flow\_token}; parte del estado intermedio vive en Blob y no como edge nativo de datos. & Evolucionar a SDK v2 DSL con datastore explicito e inputs/outputs \code{uri\_folder}.\\
 Modelo real & El flujo usa baseline/scoring controlado. & Integrar modelo real como paquete, componente AML o adaptador estable.\\
 Seguridad endpoint & Function key funciona como control temporal. & Migrar a Entra ID/Easy Auth o API Management.\\
 Retencion & Existen outputs funcionales y artifacts runtime. & Definir reglas de lifecycle por clase de datos y evidencia academica.\\

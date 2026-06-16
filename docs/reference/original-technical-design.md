@@ -33,7 +33,7 @@ La arquitectura propuesta se basa en decisiones tecnicas especificas que resuelv
 
 El siguiente diagrama detalla la topologia de red aislada (Hub-and-Spoke) y los servicios serverless utilizados para garantizar seguridad y bajo costo operativo.
 
-![Topologia de red Hub-and-Spoke y servicios serverless](assets/original-design-page-2-image-1.png)
+![Topologia de red Hub-and-Spoke y servicios serverless](../original/assets/original-design-page-2-image-1.png)
 
 ### Topologia de Red (Hub-and-Spoke) y Flujo de Conectividad
 
@@ -62,7 +62,7 @@ Los flujos principales son orquestados por Azure Data Factory (ADF), que inicia 
 
 Este flujo de secuencia ilustra el paso a paso de una ejecucion diaria del sistema de Pricing, mostrando como interactuan los componentes tecnicos y donde actuan las compuertas de calidad.
 
-![Sequence flow de ejecucion diaria del sistema de Pricing](assets/original-design-page-4-image-2.png)
+![Sequence flow de ejecucion diaria del sistema de Pricing](../original/assets/original-design-page-4-image-2.png)
 
 1. ADF ingesta datos y hashea IDs confidenciales, enviandolos a ADLS.
 2. ADF crea un registro en `model_run_log` en SQL (Estado: `STARTED`).
@@ -152,4 +152,3 @@ Cuando el negocio agregue nuevos niveles de jerarquia, por ejemplo `hier_level7`
 
 1. **Tablas de Auditoria Inmutables:** El esquema SQL `model_output_snapshot_metadata` registra la version del contrato de datos (`output_schema_version`). Las adiciones son retrocompatibles.
 2. **Versionado de Baselines:** Un cambio de columnas forzara la creacion de un nuevo identificador de linea base historica, por ejemplo `baseline_2026Q3_v3.1`. Durante la transicion, el motor de Drift comparara exclusivamente la interseccion de columnas conocidas hasta reunir suficiente historial de la nueva variable.
-

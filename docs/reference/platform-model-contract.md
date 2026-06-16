@@ -7,7 +7,7 @@
 | `pricing-mlops-platform` | Infraestructura, identidades, RBAC, Storage, Azure ML, Function App, runtime MLOps, pipeline/job YAML y runbooks. |
 | `pricing-mlops` | Repo funcional/data science: validacion, curated/features, scoring, drift, reportes y artefactos. |
 
-`pricing-mlops` no crea infraestructura ni contiene el runtime de Azure Functions/Event Grid. Plataforma empaqueta un snapshot de `pricing-mlops` como codigo del pipeline/job AML.
+`pricing-mlops` no crea infraestructura ni contiene el runtime de Azure Functions/Event Grid. Ese repo registra los componentes funcionales de Azure ML; plataforma los referencia desde el pipeline/job AML.
 
 ## Variables Publicadas Por Plataforma
 
@@ -66,11 +66,11 @@ raw-masked/samples/sample_pricing_v1.csv
 mlops/scripts/run_model_flow_function.sh
 -> POST /api/model-flow
 -> Azure ML pipeline job
--> snapshot `pricing-mlops-source`
+-> componentes registrados `pricing_mlops_*`
 -> Storage outputs
 ```
 
-`MODEL_REPO_REF` se resuelve en publish/build time desde GitHub y se empaqueta como `pricing-mlops-source`; Azure ML recibe ese snapshot local, no el repo de plataforma ni un clone vivo de GitHub. Para reproducibilidad, usar commit SHA o tag. `MODEL_REPO_PATH` es solo fallback local/dev con `ALLOW_LOCAL_MODEL_SOURCE=true`; no es la ruta normal para `staging` ni `validation`.
+`MODEL_REPO_REF` se resuelve en publish/build time desde GitHub y queda registrado en `model_source.json`; Azure ML recibe esa metadata y ejecuta componentes registrados, no un clone vivo de GitHub. Para reproducibilidad, usar commit SHA o tag. `MODEL_REPO_PATH` es solo fallback local/dev con `ALLOW_LOCAL_MODEL_SOURCE=true`; no es la ruta normal para `staging` ni `validation`.
 
 El flujo automatico es:
 

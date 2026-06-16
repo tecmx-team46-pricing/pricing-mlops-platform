@@ -1,6 +1,6 @@
 # Pipeline Azure ML
 
-Esta pagina describe el contrato entre la Function y Azure ML. La Function inyecta parametros de corrida; Azure ML ejecuta el snapshot funcional y publica outputs bajo una convencion auditable.
+Esta pagina describe el contrato entre la Function y Azure ML. La Function inyecta parametros de corrida; Azure ML ejecuta componentes registrados y publica outputs bajo una convencion auditable.
 
 ## Ruta Activa
 
@@ -12,7 +12,7 @@ mlops/azureml/pricing-mlops-pipeline.yml
 
 ## Pipeline
 
-El pipeline activo muestra los pasos derivados del notebook de monitoreo:
+El pipeline activo muestra los pasos derivados del notebook de monitoreo AUTH:
 
 | Nodo | Responsabilidad |
 |---|---|
@@ -23,17 +23,19 @@ El pipeline activo muestra los pasos derivados del notebook de monitoreo:
 | `calculate_operational_decision` | Genera semaforo operacional y manifest final. |
 | `publish_outputs` | Publica outputs funcionales al Storage MLOps. |
 
-## Snapshot Del Repo Funcional
+Los pasos funcionales usan componentes Azure ML registrados desde el repo `pricing-mlops`; este repo solo referencia esos assets desde `mlops/azureml/pricing-mlops-pipeline.yml`. La version activa en el template es `0.1.2` para los componentes `pricing_mlops_*`.
 
-Los componentes usan:
+`publish_outputs` sigue siendo componente inline de plataforma porque publica a Storage MLOps, tags/metadata y SQL audit sin recalcular metricas.
 
-```yaml
-code: ../pricing-mlops-source
+## Version Del Repo Funcional
+
+Durante el publish de la Function, plataforma resuelve `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` y escribe:
+
+```text
+model_source.json
 ```
 
-Esa ruta existe dentro del paquete preparado por `mlops/scripts/publish_orchestrator_function.sh`. Azure ML sube ese snapshot al someter el pipeline/job; la Function no clona GitHub cada vez que recibe un evento.
-
-Usar un commit SHA o tag en `MODEL_REPO_REF` es la opcion mas reproducible. Un branch puede funcionar, pero puede moverse despues.
+Ese archivo registra `model_source`, `model_repo`, `model_ref` y `model_commit_sha`. Para operacion reproducible, usar un commit SHA o tag en `MODEL_REPO_REF`; un branch puede moverse despues. La Function no clona GitHub por evento.
 
 ## Inputs Inyectados Por La Function
 
@@ -47,7 +49,10 @@ trigger_type
 model_repo
 model_ref
 model_commit_sha
+monitoring_config_version
 ```
+
+`monitoring_config_version` corresponde a `mlops/configs/drift_thresholds.json`; `publish_outputs` registra esa version y el SHA-256 del archivo en `model_run_log.json`.
 
 ## Outputs Funcionales
 

@@ -13,15 +13,15 @@ El pipeline activo expone los pasos derivados del notebook de monitoreo:
 | `calculate_operational_decision` | `scripts/components/calculate_operational_decision.py` | Genera semaforo operacional y manifest final. |
 | `publish_outputs` | `mlops/components/platform_publish_outputs.py` | Publica los outputs funcionales al Storage MLOps. |
 
-Los componentes usan:
+Los componentes funcionales `pricing_mlops_*` se registran desde el repo `pricing-mlops` y este template referencia esas versiones registradas. La plataforma solo mantiene inline el step:
 
-```yaml
-code: ../pricing-mlops-source
+```text
+publish_outputs
 ```
 
-`../pricing-mlops-source` existe dentro del paquete de Azure Functions preparado por `mlops/scripts/publish_orchestrator_function.sh`. Azure ML v2 no trata `code:` como un repo GitHub vivo; `code:` apunta a esa carpeta local y el SDK sube ese snapshot al someter el pipeline/job. Esa carpeta es un snapshot del repo `pricing-mlops`, que mantiene el codigo data science alineado con Cookiecutter Data Science.
+`publish_outputs` usa `code: ../platform-components` para ejecutar `mlops/components/platform_publish_outputs.py` desde el paquete de la Function.
 
-La plataforma resuelve el snapshot con `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` durante el empaquetado. Usar commit SHA o tag es la opcion mas reproducible; un branch es valido pero menos estricto porque puede apuntar a otro commit despues. Para desarrollo local se permite `MODEL_REPO_PATH` solo con `ALLOW_LOCAL_MODEL_SOURCE=true`; la Azure Function no clona GitHub por evento.
+La plataforma resuelve `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` durante el empaquetado y escribe `model_source.json` con el SHA real. Usar commit SHA o tag es la opcion mas reproducible; un branch es valido pero menos estricto porque puede apuntar a otro commit despues. Para desarrollo local se permite `MODEL_REPO_PATH` solo con `ALLOW_LOCAL_MODEL_SOURCE=true`; la Azure Function no clona GitHub por evento.
 
 Inputs inyectados por la Function:
 

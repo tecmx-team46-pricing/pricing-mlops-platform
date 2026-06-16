@@ -95,4 +95,4 @@ Los permisos se concentran en identidades administradas y OIDC. La regla practic
 
 No dar Owner ni Contributor de subscription para operar el flujo.
 
-Siguiente lectura recomendada: [Estructura del repo](project-structure.md) para ubicar donde vive cada parte de esta arquitectura.
+Siguiente lectura recomendada: [Estructura del repo](repo-structure.md) para ubicar donde vive cada parte de esta arquitectura.

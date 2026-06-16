@@ -1,67 +1,42 @@
 # pricing-mlops-platform
 
-Plataforma Azure para la base operativa de Pricing MLOps. Este repo gobierna infraestructura, ambientes, RBAC/OIDC, Storage/ADLS, Azure ML, Azure Functions, runtime MLOps y runbooks de operacion.
+Plataforma Azure para operar y auditar el flujo MLOps de Pricing Intelligence. Este repo contiene IaC, Azure Function, template de Azure ML, scripts operativos, contratos y documentacion.
 
-El codigo funcional/data science del flujo vive en `pricing-mlops` siguiendo Cookiecutter Data Science. La orquestacion MLOps vive aqui en `mlops/`. La referencia historica/EDA vive en `pricing-mlops-eda`.
+El codigo funcional/data science vive en `pricing-mlops`; este repo orquesta la ejecucion, registra metadata y publica evidencia.
 
-## Estado Actual
+## Flujo Activo
 
 ```text
-Operador o prueba controlada
--> Azure Function /api/model-flow
--> Azure ML pipeline job
--> Storage/ADLS outputs versionados
--> Azure SQL audit metadata
-
-BlobCreated raw-masked/incoming/*.csv
--> Event Grid
--> Azure Function EventGrid trigger
--> Azure ML pipeline job
--> Storage/ADLS outputs versionados
--> Table/JSON run metadata
--> Azure SQL audit metadata
+manual / Event Grid
+-> Azure Function
+-> Azure ML pipeline
+-> Storage MLOps
+-> Azure SQL audit
 ```
 
-GitHub Actions no es el orquestador operativo del flujo ML. En este repo solo valida o despliega infraestructura por `workflow_dispatch`.
-
-## Arquitectura
-
-```mermaid
-flowchart TD
-  Platform["pricing-mlops-platform<br/>Bicep / RBAC / Runbooks"] --> ARM["Azure Resource Manager"]
-  ARM --> Shared["rg-pricing-mlops-platform-shared<br/>Key Vault / Log Analytics / OIDC"]
-  ARM --> Staging["rg-pricing-mlops-staging<br/>Storage / Azure ML v2 / Function"]
-  ARM --> DataLab["rg-pricing-mlops-data-lab<br/>raw-unmasked restringido"]
-
-  Operator["Script operativo local"] --> Function["Azure Function<br/>orquestador"]
-  Incoming["BlobCreated<br/>raw-masked/incoming/*.csv"] --> EventGrid["Event Grid"]
-  EventGrid --> Function
-  Function --> AML["Azure ML v2 Pipeline<br/>compute ML"]
-  AML --> Storage["Storage MLOps<br/>raw-masked / curated / runs / snapshots / drift-logs / reports / artifacts"]
-  AML --> SQL["Azure SQL audit<br/>model_run_log / snapshot metadata"]
-  AML -. runtime interno .-> AMLRuntime["Storage runtime Azure ML<br/>snapshots / logs / environments"]
-  Function -. host state .-> FunctionStorage["Storage host Function"]
-  Platform --> Runtime["mlops/<br/>Function code / AML pipeline YAML"]
-  Runtime --> Function
-  Runtime --> AML
-  ModelRepo["pricing-mlops<br/>codigo funcional CCDS"] --> AML
-```
+GitHub Actions valida y despliega infraestructura bajo `workflow_dispatch`; no opera el flujo ML.
 
 ## Ambientes
 
-| Scope | Resource Group | Uso | Estado |
-|---|---|---|---|
-| `shared` | `rg-pricing-mlops-platform-shared` | Key Vault, Log Analytics, identidades OIDC. No es ambiente MLOps. | Activo |
-| `data-lab` | `rg-pricing-mlops-data-lab` | Landing restringido para unmasked y masking. | Preparado |
-| `sandbox-local` | `rg-pricing-mlops-sbx-local` | Sandbox local/admin, no GitHub Actions. | Preparado |
-| `staging` | `rg-pricing-mlops-staging` | Staging operativo con Storage, Azure ML y Function. | Activo |
-| `validation` | `rg-pricing-mlops-validation` | No-prod controlado futuro. | Preparado |
+| Scope | Uso |
+|---|---|
+| `staging` | Ambiente operativo del MVP. |
+| `validation` | No-prod controlado futuro. |
+| `data-lab` | Landing restringido para unmasked/masking. |
+| `sandbox-local` | Pruebas locales/admin. |
+| `shared` | Key Vault, Log Analytics e identidades OIDC. |
 
-`prod` no existe en IaC, parameters ni workflows.
+`prod` no existe en IaC, parametros ni workflows.
 
-## Comandos
+## Comandos Basicos
 
-Validar:
+Validar documentacion:
+
+```bash
+python -m mkdocs build --strict
+```
+
+Validar contratos e IaC:
 
 ```bash
 scripts/validate-mlops-contracts.py
@@ -73,7 +48,7 @@ az bicep build-params --file infra/parameters/data-lab.bicepparam
 az bicep build-params --file infra/parameters/sandbox-local.bicepparam
 ```
 
-What-if/deploy:
+Operar infraestructura:
 
 ```bash
 az login
@@ -82,7 +57,7 @@ scripts/what-if.sh staging
 scripts/deploy.sh staging
 ```
 
-Publicar la Function y operar el endpoint se hace desde plataforma:
+Publicar y ejecutar el flujo ML:
 
 ```bash
 MODEL_REPO_REF=<commit-sha-or-tag> \
@@ -91,59 +66,22 @@ mlops/scripts/publish_orchestrator_function.sh staging
 mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v1.csv
 ```
 
-El publish prepara un paquete temporal con el entrypoint de Azure Functions, `mlops/azureml/pricing-mlops-pipeline.yml` y un snapshot del repo `pricing-mlops` bajo `pricing-mlops-source/`. Para `staging` y `validation`, ese snapshot se resuelve desde `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` durante el empaquetado; usar un commit SHA o tag es la ruta mas reproducible. Un branch funciona, pero puede moverse. `MODEL_REPO_PATH` queda solo como fallback local/dev con `ALLOW_LOCAL_MODEL_SOURCE=true`. La Function no clona GitHub por evento.
-
-El pipeline activo muestra los pasos de monitoreo en Azure ML:
-
-```text
-validate_prepare -> build_monitoring_inputs -> calculate_recommendation_validity -> calculate_auth_history_drift -> calculate_operational_decision -> publish_outputs
-```
-
-`mlops/azureml/pricing-mlops-pipeline.yml` es el template principal. Ninguna ruta ejecuta el notebook completo como caja negra.
-
-El goal actualizado esta documentado en [`docs/pipeline-goal.md`](docs/pipeline-goal.md).
-
-## Storage
-
-`<mlops-storage-account>` es el data lake MLOps de `staging`. Su contrato funcional se limita a datos masked y outputs en `raw-masked`, `curated`, `baseline`, `runs`, `snapshots`, `drift-logs`, `reports` y `artifacts`; mantiene `allowSharedKeyAccess=false`.
-
-Azure ML usa un workspace v2 activo (`mlw-pricing-mlops-stg-v2-<suffix>`) asociado al Storage runtime `stamlpmlopsstg<suffix>` para snapshots de codigo, logs, environments y artifacts internos de AML. El workspace original `mlw-pricing-mlops-staging-<suffix>` queda como legacy sin borrar; sus containers internos en `<mlops-storage-account>` no se deben eliminar sin aprobacion explicita.
-
-La Function App usa otro Storage (`stfn<generated-suffix>`) para `AzureWebJobsStorage`. Ese storage puede usar connection string de host runtime, pero no es data lake MLOps.
+`MODEL_REPO_REF` queda registrado en `model_source.json`; la ejecucion funcional usa componentes Azure ML registrados desde `pricing-mlops`.
 
 ## Documentacion
-
-La documentacion academica se publica con MkDocs Material y GitHub Pages. Para previsualizarla localmente:
 
 ```bash
 python -m pip install -r requirements-docs.txt
 python -m mkdocs serve
 ```
 
-Para validar el sitio antes de abrir un PR:
+Lecturas principales:
 
-```bash
-python -m mkdocs build --strict
-```
-
-Cuando GitHub Pages quede habilitado en el repo, el sitio se publicara en:
-
-```text
-https://tecmx-team46-pricing.github.io/pricing-mlops-platform/
-```
-
-Leer en este orden:
-
-1. [`docs/index.md`](docs/index.md)
-2. [`docs/contexto-problema.md`](docs/contexto-problema.md)
-3. [`docs/objetivos-alcance.md`](docs/objetivos-alcance.md)
-4. [`docs/reporte-avance-proyecto-integrador.md`](docs/reporte-avance-proyecto-integrador.md)
-5. [`docs/architecture.md`](docs/architecture.md)
-6. [`docs/project-structure.md`](docs/project-structure.md)
-7. [`docs/operations.md`](docs/operations.md)
-8. [`docs/evidencia.md`](docs/evidencia.md)
-9. [`docs/data-governance-plan.md`](docs/data-governance-plan.md)
-10. [`docs/roadmap.md`](docs/roadmap.md)
+1. [Inicio](docs/index.md)
+2. [Arquitectura](docs/architecture/overview.md)
+3. [Operacion](docs/operations/index.md)
+4. [Pipeline Azure ML](docs/reference/azure-ml-pipeline.md)
+5. [Evidencia](docs/project/evidencia.md)
 
 ## Fuera De Alcance
 

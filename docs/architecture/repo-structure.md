@@ -13,7 +13,7 @@ pricing-mlops-platform
 -> documenta como operar y auditar el flujo
 ```
 
-El codigo funcional/data science vive en el repo `pricing-mlops`. Este repo lo empaqueta como snapshot cuando publica la Azure Function, para que Azure ML ejecute una version concreta del flujo.
+El codigo funcional/data science vive en el repo `pricing-mlops`. Ese repo registra los componentes Azure ML funcionales; este repo publica la Function, referencia esos componentes y registra metadata del commit usado.
 
 ## Mapa Mental
 
@@ -63,13 +63,13 @@ Referencias utiles:
 
 | Si quieres entender... | Empieza aqui |
 |---|---|
-| La historia del proyecto | `docs/index.md`, `docs/contexto-problema.md`, `docs/reporte-avance-proyecto-integrador.md` |
-| La arquitectura | `README.md:27-48`, `docs/architecture.md`, `docs/azure-services.md` |
+| La historia del proyecto | `docs/index.md`, `docs/project/contexto-problema.md`, `docs/project/reporte-avance-proyecto-integrador.md` |
+| La arquitectura | `README.md`, `docs/architecture/overview.md`, `docs/architecture/azure-services.md` |
 | La infraestructura Azure | `infra/workloads/pricing-mlops/main.bicep:49-103`, `infra/parameters/staging.bicepparam` |
 | La Function orquestadora | `mlops/functions/function_app.py:48-115` |
-| El pipeline Azure ML AUTH monitoring | `mlops/azureml/pricing-mlops-pipeline.yml`, `docs/pipeline-goal.md` |
-| Los contratos de evidencia | `mlops/schemas/`, `docs/data-contracts.md` |
-| La operacion diaria | `docs/operations.md`, `mlops/scripts/` |
+| El pipeline Azure ML AUTH monitoring | `mlops/azureml/pricing-mlops-pipeline.yml`, `docs/reference/azure-ml-pipeline.md` |
+| Los contratos de evidencia | `mlops/schemas/`, `docs/reference/data-contracts.md` |
+| La operacion diaria | `docs/operations/index.md`, `mlops/scripts/` |
 | La publicacion del sitio | `mkdocs.yml:54-79`, `.github/workflows/docs.yml:33-64` |
 
 ## Directorios Principales
@@ -104,7 +104,7 @@ Referencias utiles:
 | `infra/workloads/pricing-mlops/main.bicep` | Entry point del workload MLOps en Azure. |
 | `mlops/functions/function_app.py` | Orquestador HTTP/Event Grid que somete jobs a Azure ML. |
 | `mlops/azureml/pricing-mlops-pipeline.yml` | Pipeline activo de Azure ML. |
-| `mlops/scripts/publish_orchestrator_function.sh` | Empaqueta Function + runtime + snapshot del repo modelo. |
+| `mlops/scripts/publish_orchestrator_function.sh` | Empaqueta Function + runtime + template AML + metadata del repo modelo. |
 | `scripts/validate-mlops-contracts.py` | Valida schemas, thresholds, layout y contratos IaC/docs. |
 
 ## Relacion Con El Repo Del Modelo
@@ -119,14 +119,14 @@ pricing-mlops
 -> validacion de datos, curated, scoring, drift, reportes
 ```
 
-La plataforma no clona el repo funcional en cada evento. Durante la publicacion, resuelve `MODEL_REPO_GITHUB` + `MODEL_REPO_REF`, empaqueta un snapshot bajo `pricing-mlops-source/` y Azure ML ejecuta ese snapshot.
+La plataforma no clona el repo funcional en cada evento. Durante la publicacion, resuelve `MODEL_REPO_GITHUB` + `MODEL_REPO_REF`, escribe `model_source.json` y la Function inyecta esa metadata al job AML. Azure ML ejecuta los componentes registrados desde `pricing-mlops`.
 
 Referencias:
 
 | Referencia | Que revisar |
 |---|---|
-| `README.md:85-100` | Como se publica la Function y se registra el snapshot. |
-| `docs/platform-model-operating-contract.md` | Contrato entre plataforma y modelo. |
+| `README.md` | Como se publica la Function y se registra la version del repo modelo. |
+| `docs/reference/platform-model-contract.md` | Contrato entre plataforma y modelo. |
 | `mlops/docs/azure-ml-job-contract.md` | Contrato tecnico del pipeline/job. |
 
 ## Ambientes
@@ -145,25 +145,25 @@ No existe `prod` en IaC, parametros ni workflows.
 Para una revision academica:
 
 1. `docs/index.md`
-2. `docs/contexto-problema.md`
-3. `docs/objetivos-alcance.md`
-4. `docs/reporte-avance-proyecto-integrador.md`
-5. `docs/evidencia.md`
+2. `docs/project/contexto-problema.md`
+3. `docs/project/objetivos-alcance.md`
+4. `docs/project/reporte-avance-proyecto-integrador.md`
+5. `docs/project/evidencia.md`
 
 Para entender como corre el sistema:
 
 1. `README.md:7-25`
 2. `mlops/functions/function_app.py:48-115`
 3. `mlops/azureml/pricing-mlops-pipeline.yml`
-4. `docs/operations.md`
+4. `docs/operations/index.md`
 
 Para entender que se despliega:
 
 1. `infra/workloads/pricing-mlops/main.bicep`
 2. `infra/parameters/staging.bicepparam`
-3. `docs/azure-services.md`
+3. `docs/architecture/azure-services.md`
 
-Siguiente lectura recomendada: [Operacion](operations.md), si quieres pasar del mapa del repo a los comandos concretos.
+Siguiente lectura recomendada: [Operacion](../operations/index.md), si quieres pasar del mapa del repo a los comandos concretos.
 
 ## Que No Es Este Repo
 

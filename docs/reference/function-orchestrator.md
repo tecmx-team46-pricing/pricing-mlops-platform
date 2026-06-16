@@ -35,7 +35,8 @@ El paquete incluye:
 - configuracion `host.json`;
 - dependencias runtime;
 - definiciones Azure ML;
-- snapshot del repo funcional `pricing-mlops` bajo `pricing-mlops-source/`.
+- metadata del repo funcional en `model_source.json`;
+- componente de publicacion `platform_publish_outputs.py`.
 
 ## Reglas Del Trigger Automatico
 
@@ -54,4 +55,4 @@ La fuente tecnica viva se mantiene en:
 mlops/docs/function-orchestrator.md
 ```
 
-Siguiente lectura recomendada: [Pipeline Azure ML](azure-ml-job-contract.md), para ver que ejecuta Azure ML despues de la orquestacion.
+Siguiente lectura recomendada: [Pipeline Azure ML](azure-ml-pipeline.md), para ver que ejecuta Azure ML despues de la orquestacion.

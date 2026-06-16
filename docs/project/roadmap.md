@@ -17,7 +17,7 @@ El MVP deja una base inicial: infraestructura reproducible, una Function que orq
 
 La siguiente etapa propuesta es reducir las brechas principales del MVP:
 
-1. Evolucionar el pipeline Azure ML a DAG de datos real con SDK v2 DSL, componentes registrados, inputs/outputs `uri_folder` y datastore explicito.
+1. Evolucionar el pipeline Azure ML a dependencias de datos nativas con SDK v2 DSL, inputs/outputs `uri_folder` y datastore explicito.
 2. Migrar Function key a Entra ID/Easy Auth o API Management.
 3. Agregar reglas reales de calidad inspiradas en el diseno original.
 4. Mejorar drift con PSI/KS/Z-test y umbrales aprobados por negocio.
@@ -28,13 +28,13 @@ La siguiente etapa propuesta es reducir las brechas principales del MVP:
 
 ## Pipeline Azure ML Como DAG Real
 
-El pipeline actual funciona con tres command components:
+El pipeline actual funciona con componentes visibles registrados y un step de publicacion de plataforma:
 
 ```text
 validate_prepare -> build_monitoring_inputs -> calculate_recommendation_validity -> calculate_auth_history_drift -> calculate_operational_decision -> publish_outputs
 ```
 
-Hoy la coordinacion usa estado intermedio en Blob bajo `artifacts/component-state/<run_id>/`. Funciona para el MVP, pero Azure ML no entiende esos blobs como dependencias de datos nativas.
+Hoy la coordinacion entre steps usa `flow_token` y estado intermedio en Blob bajo `artifacts/component-state/<run_id>/`. Funciona para el MVP y muestra el grafo, pero Azure ML no entiende esos blobs como dependencias de datos nativas.
 
 La evolucion recomendada es declarar dependencias de datos nativas:
 
@@ -49,10 +49,10 @@ calculate_operational_decision.outputs.run_artifacts
 Decision propuesta:
 
 - Implementar una version SDK v2 DSL en `mlops/azureml/`, manteniendo el YAML actual como fallback hasta validar estabilidad.
-- Usar componentes con interfaces explicitas `uri_folder`.
+- Mantener los componentes registrados, agregando interfaces explicitas `uri_folder`.
 - Crear un datastore Azure ML explicito apuntando al Storage funcional MLOps.
 - Ejecutar jobs con `managed_identity` y RBAC minimo confirmado.
-- Mantener el command job unico como fallback operativo para incidentes.
+- Mantener el YAML actual como fallback operativo hasta validar estabilidad.
 
 ## Riesgos A Vigilar
 

@@ -30,24 +30,24 @@ Este avance no presenta una plataforma productiva. Presenta un MVP que cubre:
 
 Para entender el proyecto en orden:
 
-1. [Contexto y problema](contexto-problema.md)
-2. [Objetivos y alcance](objetivos-alcance.md)
-3. [Reporte de avance](reporte-avance-proyecto-integrador.md)
-4. [Arquitectura](architecture.md)
-5. [Estructura del repo](project-structure.md)
-6. [Evidencia del MVP](evidencia.md)
-7. [Gobierno de datos](data-governance-plan.md)
-8. [Roadmap](roadmap.md)
+1. [Contexto y problema](project/contexto-problema.md)
+2. [Objetivos y alcance](project/objetivos-alcance.md)
+3. [Reporte de avance](project/reporte-avance-proyecto-integrador.md)
+4. [Arquitectura](architecture/overview.md)
+5. [Estructura del repo](architecture/repo-structure.md)
+6. [Evidencia del MVP](project/evidencia.md)
+7. [Gobierno de datos](governance/data-governance.md)
+8. [Roadmap](project/roadmap.md)
 
 Si necesitas operar o revisar detalles tecnicos, salta a:
 
 | Necesidad | Documento |
 |---|---|
-| Entender servicios Azure | [Servicios Azure](azure-services.md) |
-| Ejecutar o diagnosticar el flujo | [Operacion](operations.md) |
-| Revisar contrato plataforma-modelo | [Contrato plataforma-modelo](platform-model-operating-contract.md) |
-| Revisar Function y pipeline | [Function orchestrator](function-orchestrator.md), [Pipeline Azure ML](azure-ml-job-contract.md) |
-| Consultar auditoria | [Auditoria SQL](sql-audit-runbook.md) |
+| Entender servicios Azure | [Servicios Azure](architecture/azure-services.md) |
+| Ejecutar o diagnosticar el flujo | [Operacion](operations/index.md) |
+| Revisar contrato plataforma-modelo | [Contrato plataforma-modelo](reference/platform-model-contract.md) |
+| Revisar Function y pipeline | [Function orchestrator](reference/function-orchestrator.md), [Pipeline Azure ML](reference/azure-ml-pipeline.md) |
+| Consultar auditoria | [Auditoria SQL](operations/sql-audit.md) |
 
 ## Repositorios Del Proyecto
 
@@ -61,4 +61,4 @@ Si necesitas operar o revisar detalles tecnicos, salta a:
 
 El MVP no contiene produccion real ni un modelo productivo definitivo. Tampoco incluye ADF, endpoints online de Azure ML, Private Endpoints o Hub-Spoke. La etapa actual se limita a operar el flujo, guardar evidencia y dejar preparada la integracion posterior de un modelo formal.
 
-Siguiente lectura recomendada: [Contexto y problema](contexto-problema.md).
+Siguiente lectura recomendada: [Contexto y problema](project/contexto-problema.md).

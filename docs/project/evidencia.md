@@ -25,7 +25,7 @@ Azure Function
 Esta corrida valida tres comportamientos:
 
 - la Function puede iniciar el flujo remoto;
-- Azure ML puede ejecutar el snapshot funcional;
+- Azure ML puede ejecutar los componentes funcionales registrados;
 - la plataforma conserva metadata y artefactos para auditoria posterior.
 
 ## Que Artefactos Deben Existir
@@ -59,8 +59,8 @@ La plataforma captura metadata para explicar una corrida:
 - `run_id`;
 - input usado;
 - trigger manual o Event Grid;
-- repo funcional y referencia empaquetada;
-- commit real del snapshot funcional;
+- repo funcional y referencia publicada;
+- commit real registrado en `model_source.json`;
 - ubicacion de outputs;
 - status de la corrida.
 
@@ -71,10 +71,10 @@ SQL no guarda datasets completos. Sirve para consultar metadata y ubicar evidenc
 Para revisar el MVP, usa este orden:
 
 1. [Reporte de avance](reporte-avance-proyecto-integrador.md) para la narrativa academica.
-2. [Arquitectura](architecture.md) para entender servicios y responsabilidades.
-3. [Operacion](operations.md) para comandos, portal y verificacion.
-4. [Auditoria SQL](sql-audit-runbook.md) para consultas de metadata.
-5. [Contratos de datos](data-contracts.md) para schemas y evidencia minima.
+2. [Arquitectura](../architecture/overview.md) para entender servicios y responsabilidades.
+3. [Operacion](../operations/index.md) para comandos, portal y verificacion.
+4. [Auditoria SQL](../operations/sql-audit.md) para consultas de metadata.
+5. [Contratos de datos](../reference/data-contracts.md) para schemas y evidencia minima.
 
 ## Limitacion Del Resultado
 

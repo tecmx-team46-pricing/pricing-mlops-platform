@@ -34,7 +34,7 @@ mlops/scripts/publish_orchestrator_function.sh staging
 
 El modo `vendored` instala las dependencias en `.python_packages/lib/site-packages` antes de crear el ZIP y publica con `SCM_DO_BUILD_DURING_DEPLOYMENT=false`.
 
-El script copia `function_app.py`, `host.json`, `requirements.txt`, `mlops/azureml/` y un snapshot del repo `pricing-mlops` bajo `pricing-mlops-source/`. Para operacion de `staging` y `validation`, resuelve `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` antes de empaquetar y escribe el commit real en `model_source.json`. `MODEL_REPO_PATH` solo se usa como fallback local con `ALLOW_LOCAL_MODEL_SOURCE=true`. No hace deploy real si se ejecuta con `DRY_RUN=true`.
+El script copia `function_app.py`, `host.json`, `requirements.txt`, `mlops/azureml/`, `mlops/configs/` y `mlops/components/platform_publish_outputs.py`. Para operacion de `staging` y `validation`, resuelve `MODEL_REPO_GITHUB` + `MODEL_REPO_REF` antes de empaquetar y escribe el commit real en `model_source.json`. `MODEL_REPO_PATH` solo se usa como fallback local con `ALLOW_LOCAL_MODEL_SOURCE=true`. No hace deploy real si se ejecuta con `DRY_RUN=true`.
 
 La Function no ejecuta scoring, drift ni procesamiento pesado. Solo valida, registra metadata inicial en `mlopsruns` o en JSON fallback bajo `runs`, y somete Azure ML con managed identity.
 

@@ -62,4 +62,4 @@ La fuente tecnica viva se mantiene en:
 mlops/docs/data-contracts.md
 ```
 
-Siguiente lectura recomendada: [Evidencia del MVP](evidencia.md), para ver como estos contratos aparecen en una corrida validada.
+Siguiente lectura recomendada: [Evidencia del MVP](../project/evidencia.md), para ver como estos contratos aparecen en una corrida validada.

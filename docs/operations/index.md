@@ -40,7 +40,7 @@ sandbox-local
 
 ## Operacion Del Flujo ML
 
-La operacion diaria del flujo vive en este repo bajo `mlops/scripts/`. El repo `pricing-mlops` contiene el codigo data science y se empaqueta como snapshot para Azure ML.
+La operacion diaria del flujo vive en este repo bajo `mlops/scripts/`. El repo `pricing-mlops` contiene el codigo data science y registra los componentes funcionales que Azure ML ejecuta.
 
 Publicar o actualizar el codigo de la Function:
 
@@ -57,7 +57,7 @@ MODEL_REPO_REF=<commit-sha-or-tag> \
 mlops/scripts/publish_orchestrator_function.sh staging
 ```
 
-`MODEL_REPO_REF` se resuelve desde `MODEL_REPO_GITHUB` en build/publish time y el commit real queda escrito en `model_source.json`. Para desarrollo local se permite `MODEL_REPO_PATH=../pricing-mlops` solo con `ALLOW_LOCAL_MODEL_SOURCE=true`; si ese repo local tiene cambios sin commit, el script falla salvo que se use `ALLOW_DIRTY_LOCAL_MODEL_SOURCE=true` para una prueba local deliberada.
+`MODEL_REPO_REF` se resuelve desde `MODEL_REPO_GITHUB` en build/publish time y el commit real queda escrito en `model_source.json`. Para desarrollo local se permite `MODEL_REPO_PATH=../pricing-mlops` solo con `ALLOW_LOCAL_MODEL_SOURCE=true`; si ese repo local tiene cambios sin commit, el script falla salvo que se use `ALLOW_DIRTY_LOCAL_MODEL_SOURCE=true` para una prueba local deliberada. Esa metadata se inyecta al job; la ejecucion funcional usa los componentes Azure ML registrados.
 
 Ejecutar el flujo remoto:
 
@@ -70,11 +70,11 @@ mlops/scripts/run_model_flow_function.sh staging team46 samples/sample_pricing_v
 
 Ese script llama la Function, espera el job AML por ARM/REST y verifica metadata de los outputs. No usa GitHub Actions ni `az ml`. En Azure ML > Jobs, el pipeline debe mostrar los nodos `validate_prepare`, `build_monitoring_inputs`, `calculate_recommendation_validity`, `calculate_auth_history_drift`, `calculate_operational_decision` y `publish_outputs`.
 
-## Operacion AUTH Monitoring Avance 4
+## Operacion AUTH Monitoring
 
-La ruta Avance 4 no corre el notebook completo. Usa componentes extraidos del notebook y deja el notebook como referencia del analista.
+La ruta operativa no corre notebooks completos. Usa componentes Azure ML registrados desde `pricing-mlops` y deja el notebook como referencia metodologica.
 
-Los componentes `pricing_mlops_*` se registran desde el repo `pricing-mlops`, donde vive el codigo de `scripts/components`. Este repo de plataforma solo referencia esos componentes ya registrados desde `mlops/azureml/pricing-mlops-pipeline.yml`.
+Este repo de plataforma conserva el template `mlops/azureml/pricing-mlops-pipeline.yml`, la Function y `publish_outputs`; el registro de componentes `pricing_mlops_*` ocurre en el repo funcional.
 
 Preflight con blobs requeridos:
 
@@ -92,16 +92,7 @@ MLOPS_CURRENT_AUTH_HISTORY_BLOB_PATH=<current-auth-history.csv> \
 mlops/scripts/run_model_flow_function.sh staging team46 <current-auth-history.csv>
 ```
 
-La ruta principal usa `pricing-mlops-pipeline.yml` y debe mostrar estos seis nodos:
-
-```text
-validate_prepare
-build_monitoring_inputs
-calculate_recommendation_validity
-calculate_auth_history_drift
-calculate_operational_decision
-publish_outputs
-```
+El contrato de nodos, inputs y outputs esta en [Pipeline Azure ML](../reference/azure-ml-pipeline.md).
 
 El trigger automatico se habilita por Event Grid sobre `raw-masked/incoming/*.csv`. Para probarlo:
 
@@ -133,7 +124,7 @@ La Function rechaza eventos fuera de `raw-masked/incoming/`, `samples/`, paths a
 
 ## SQL Audit
 
-Runbook completo: [`sql-audit-runbook.md`](sql-audit-runbook.md).
+Runbook completo: [Auditoria SQL](sql-audit.md).
 
 Conexion local con Microsoft Entra:
 
@@ -173,7 +164,7 @@ Pendiente: migrar el endpoint a Entra ID/Easy Auth o API Management si el equipo
 
 ## Limpieza De Recursos Legacy
 
-El inventario activo esta en [`legacy-resource-inventory.md`](legacy-resource-inventory.md). No borrar recursos Azure legacy sin aprobacion explicita.
+El inventario activo esta en [Inventario legacy](legacy-resources.md). No borrar recursos Azure legacy sin aprobacion explicita.
 
 La ruta Container Apps/ACR del PoC anterior no forma parte del IaC activo. En `staging`, los recursos legacy ya fueron eliminados:
 
