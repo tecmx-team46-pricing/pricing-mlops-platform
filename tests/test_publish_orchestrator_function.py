@@ -109,6 +109,33 @@ def test_publish_allows_clean_local_model_source_with_flag(tmp_path):
     assert not (package_root / "pricing-mlops-source" / "data" / "samples" / "unmasked").exists()
 
 
+def test_publish_can_prepare_vendored_function_package(tmp_path):
+    model_repo = _minimal_model_repo(tmp_path)
+
+    result = _run_publish(
+        {
+            "DRY_RUN": "true",
+            "KEEP_PACKAGE": "true",
+            "MODEL_REPO_PATH": str(model_repo),
+            "ALLOW_LOCAL_MODEL_SOURCE": "true",
+            "FUNCTION_PACKAGE_MODE": "vendored",
+            "SKIP_FUNCTION_DEPENDENCY_INSTALL": "true",
+        }
+    )
+
+    assert result.returncode == 0, result.stderr
+    package_root = _package_root_from_output(result.stdout)
+
+    assert "Function package mode: vendored" in result.stdout
+    assert (
+        package_root
+        / ".python_packages"
+        / "lib"
+        / "site-packages"
+        / ".dependency-install-skipped"
+    ).is_file()
+
+
 def _run_publish(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     clean_env = {
         key: value
@@ -120,6 +147,8 @@ def _run_publish(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
             "MODEL_REPO_PATH",
             "MODEL_REPO_REF",
             "PRICING_MLOPS_REPO",
+            "FUNCTION_PACKAGE_MODE",
+            "SKIP_FUNCTION_DEPENDENCY_INSTALL",
         }
     }
     clean_env.update(env)

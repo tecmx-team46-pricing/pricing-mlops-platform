@@ -16,10 +16,22 @@ ALLOW_LOCAL_MODEL_SOURCE="${ALLOW_LOCAL_MODEL_SOURCE:-false}"
 ALLOW_DIRTY_LOCAL_MODEL_SOURCE="${ALLOW_DIRTY_LOCAL_MODEL_SOURCE:-false}"
 DRY_RUN="${DRY_RUN:-false}"
 KEEP_PACKAGE="${KEEP_PACKAGE:-false}"
+FUNCTION_PACKAGE_MODE="${FUNCTION_PACKAGE_MODE:-remote-build}"
+SKIP_FUNCTION_DEPENDENCY_INSTALL="${SKIP_FUNCTION_DEPENDENCY_INSTALL:-false}"
+FUNCTION_DEPENDENCY_PYTHON_VERSION="${FUNCTION_DEPENDENCY_PYTHON_VERSION:-3.11}"
+FUNCTION_DEPENDENCY_PLATFORM="${FUNCTION_DEPENDENCY_PLATFORM:-manylinux2014_x86_64}"
+FUNCTION_DEPENDENCY_IMPLEMENTATION="${FUNCTION_DEPENDENCY_IMPLEMENTATION:-cp}"
+FUNCTION_DEPENDENCY_ABI="${FUNCTION_DEPENDENCY_ABI:-cp311}"
 
 if [[ "${ENVIRONMENT}" != "staging" && "${ENVIRONMENT}" != "validation" ]]; then
   echo "Unsupported environment for Function publish: ${ENVIRONMENT}" >&2
   echo "Allowed environments: staging, validation" >&2
+  exit 1
+fi
+
+if [[ "${FUNCTION_PACKAGE_MODE}" != "remote-build" && "${FUNCTION_PACKAGE_MODE}" != "vendored" ]]; then
+  echo "Unsupported Function package mode: ${FUNCTION_PACKAGE_MODE}" >&2
+  echo "Allowed modes: remote-build, vendored" >&2
   exit 1
 fi
 
@@ -224,6 +236,26 @@ for path in "${required_package_paths[@]}"; do
   fi
 done
 
+if [[ "${FUNCTION_PACKAGE_MODE}" == "vendored" ]]; then
+  SITE_PACKAGES_DIR="${PACKAGE_ROOT}/.python_packages/lib/site-packages"
+  mkdir -p "${SITE_PACKAGES_DIR}"
+  if [[ "${SKIP_FUNCTION_DEPENDENCY_INSTALL}" == "true" ]]; then
+    touch "${SITE_PACKAGES_DIR}/.dependency-install-skipped"
+  else
+    python -m pip install \
+      --disable-pip-version-check \
+      --platform "${FUNCTION_DEPENDENCY_PLATFORM}" \
+      --python-version "${FUNCTION_DEPENDENCY_PYTHON_VERSION}" \
+      --implementation "${FUNCTION_DEPENDENCY_IMPLEMENTATION}" \
+      --abi "${FUNCTION_DEPENDENCY_ABI}" \
+      --only-binary=:all: \
+      --ignore-installed \
+      --no-warn-conflicts \
+      --target "${SITE_PACKAGES_DIR}" \
+      -r "${PACKAGE_ROOT}/requirements.txt"
+  fi
+fi
+
 (cd "${PACKAGE_ROOT}" && zip -qr "${PACKAGE_PATH}" .)
 
 if [[ "${DRY_RUN}" == "true" ]]; then
@@ -231,16 +263,34 @@ if [[ "${DRY_RUN}" == "true" ]]; then
   echo "Model repo: ${MODEL_REPO_GITHUB}"
   echo "Model ref: ${MODEL_REPO_REF}"
   echo "Model commit: ${MODEL_COMMIT_SHA}"
+  echo "Function package mode: ${FUNCTION_PACKAGE_MODE}"
   echo "Package prepared: ${PACKAGE_PATH}"
   echo "Package root: ${PACKAGE_ROOT}"
   unzip -Z1 "${PACKAGE_PATH}" | sort
   exit 0
 fi
 
-az functionapp deployment source config-zip \
-  --resource-group "${RESOURCE_GROUP}" \
-  --name "${FUNCTION_APP}" \
-  --src "${PACKAGE_PATH}" \
-  --build-remote true
+if [[ "${FUNCTION_PACKAGE_MODE}" == "vendored" ]]; then
+  az functionapp config appsettings set \
+    --resource-group "${RESOURCE_GROUP}" \
+    --name "${FUNCTION_APP}" \
+    --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
+
+  az functionapp deployment source config-zip \
+    --resource-group "${RESOURCE_GROUP}" \
+    --name "${FUNCTION_APP}" \
+    --src "${PACKAGE_PATH}"
+else
+  az functionapp config appsettings set \
+    --resource-group "${RESOURCE_GROUP}" \
+    --name "${FUNCTION_APP}" \
+    --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+
+  az functionapp deployment source config-zip \
+    --resource-group "${RESOURCE_GROUP}" \
+    --name "${FUNCTION_APP}" \
+    --src "${PACKAGE_PATH}" \
+    --build-remote true
+fi
 
 echo "Published Function App: ${FUNCTION_APP}"
