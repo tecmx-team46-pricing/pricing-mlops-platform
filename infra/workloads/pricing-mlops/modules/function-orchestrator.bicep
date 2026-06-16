@@ -84,7 +84,7 @@ param runIndexTableName string = 'mlopsruns'
 param modelRepoGithub string = 'tecmx-team46-pricing/pricing-mlops'
 
 @description('Functional model repository ref used by the deployed runtime.')
-param modelRepoRef string = 'PoC/model-flow-template'
+param modelRepoRef string = 'feature/avance4-pipeline-abstraction'
 
 var storageBlobDataContributorRoleDefinitionId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 var storageTableDataContributorRoleDefinitionId = '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'

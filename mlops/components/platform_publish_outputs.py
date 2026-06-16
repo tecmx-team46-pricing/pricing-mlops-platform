@@ -9,6 +9,19 @@ import tempfile
 import time
 
 
+REQUIRED_AUTH_MONITORING_ARTIFACTS = (
+    "snapshots/baseline_recommendation_snapshot.csv",
+    "snapshots/baseline_auth_history_profile.csv",
+    "snapshots/current_auth_history_snapshot_real.csv",
+    "logs/auth_recommendation_validity_log.csv",
+    "logs/auth_history_drift_log.csv",
+    "summaries/operational_decision_summary.csv",
+    "summaries/run_readiness_summary.csv",
+    "reports/auth_recommendation_validity_report.md",
+    "manifest/artifact_manifest.json",
+)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Publish Pricing MLOps artifacts from platform-owned code.")
     parser.add_argument("--run-dir", default="")
@@ -162,6 +175,7 @@ def _publish_from_dir(
     if not run_dir.exists():
         raise FileNotFoundError(f"run directory not found: {run_dir}")
     _ensure_run_log(run_dir, run_id, input_blob_path)
+    _validate_auth_monitoring_artifacts(run_dir)
     prefix = _partition_prefix(
         environment=environment,
         compute_target=compute_target,
@@ -183,6 +197,18 @@ def _publish_from_dir(
             )
         published[relative_path] = f"azureblob://{container}/{blob_path}"
     return published
+
+
+def _validate_auth_monitoring_artifacts(run_dir: Path) -> None:
+    missing = [
+        relative_path
+        for relative_path in REQUIRED_AUTH_MONITORING_ARTIFACTS
+        if not (run_dir / relative_path).is_file()
+    ]
+    if missing:
+        raise FileNotFoundError(
+            "AUTH monitoring artifact contract is incomplete; missing: " + ", ".join(missing)
+        )
 
 
 def _ensure_run_log(run_dir: Path, run_id: str, input_blob_path: str) -> None:

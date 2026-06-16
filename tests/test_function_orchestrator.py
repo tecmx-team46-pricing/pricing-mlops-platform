@@ -62,15 +62,26 @@ def test_pipeline_template_uses_packaged_model_source():
     assert "python platform_publish_outputs.py" in (
         job_definition["jobs"]["publish_outputs"]["component"]["command"]
     )
-    assert job_definition["jobs"]["build_monitoring_inputs"]["depends_on"] == ["validate_prepare"]
-    assert job_definition["jobs"]["calculate_recommendation_validity"]["depends_on"] == ["build_monitoring_inputs"]
-    assert job_definition["jobs"]["calculate_auth_history_drift"]["depends_on"] == [
-        "calculate_recommendation_validity"
-    ]
-    assert job_definition["jobs"]["calculate_operational_decision"]["depends_on"] == [
-        "calculate_auth_history_drift"
-    ]
-    assert job_definition["jobs"]["publish_outputs"]["depends_on"] == ["calculate_operational_decision"]
+    expected_flow = {
+        "build_monitoring_inputs": "${{parent.jobs.validate_prepare.outputs.flow_token}}",
+        "calculate_recommendation_validity": "${{parent.jobs.build_monitoring_inputs.outputs.flow_token}}",
+        "calculate_auth_history_drift": (
+            "${{parent.jobs.calculate_recommendation_validity.outputs.flow_token}}"
+        ),
+        "calculate_operational_decision": "${{parent.jobs.calculate_auth_history_drift.outputs.flow_token}}",
+        "publish_outputs": "${{parent.jobs.calculate_operational_decision.outputs.flow_token}}",
+    }
+    for job_name, token_path in expected_flow.items():
+        assert job_definition["jobs"][job_name]["inputs"]["previous_step_token"] == {
+            "type": "uri_folder",
+            "path": token_path,
+        }
+
+    for job in job_definition["jobs"].values():
+        assert "depends_on" not in job
+        assert job["identity"] == {"type": "user_identity"}
+
+    assert "flow_token" in job_definition["jobs"]["validate_prepare"]["outputs"]
     assert "component-state/${{inputs.run_id}}/monitoring_inputs" in (
         job_definition["jobs"]["build_monitoring_inputs"]["component"]["command"]
     )

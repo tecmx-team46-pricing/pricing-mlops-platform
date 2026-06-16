@@ -15,7 +15,7 @@ inputs:
   current_history_blob_path: samples/sample_pricing_v1.csv
   trigger_type: manual
   model_repo: tecmx-team46-pricing/pricing-mlops
-  model_ref: PoC/model-flow-template
+  model_ref: feature/avance4-pipeline-abstraction
   model_commit_sha: unknown
   job_identity_client_id: ''
   sql_enabled: 'false'
@@ -45,7 +45,9 @@ jobs:
         --input-blob-path ${{inputs.input_blob_path}}
         --output-dir outputs/prepared_data
         --prepared-container artifacts
-        --prepared-prefix component-state/${{inputs.run_id}}/prepared
+        --prepared-prefix component-state/${{inputs.run_id}}/prepared &&
+        mkdir -p ${{outputs.flow_token}} &&
+        echo validate_prepare > ${{outputs.flow_token}}/done.txt
       environment:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml
@@ -58,18 +60,22 @@ jobs:
           type: string
         job_identity_client_id:
           type: string
+      outputs:
+        flow_token:
+          type: uri_folder
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       input_blob_path: ${{parent.inputs.input_blob_path}}
       run_id: ${{parent.inputs.run_id}}
       job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
+    outputs:
+      flow_token:
+        type: uri_folder
     identity:
       type: user_identity
   build_monitoring_inputs:
     type: command
     compute: azureml:serverless
-    depends_on:
-      - validate_prepare
     component:
       type: command
       name: pricing_mlops_build_monitoring_inputs
@@ -77,6 +83,7 @@ jobs:
       code: ../pricing-mlops-source
       command: >-
         python -m pip install -e . &&
+        test -f ${{inputs.previous_step_token}}/done.txt &&
         MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/build_monitoring_inputs.py
@@ -90,7 +97,9 @@ jobs:
         --current-history-container ${{inputs.current_history_container}}
         --current-history-blob-path ${{inputs.current_history_blob_path}}
         --monitoring-inputs-container artifacts
-        --monitoring-inputs-prefix component-state/${{inputs.run_id}}/monitoring_inputs
+        --monitoring-inputs-prefix component-state/${{inputs.run_id}}/monitoring_inputs &&
+        mkdir -p ${{outputs.flow_token}} &&
+        echo build_monitoring_inputs > ${{outputs.flow_token}}/done.txt
       environment:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml
@@ -109,6 +118,11 @@ jobs:
           type: string
         job_identity_client_id:
           type: string
+        previous_step_token:
+          type: uri_folder
+      outputs:
+        flow_token:
+          type: uri_folder
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
@@ -117,13 +131,17 @@ jobs:
       current_history_container: ${{parent.inputs.current_history_container}}
       current_history_blob_path: ${{parent.inputs.current_history_blob_path}}
       job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
+      previous_step_token:
+        type: uri_folder
+        path: ${{parent.jobs.validate_prepare.outputs.flow_token}}
+    outputs:
+      flow_token:
+        type: uri_folder
     identity:
       type: user_identity
   calculate_recommendation_validity:
     type: command
     compute: azureml:serverless
-    depends_on:
-      - build_monitoring_inputs
     component:
       type: command
       name: pricing_mlops_calculate_recommendation_validity
@@ -131,6 +149,7 @@ jobs:
       code: ../pricing-mlops-source
       command: >-
         python -m pip install -e . &&
+        test -f ${{inputs.previous_step_token}}/done.txt &&
         MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/calculate_recommendation_validity.py
@@ -140,7 +159,9 @@ jobs:
         --monitoring-inputs-container artifacts
         --monitoring-inputs-prefix component-state/${{inputs.run_id}}/monitoring_inputs
         --validity-container artifacts
-        --validity-prefix component-state/${{inputs.run_id}}/recommendation_validity
+        --validity-prefix component-state/${{inputs.run_id}}/recommendation_validity &&
+        mkdir -p ${{outputs.flow_token}} &&
+        echo calculate_recommendation_validity > ${{outputs.flow_token}}/done.txt
       environment:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml
@@ -151,17 +172,26 @@ jobs:
           type: string
         job_identity_client_id:
           type: string
+        previous_step_token:
+          type: uri_folder
+      outputs:
+        flow_token:
+          type: uri_folder
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
       job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
+      previous_step_token:
+        type: uri_folder
+        path: ${{parent.jobs.build_monitoring_inputs.outputs.flow_token}}
+    outputs:
+      flow_token:
+        type: uri_folder
     identity:
       type: user_identity
   calculate_auth_history_drift:
     type: command
     compute: azureml:serverless
-    depends_on:
-      - calculate_recommendation_validity
     component:
       type: command
       name: pricing_mlops_calculate_auth_history_drift
@@ -169,6 +199,7 @@ jobs:
       code: ../pricing-mlops-source
       command: >-
         python -m pip install -e . &&
+        test -f ${{inputs.previous_step_token}}/done.txt &&
         MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/calculate_auth_history_drift.py
@@ -179,7 +210,9 @@ jobs:
         --validity-container artifacts
         --validity-prefix component-state/${{inputs.run_id}}/recommendation_validity
         --drift-container artifacts
-        --drift-prefix component-state/${{inputs.run_id}}/auth_history_drift
+        --drift-prefix component-state/${{inputs.run_id}}/auth_history_drift &&
+        mkdir -p ${{outputs.flow_token}} &&
+        echo calculate_auth_history_drift > ${{outputs.flow_token}}/done.txt
       environment:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml
@@ -190,17 +223,26 @@ jobs:
           type: string
         job_identity_client_id:
           type: string
+        previous_step_token:
+          type: uri_folder
+      outputs:
+        flow_token:
+          type: uri_folder
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
       job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
+      previous_step_token:
+        type: uri_folder
+        path: ${{parent.jobs.calculate_recommendation_validity.outputs.flow_token}}
+    outputs:
+      flow_token:
+        type: uri_folder
     identity:
       type: user_identity
   calculate_operational_decision:
     type: command
     compute: azureml:serverless
-    depends_on:
-      - calculate_auth_history_drift
     component:
       type: command
       name: pricing_mlops_calculate_operational_decision
@@ -208,6 +250,7 @@ jobs:
       code: ../pricing-mlops-source
       command: >-
         python -m pip install -e . &&
+        test -f ${{inputs.previous_step_token}}/done.txt &&
         MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python scripts/components/calculate_operational_decision.py
@@ -218,7 +261,9 @@ jobs:
         --validity-container artifacts
         --validity-prefix component-state/${{inputs.run_id}}/auth_history_drift
         --decision-container artifacts
-        --decision-prefix component-state/${{inputs.run_id}}/operational_decision
+        --decision-prefix component-state/${{inputs.run_id}}/operational_decision &&
+        mkdir -p ${{outputs.flow_token}} &&
+        echo calculate_operational_decision > ${{outputs.flow_token}}/done.txt
       environment:
         image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
         conda_file: environment.yml
@@ -229,17 +274,26 @@ jobs:
           type: string
         job_identity_client_id:
           type: string
+        previous_step_token:
+          type: uri_folder
+      outputs:
+        flow_token:
+          type: uri_folder
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
       job_identity_client_id: ${{parent.inputs.job_identity_client_id}}
+      previous_step_token:
+        type: uri_folder
+        path: ${{parent.jobs.calculate_auth_history_drift.outputs.flow_token}}
+    outputs:
+      flow_token:
+        type: uri_folder
     identity:
       type: user_identity
   publish_outputs:
     type: command
     compute: azureml:serverless
-    depends_on:
-      - calculate_operational_decision
     component:
       type: command
       name: pricing_mlops_publish_outputs
@@ -247,6 +301,7 @@ jobs:
       code: ../platform-components
       command: >-
         python -m pip install azure-identity azure-storage-blob &&
+        test -f ${{inputs.previous_step_token}}/done.txt &&
         MLOPS_USE_MANAGED_IDENTITY_CREDENTIAL=true
         AZURE_ML_JOB_IDENTITY_CLIENT_ID=${{inputs.job_identity_client_id}}
         python platform_publish_outputs.py
@@ -303,6 +358,8 @@ jobs:
           type: string
         optional_artifact_sinks:
           type: string
+        previous_step_token:
+          type: uri_folder
     inputs:
       storage_account: ${{parent.inputs.storage_account}}
       run_id: ${{parent.inputs.run_id}}
@@ -322,5 +379,8 @@ jobs:
       sql_snapshot_table: ${{parent.inputs.sql_snapshot_table}}
       artifact_sinks: ${{parent.inputs.artifact_sinks}}
       optional_artifact_sinks: ${{parent.inputs.optional_artifact_sinks}}
+      previous_step_token:
+        type: uri_folder
+        path: ${{parent.jobs.calculate_operational_decision.outputs.flow_token}}
     identity:
       type: user_identity
