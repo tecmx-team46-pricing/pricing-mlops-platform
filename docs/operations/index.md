@@ -26,6 +26,8 @@ az bicep build-params --file infra/parameters/sandbox-local.bicepparam
 ```bash
 scripts/what-if.sh staging
 scripts/deploy.sh staging
+scripts/what-if.sh validation
+scripts/deploy.sh validation
 ```
 
 Ambientes aceptados por scripts:
@@ -56,6 +58,9 @@ scripts/invoke_auth_monitoring_batch_endpoint.sh
 ```
 
 Platform no contiene scripts de endpoint ni componentes Azure ML operativos.
+
+Para levantar `validation` en la cuenta `pricing46mlops@outlook.com`, seguir
+`docs/goals/lift-validation-to-pricing46-account.md`.
 
 Para entender el flujo completo entre ambos repos, ver [Flujo end to end](end-to-end-flow.md).
 

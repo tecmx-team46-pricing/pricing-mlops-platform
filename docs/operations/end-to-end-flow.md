@@ -70,9 +70,14 @@ El ultimo paso, `publish_outputs`, tambien vive en `pricing-mlops`. Publica los 
 
 | Asset Azure ML | Version |
 |---|---|
-| `pricing_mlops_publish_outputs` | `0.1.2` |
-| `pricing_mlops_auth_monitoring_pipeline` | `0.1.3` |
-| `pricing-auth-monitoring/blue` | apunta a `pricing_mlops_auth_monitoring_pipeline:0.1.3` |
+| `pricing_mlops_validate_prepare` | `0.1.5` |
+| `pricing_mlops_publish_outputs` | `0.1.6` |
+| `pricing_mlops_auth_monitoring_pipeline` | `0.1.18` |
+| `pricing-auth-monitoring/blue` | apunta a `pricing_mlops_auth_monitoring_pipeline:0.1.18` |
+
+Para `validation` en la cuenta `pricing46mlops@outlook.com`, el endpoint operativo es
+`pricing-auth-monitoring-v46/blue` porque `pricing-auth-monitoring` no estaba disponible
+en `eastus2`. El deployment sigue siendo `blue` y apunta al mismo pipeline component.
 
 El manifest operativo vive en:
 
@@ -91,6 +96,8 @@ az bicep build --file infra/foundation/main.bicep
 az bicep build --file infra/workloads/pricing-mlops/main.bicep
 scripts/what-if.sh staging
 scripts/deploy.sh staging
+scripts/what-if.sh validation
+scripts/deploy.sh validation
 ```
 
 ## Comandos De Operacion ML
@@ -129,6 +136,12 @@ Ejemplo de corrida validada:
 
 ```text
 environment=staging/compute=azure-ml/trigger=batch-endpoint/owner=team46/run_date=20260616/run_id=20260616T085532Z-batch-endpoint/
+```
+
+Para la cuenta nueva, el prefijo esperado cambia a:
+
+```text
+environment=validation/compute=azure-ml/trigger=batch-endpoint/owner=team46/run_date=<yyyymmdd>/run_id=<run_id>/
 ```
 
 ## Regla Para Cambios Futuros

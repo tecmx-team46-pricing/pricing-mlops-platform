@@ -49,6 +49,20 @@ param modelGithubActionsPrincipalId string = ''
 @description('Create model repo GitHub Actions permissions for Azure ML job submission.')
 param enableModelGithubActionsIdentity bool = false
 
+@description('Azure ML compute cluster name used by pipeline jobs.')
+param amlComputeClusterName string = 'cpu-cluster'
+
+@description('Azure ML compute cluster VM size.')
+param amlComputeVmSize string = 'STANDARD_DS2_V2'
+
+@description('Minimum Azure ML compute nodes.')
+@minValue(0)
+param amlComputeMinNodeCount int = 0
+
+@description('Maximum Azure ML compute nodes.')
+@minValue(1)
+param amlComputeMaxNodeCount int = 1
+
 var azureMlDataScientistRoleDefinitionId = 'f6c7c914-8db3-469d-8ca1-694a8f32e121'
 var storageBlobDataContributorRoleDefinitionId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 var storageFileDataPrivilegedContributorRoleDefinitionId = '69566ab7-960f-475b-8e7c-b3118f30c6bd'
@@ -116,6 +130,38 @@ resource workspace 'Microsoft.MachineLearningServices/workspaces@2024-04-01' = {
   }, !empty(azureMlContainerRegistryName) ? {
     containerRegistry: azureMlContainerRegistry.id
   } : {})
+}
+
+resource amlComputeCluster 'Microsoft.MachineLearningServices/workspaces/computes@2024-04-01' = {
+  parent: workspace
+  name: amlComputeClusterName
+  location: location
+  tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${azureMlJobIdentityId}': {}
+    }
+  }
+  properties: {
+    computeLocation: location
+    computeType: 'AmlCompute'
+    description: 'CPU cluster for Pricing MLOps pipeline jobs.'
+    disableLocalAuth: true
+    properties: {
+      enableNodePublicIp: true
+      isolatedNetwork: false
+      osType: 'Linux'
+      remoteLoginPortPublicAccess: 'Disabled'
+      scaleSettings: {
+        maxNodeCount: amlComputeMaxNodeCount
+        minNodeCount: amlComputeMinNodeCount
+        nodeIdleTimeBeforeScaleDown: 'PT120S'
+      }
+      vmPriority: 'Dedicated'
+      vmSize: amlComputeVmSize
+    }
+  }
 }
 
 resource azureMlJobStorageContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
@@ -203,3 +249,4 @@ output azureMlWorkspaceId string = workspace.id
 output azureMlWorkspacePrincipalId string = workspace.identity.principalId
 output applicationInsightsName string = appInsights.name
 output azureMlJobIdentityClientId string = azureMlJobIdentityClientId
+output amlComputeClusterName string = amlComputeCluster.name

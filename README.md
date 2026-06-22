@@ -21,7 +21,7 @@ GitHub Actions de platform valida y despliega infraestructura bajo `workflow_dis
 | Scope | Uso |
 |---|---|
 | `staging` | Ambiente operativo compartido. |
-| `validation` | No-prod controlado futuro. |
+| `validation` | No-prod controlado para levantar la nueva cuenta y validar el flujo end-to-end. |
 | `data-lab` | Landing restringido para unmasked/masking. |
 | `sandbox-local` | Pruebas locales/admin. |
 | `shared` | Key Vault, Log Analytics e identidades OIDC. |
@@ -54,6 +54,9 @@ az login
 az account set --subscription "<azure-subscription-name>"
 scripts/what-if.sh staging
 scripts/deploy.sh staging
+# Para la cuenta nueva:
+scripts/what-if.sh validation
+scripts/deploy.sh validation
 ```
 
 Operar ML:
@@ -64,6 +67,9 @@ scripts/register_azureml_components.sh
 scripts/deploy_auth_monitoring_batch_endpoint.sh
 scripts/invoke_auth_monitoring_batch_endpoint.sh
 ```
+
+Para la migracion a `pricing46mlops@outlook.com`, ver
+`docs/goals/lift-validation-to-pricing46-account.md`.
 
 ## Documentacion
 

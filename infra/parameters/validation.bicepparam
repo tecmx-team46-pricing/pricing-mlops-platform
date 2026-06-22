@@ -16,10 +16,13 @@ param sharedOwner = 'team46'
 param githubRepository = 'tecmx-team46-pricing/pricing-mlops-platform'
 param githubEnvironment = 'validation'
 param enableGithubActionsIdentity = true
-// Validation can be enabled for the model repo when the controlled environment is ready.
 param modelGithubRepository = 'tecmx-team46-pricing/pricing-mlops'
 param modelGithubEnvironment = 'validation'
-param enableModelGithubActionsIdentity = false
+param enableModelGithubActionsIdentity = true
+param enableAzureMl = true
+param useAzureMlWorkspaceV2 = true
+param azureMlWorkspaceV2Name = ''
+param azureMlContainerRegistryName = 'f807aef31d5e4af08b7ec00956f7e623'
 
 // Validation is non-production. Keep budget creation explicit.
 param monthlyBudgetAmount = 0
@@ -29,6 +32,6 @@ param extraTags = {
   data_classification: 'masked-or-synthetic'
   maturity: 'controlled-non-prod'
   subscription_strategy: 'single-subscription'
-  subscription_name: '<azure-subscription-name>'
+  subscription_name: 'Azure subscription 1'
   credit_limit_usd: '200'
 }

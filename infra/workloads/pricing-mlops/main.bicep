@@ -249,3 +249,4 @@ output azureMlWorkspaceId string = enableAzureMl ? azureMl!.outputs.azureMlWorks
 output azureMlApplicationInsightsName string = enableAzureMl ? azureMl!.outputs.applicationInsightsName : ''
 output azureMlJobIdentityName string = enableAzureMl ? azureMlJobIdentity!.outputs.identityName : ''
 output azureMlJobIdentityClientId string = enableAzureMl ? azureMlJobIdentity!.outputs.clientId : ''
+output azureMlComputeClusterName string = enableAzureMl ? azureMl!.outputs.amlComputeClusterName : ''
